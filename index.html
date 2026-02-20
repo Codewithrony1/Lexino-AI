@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEXINO AI - Professional Chat Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="animated-wallpaper wallpaper-none" id="animatedWallpaper" aria-hidden="true"></div>
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+            <div class="setting-item">
+                <label>AI Model</label>
+                <select id="modelSelect">
+                    <option value="meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Max Response Length</label>
+                <select id="maxTokens">
+                    <option value="500">Short (500 tokens)</option>
+                    <option value="1000">Medium (1,000 tokens)</option>
+                    <option value="2000" selected>Long (2,000 tokens)</option>
+                    <option value="4000">Very Long (4,000 tokens)</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Language</label>
+                <select id="language">
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="hi">Hindi</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Wallpaper</label>
+                <div class="wallpaper-grid" id="wallpaperGrid">
+                    <button class="wallpaper-option active" data-wallpaper="none" onclick="setWallpaper('none')">
+                        <span class="wallpaper-preview preview-none"></span>
+                        <span>Default</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="aurora" onclick="setWallpaper('aurora')">
+                        <span class="wallpaper-preview preview-aurora"></span>
+                        <span>Aurora Flow</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="neon" onclick="setWallpaper('neon')">
+                        <span class="wallpaper-preview preview-neon"></span>
+                        <span>Neon Pulse</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="mesh" onclick="setWallpaper('mesh')">
+                        <span class="wallpaper-preview preview-mesh"></span>
+                        <span>Mesh Waves</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="galaxy" onclick="setWallpaper('galaxy')">
+                        <span class="wallpaper-preview preview-galaxy"></span>
+                        <span>Galaxy Drift</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="sunset" onclick="setWallpaper('sunset')">
+                        <span class="wallpaper-preview preview-sunset"></span>
+                        <span>Sunset Bloom</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="settings-modal" id="profileModal">
+        <div class="settings-content profile-content">
+            <div class="settings-header">
+                <h2>Profile</h2>
+                <button class="close-btn" onclick="closeProfileModal()">x</button>
+            </div>
+            <div class="setting-item">
+                <label>Full Name</label>
+                <input type="text" id="profileNameInput" placeholder="Enter your name">
+            </div>
+            <div class="setting-item">
+                <label>Email</label>
+                <input type="email" id="profileEmailInput" placeholder="Enter your email">
+            </div>
+            <div class="setting-item">
+                <label>Bio</label>
+                <textarea id="profileBioInput" rows="3" placeholder="Short bio"></textarea>
+            </div>
+            <div class="profile-modal-actions">
+                <button class="profile-btn secondary" onclick="closeProfileModal()">Cancel</button>
+                <button class="profile-btn primary" onclick="saveProfile()">Save Profile</button>
+            </div>
+        </div>
+    </div>
+    <div class="settings-modal" id="deleteConfirmModal">
+        <div class="settings-content delete-confirm-content">
+            <div class="settings-header">
+                <h2>Delete Chat</h2>
+            </div>
+            <p class="delete-confirm-text">Are you sure you want to delete this chat?</p>
+            <p class="delete-confirm-title" id="deleteConfirmTitle"></p>
+            <div class="profile-modal-actions">
+                <button class="profile-btn secondary" onclick="closeDeleteConfirmModal()">No</button>
+                <button class="profile-btn danger" onclick="confirmDeleteFromModal()">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="collapsed-rail" id="collapsedRail">
+                <button class="rail-btn rail-logo" onclick="toggleSidebar()" title="Open Sidebar">
+                    <img
+                        class="rail-icon-img"
+                        src="Images/burger-bar.png"
+                        alt="Menu"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                    >
+                    <span class="rail-icon-text" style="display: none;">&#9776;</span>
+                </button>
+                <button class="rail-btn" onclick="startNewChat()" title="New chat">
+                    <img
+                        class="rail-icon-img"
+                        src="Images/new-chat.png"
+                        alt="New chat"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                    >
+                    <span class="rail-icon-text" style="display: none;">&#9998;</span>
+                </button>
+                <button class="rail-btn" onclick="searchChats()" title="Search chats">
+                    <img
+                        class="rail-icon-img"
+                        src="Images/search.png"
+                        alt="Search chats"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';"
+                    >
+                    <span class="rail-icon-text" style="display: none;">&#8981;</span>
+                </button>
+                <div class="rail-spacer"></div>
+                <button class="rail-avatar-btn" id="railAvatarBtn" onclick="toggleRailQuickMenu(event)" title="Account menu">
+                    <span id="railProfileInitial">RR</span>
+                </button>
+                <div class="rail-quick-menu" id="railQuickMenu">
+                    <button class="rail-quick-item" onclick="closeRailQuickMenu(); openProfileModal();">
+                        <span class="rail-quick-icon">&#9786;</span>
+                        <span>Profile</span>
+                    </button>
+                    <button class="rail-quick-item" onclick="closeRailQuickMenu(); openSettings();">
+                        <span class="rail-quick-icon">&#9881;</span>
+                        <span>Settings</span>
+                    </button>
+                    <button class="rail-quick-item" onclick="closeRailQuickMenu(); openHelp();">
+                        <span class="rail-quick-icon">?</span>
+                        <span>Help</span>
+                    </button>
+                </div>
+            </div>
+            <div class="sidebar-topbar">
+                <div class="sidebar-brand-wrap">
+                    <div class="sidebar-logo-symbol">◎</div>
+                    <button class="sidebar-custom-image-btn" onclick="triggerSidebarBrandImage()" title="Change image">
+                        <img id="sidebarBrandImage" class="sidebar-brand-image" src="" alt="Brand image">
+                        <span id="sidebarBrandPlaceholder">+</span>
+                    </button>
+                </div>
+                <button class="sidebar-collapse-btn" onclick="closeSidebar()" title="Close sidebar">◧</button>
+            </div>
+            <input type="file" id="sidebarBrandInput" class="file-input" accept="image/*" onchange="handleSidebarBrandUpload(event)">
+
+            <div class="sidebar-section">
+                <div class="sidebar-menu-item" onclick="startNewChat()">
+                    <span class="icon">✎</span>
+                    <span>New chat</span>
+                </div>
+                <div class="sidebar-menu-item" id="searchChatsMenu" onclick="searchChats()">
+                    <span class="icon">⌕</span>
+                    <span>Search chats</span>
+                </div>
+            </div>
+            <aside class="search-panel" id="searchPanel">
+                <div class="search-panel-header">
+                    <h3>Search Chats</h3>
+                    <button class="search-panel-close" onclick="closeSearchPanel()" title="Close">x</button>
+                </div>
+                <div class="search-panel-body">
+                    <input
+                        class="search-input"
+                        id="searchInput"
+                        type="text"
+                        placeholder="Search saved chats..."
+                        oninput="handleSearchInput(this.value)"
+                    >
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+            </aside>
+
+
+            <div class="chat-history" id="chatHistory"></div>
+            <div class="sidebar-footer">
+                <button class="sidebar-account-card" id="sidebarAccountBtn" onclick="toggleSidebarAccountMenu(event)" title="Account menu">
+                    <div class="sidebar-account-avatar" id="sidebarAccountInitial">R</div>
+                    <div class="sidebar-account-text">
+                        <div class="sidebar-account-name" id="sidebarAccountName">Ritik</div>
+                        <div class="sidebar-account-handle" id="sidebarAccountHandle">@ritik</div>
+                    </div>
+                    <span class="sidebar-account-arrow">&#8250;</span>
+                </button>
+                <div class="sidebar-account-menu" id="sidebarAccountMenu">
+                    <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); upgradePlan();">
+                        <span class="icon">&#10024;</span>
+                        <span>Upgrade plan</span>
+                    </button>
+                    <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); openSettings();">
+                        <span class="icon">&#9788;</span>
+                        <span>Personalization</span>
+                    </button>
+                    <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); openSettings();">
+                        <span class="icon">&#9881;</span>
+                        <span>Settings</span>
+                    </button>
+                    <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); openHelp();">
+                        <span class="icon">?</span>
+                        <span>Help</span>
+                    </button>
+                    <button class="sidebar-account-item danger" onclick="closeSidebarAccountMenu(); logoutAccount();">
+                        <span class="icon">&#10162;</span>
+                        <span>Log out</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat -->
+        <main class="chat-container">
+            <header class="chat-header">
+                <div class="header-center">
+                    <div class="header-logo">LEXINO AI</div>
+                    <div class="temp-mode-badge" id="tempModeBadge">Temp Mode</div>
+                </div>
+                <div class="header-actions">
+                    <button class="temp-chat-btn" id="tempChatBtn" onclick="startTempChat()" title="Temporary Chat">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </button>
+                    <div class="header-account" onclick="toggleAccountMenu()">
+                        <div class="header-avatar">R</div>
+                        <span class="header-account-name" id="headerProfileName">Ritik</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state" id="emptyState">
+                    <h2>LEXINO AI</h2>
+                    <p>How can I help you today?</p>
+                    <div class="suggestion-chips">
+                        <div class="chip" onclick="useSuggestion('Explain quantum computing')">
+                            Explain quantum computing
+                        </div>
+                        <div class="chip" onclick="useSuggestion('Write a business proposal')">
+                            Write a business proposal
+                        </div>
+                        <div class="chip" onclick="useSuggestion('Brainstorm startup ideas')">
+                            Brainstorm startup ideas
+                        </div>
+                        <div class="chip" onclick="useSuggestion('Review this code')">
+                            Review this code
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <div class="input-container">
+                        <button class="tool-btn" onclick="triggerFileUpload()" title="Upload docs or images (Max 50 files, 100MB each)">
+                            +
+                        </button>
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput" 
+                            placeholder="Ask anything"
+                            rows="1"
+                            onkeydown="handleKeyPress(event)"
+                            oninput="autoResize(this)"
+                        ></textarea>
+                        <button class="tool-btn" id="micBtn" onclick="toggleVoiceInput()" title="Voice input">
+                            ◉
+                        </button>
+                        <button class="tool-btn" title="Advanced options">
+                            ⋮
+                        </button>
+                    </div>
+                    <div class="uploaded-files" id="uploadedFiles"></div>
+                    <input type="file" id="fileInput" class="file-input" onchange="handleFileUpload(event)" multiple accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="chat-context-menu" id="chatContextMenu">
+        <button class="chat-context-action danger" onclick="deleteChatFromContextMenu()">Delete chat</button>
+    </div>
+
+        <script src="api.js"></script>
+        <script src="script.js"></script>
+</body>
+</html>
