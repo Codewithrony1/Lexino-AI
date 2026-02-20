@@ -1,0 +1,14 @@
+{
+  "name": "lexino-chatting-app",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Lexino.ai frontend + Vercel serverless API",
+  "scripts": {
+    "dev": "npx vercel dev",
+    "start": "npx vercel dev"
+  },
+  "dependencies": {
+    "@huggingface/inference": "^4.0.0"
+  }
+}

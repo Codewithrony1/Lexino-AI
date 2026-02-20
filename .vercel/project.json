@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_jhekgEV2jd5ujk5mwP8QHG8dejHd",
+  "orgId": "team_yxLbLFcJRUcmuj24DA4S43CV",
+  "projectName": "lexino-ai",
+  "settings": {
+    "createdAt": 1771179862861,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
