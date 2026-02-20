@@ -4,8 +4,7 @@
   "argv": [
     "C:\\Program Files\\nodejs\\node.exe",
     "C:\\Users\\sumit\\AppData\\Local\\npm-cache\\_npx\\69f9afb961c37556\\node_modules\\vercel\\dist\\vc.js",
-    "build",
-    "--yes"
+    "build"
   ],
   "cliVersion": "50.22.1",
   "builds": [
@@ -29,5 +28,8 @@
         "zeroConfig": true
       }
     }
-  ]
+  ],
+  "features": {
+    "webAnalyticsVersion": "1.6.1"
+  }
 }

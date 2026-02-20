@@ -1,7 +1,3 @@
-import { InferenceClient } from "@huggingface/inference";
-
-const client = new InferenceClient(process.env.HF_TOKEN);
-
 function extractMessage(body) {
   if (typeof body?.message === "string" && body.message.trim()) {
     return body.message.trim();
@@ -37,7 +33,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    const token = (process.env.HF_TOKEN || "").trim();
+    if (!token || !token.trim()) {
+      return res.status(500).json({
+        error: "Server misconfigured: HF_TOKEN is missing."
+      });
+    }
+
     const parsedBody = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const { InferenceClient } = await import("@huggingface/inference");
+    const client = new InferenceClient(token);
     const selectedModel = typeof parsedBody.selectedModel === "string" && parsedBody.selectedModel.trim()
       ? parsedBody.selectedModel.trim()
       : "meta-llama/Meta-Llama-3-8B-Instruct";
@@ -62,6 +67,8 @@ export default async function handler(req, res) {
       output: reply
     });
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    console.error("api/chat failure:", error);
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    res.status(500).json({ error: message });
   }
 }
