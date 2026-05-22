@@ -9,7 +9,6 @@
     "start": "npx vercel dev"
   },
   "dependencies": {
-    "@huggingface/inference": "^4.0.0",
     "@vercel/analytics": "^1.6.1"
   }
 }

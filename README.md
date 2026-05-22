@@ -35,7 +35,11 @@ The project is built with vanilla JavaScript and relies on LocalStorage for clie
    ```
 
 2. **Backend Setup**
-   Ensure you have a compatible backend server running. The frontend expects a POST endpoint at `/api/chat` (or `http://127.0.0.1:3000/api/chat` for local development) that accepts JSON bodies with `content`, `history`, `selectedModel`, and `maxTokens`.
+   Create a `.env` file with your Groq API key:
+   ```bash
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+   The frontend expects a POST endpoint at `/api/chat` (or `http://127.0.0.1:3000/api/chat` for local development) that accepts JSON bodies with `content`, `history`, `selectedModel`, and `maxTokens`.
 
 3. **Launch**
    Open the `index.html` file in your preferred web browser.
@@ -46,7 +50,7 @@ The project is built with vanilla JavaScript and relies on LocalStorage for clie
 The `api.js` file contains logic to determine the API endpoint based on the window's hostname.
 
 ### Models
-The application defaults to `meta-llama/Meta-Llama-3-8B-Instruct` but supports model selection if a `<select id="modelSelect">` element is present in the DOM.
+The application defaults to Groq's `llama-3.3-70b-versatile` model and also includes `llama-3.1-8b-instant` as a faster option.
 
 ## 📄 License
 

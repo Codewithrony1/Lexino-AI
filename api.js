@@ -32,7 +32,7 @@
     async function getResponse(content, history = []) {
         const modelSelect = document.getElementById("modelSelect");
         const maxTokensSelect = document.getElementById("maxTokens");
-        const selectedModelValue = modelSelect ? modelSelect.value : "meta-llama/Meta-Llama-3-8B-Instruct";
+        const selectedModelValue = modelSelect ? modelSelect.value : "llama-3.3-70b-versatile";
         const maxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 2000;
         const requestBody = JSON.stringify({
             selectedModel: selectedModelValue,

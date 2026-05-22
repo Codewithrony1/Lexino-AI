@@ -33,21 +33,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const token = (process.env.HF_TOKEN || "").trim();
-    if (!token || !token.trim()) {
+    const token = (process.env.GROQ_API_KEY || "").trim();
+    if (!token) {
       return res.status(500).json({
-        error: "Server misconfigured: HF_TOKEN is missing."
+        error: "Server misconfigured: GROQ_API_KEY is missing."
       });
     }
 
     const parsedBody = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    const { InferenceClient } = await import("@huggingface/inference");
-    const client = new InferenceClient(token);
     const selectedModel = typeof parsedBody.selectedModel === "string" && parsedBody.selectedModel.trim()
       ? parsedBody.selectedModel.trim()
-      : "meta-llama/Meta-Llama-3-8B-Instruct";
+      : "llama-3.3-70b-versatile";
     const maxTokens = Number(parsedBody.maxTokens);
-    const safeMaxTokens = Number.isFinite(maxTokens) && maxTokens > 0 ? Math.min(Math.floor(maxTokens), 4096) : 150;
+    const safeMaxTokens = Number.isFinite(maxTokens) && maxTokens > 0 ? Math.min(Math.floor(maxTokens), 32768) : 2000;
     const message = extractMessage(parsedBody);
     const history = Array.isArray(parsedBody.history)
       ? parsedBody.history
@@ -55,13 +53,26 @@ export default async function handler(req, res) {
           .slice(-20)
       : [];
 
-    const response = await client.chatCompletion({
-      model: selectedModel,
-      messages: [...history, { role: "user", content: message }],
-      max_tokens: safeMaxTokens
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: [...history, { role: "user", content: message }],
+        max_tokens: safeMaxTokens
+      })
     });
 
-    const reply = response?.choices?.[0]?.message?.content || "";
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data?.error?.message || `Groq API request failed with HTTP ${response.status}`;
+      return res.status(response.status).json({ error: message });
+    }
+
+    const reply = data?.choices?.[0]?.message?.content || "";
     res.status(200).json({
       reply,
       output: reply

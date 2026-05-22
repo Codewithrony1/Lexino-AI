@@ -1104,6 +1104,8 @@
                 lower.includes("start server at");
 
             const isAuth =
+                lower.includes("groq_api_key") ||
+                lower.includes("groq_api_key") ||
                 lower.includes("hf_token") ||
                 lower.includes("unauthorized") ||
                 lower.includes("forbidden") ||
@@ -1126,7 +1128,7 @@
             }
 
             if (isAuth) {
-                return `Error: ${raw}. Please check your HF token (HF_TOKEN) and try again.`;
+                return `Error: ${raw}. Please check your Groq API key (GROQ_API_KEY) and try again.`;
             }
 
             return `Error: ${raw}.`;
