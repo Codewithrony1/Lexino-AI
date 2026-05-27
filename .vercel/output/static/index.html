@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>LEXINO AI - Professional Chat Interface</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <link rel="stylesheet" href="style.css">
@@ -19,8 +19,8 @@
             <div class="setting-item">
                 <label>AI Model</label>
                 <select id="modelSelect">
-                    <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B Versatile</option>
-                    <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
+                    <option value="llama-3.1-8b-instant" selected>Llama 3.1 8B Instant</option>
                 </select>
             </div>
             <div class="setting-item">
@@ -51,23 +51,31 @@
                     </button>
                     <button class="wallpaper-option" data-wallpaper="aurora" onclick="setWallpaper('aurora')">
                         <span class="wallpaper-preview preview-aurora"></span>
-                        <span>Aurora Flow</span>
+                        <span>Deep Aurora</span>
                     </button>
                     <button class="wallpaper-option" data-wallpaper="neon" onclick="setWallpaper('neon')">
                         <span class="wallpaper-preview preview-neon"></span>
-                        <span>Neon Pulse</span>
+                        <span>Neon Matrix</span>
                     </button>
                     <button class="wallpaper-option" data-wallpaper="mesh" onclick="setWallpaper('mesh')">
                         <span class="wallpaper-preview preview-mesh"></span>
-                        <span>Mesh Waves</span>
+                        <span>Signal Mesh</span>
                     </button>
-                    <button class="wallpaper-option" data-wallpaper="galaxy" onclick="setWallpaper('galaxy')">
-                        <span class="wallpaper-preview preview-galaxy"></span>
-                        <span>Galaxy Drift</span>
+                    <button class="wallpaper-option" data-wallpaper="starfall" onclick="setWallpaper('starfall')">
+                        <span class="wallpaper-preview preview-starfall"></span>
+                        <span>Quiet Stars</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="particlefield" onclick="setWallpaper('particlefield')">
+                        <span class="wallpaper-preview preview-particlefield"></span>
+                        <span>Particle Field</span>
                     </button>
                     <button class="wallpaper-option" data-wallpaper="sunset" onclick="setWallpaper('sunset')">
                         <span class="wallpaper-preview preview-sunset"></span>
-                        <span>Sunset Bloom</span>
+                        <span>Solar Dusk</span>
+                    </button>
+                    <button class="wallpaper-option" data-wallpaper="universe" onclick="setWallpaper('universe')">
+                        <span class="wallpaper-preview preview-universe"></span>
+                        <span>Smoky Universe</span>
                     </button>
                 </div>
             </div>
@@ -279,24 +287,60 @@
 
             <div class="input-area">
                 <div class="input-wrapper">
-                    <div class="input-container">
-                        <button class="tool-btn" onclick="triggerFileUpload()" title="Upload docs or images (Max 50 files, 100MB each)">
-                            +
-                        </button>
-                        <textarea 
-                            class="message-input" 
-                            id="messageInput" 
-                            placeholder="Ask anything"
-                            rows="1"
-                            onkeydown="handleKeyPress(event)"
-                            oninput="autoResize(this)"
-                        ></textarea>
-                        <button class="tool-btn" id="micBtn" onclick="toggleVoiceInput()" title="Voice input">
-                            ◉
-                        </button>
-                        <button class="tool-btn" title="Advanced options">
-                            ⋮
-                        </button>
+                    <div class="input-container ai-composer" role="group" aria-label="AI chat composer">
+                        <div class="composer-input-row">
+                            <button class="composer-icon-btn composer-attach-btn" onclick="triggerFileUpload()" title="Upload docs or images" aria-label="Attach files">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 5v14M5 12h14"></path>
+                                </svg>
+                            </button>
+                            <textarea 
+                                class="message-input" 
+                                id="messageInput" 
+                                placeholder="Ask anything"
+                                rows="1"
+                                aria-label="Message"
+                                onkeydown="handleKeyPress(event)"
+                                oninput="autoResize(this); updateComposerState()"
+                            ></textarea>
+                            <div class="composer-actions">
+                                <button class="composer-icon-btn" id="micBtn" onclick="toggleVoiceInput()" title="Voice input" aria-label="Start voice input">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"></path>
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                        <path d="M12 19v3"></path>
+                                    </svg>
+                                </button>
+                                <button class="composer-send-btn" id="sendBtn" onclick="sendMessage()" title="Send message" aria-label="Send message" disabled>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 19V5"></path>
+                                        <path d="m5 12 7-7 7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="composer-footer">
+                            <div class="composer-footer-spacer" aria-hidden="true"></div>
+                            <div class="model-selector">
+                                <button class="model-selector-btn" id="modelSelectorBtn" onclick="toggleModelMenu(event)" aria-haspopup="listbox" aria-expanded="false" aria-label="Select model">
+                                    <span id="modelSelectorLabel">Fast</span>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="m7 10 5 5 5-5"></path>
+                                    </svg>
+                                </button>
+                                <div class="model-menu" id="modelMenu" role="listbox" aria-label="Model options">
+                                    <button class="model-option active" type="button" role="option" aria-selected="true" onclick="selectComposerModel('Fast', 'llama-3.1-8b-instant')">
+                                        <span>Fast</span>
+                                        <small>Instant replies</small>
+                                    </button>
+                                    <button class="model-option" type="button" role="option" aria-selected="false" onclick="selectComposerModel('Pro', 'llama-3.3-70b-versatile')">
+                                        <span>Pro</span>
+                                        <small>Deeper reasoning</small>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="composer-footer-spacer" aria-hidden="true"></div>
+                        </div>
                     </div>
                     <div class="uploaded-files" id="uploadedFiles"></div>
                     <input type="file" id="fileInput" class="file-input" onchange="handleFileUpload(event)" multiple accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif">

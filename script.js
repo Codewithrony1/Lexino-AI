@@ -7,7 +7,7 @@
         const PROFILE_STORAGE_KEY = "lexino_profile_v1";
         const WALLPAPER_STORAGE_KEY = "lexino_wallpaper_v1";
         const SIDEBAR_BRAND_IMAGE_KEY = "lexino_sidebar_brand_image_v1";
-        const allowedWallpapers = ["none", "aurora", "neon", "mesh", "galaxy", "sunset"];
+        const allowedWallpapers = ["none", "aurora", "neon", "mesh", "starfall", "particlefield", "sunset", "universe"];
         const defaultProfile = {
             name: "Ritik",
             email: "",
@@ -22,6 +22,101 @@
         let currentConversation = [];
         let contextMenuChatId = null;
         let pendingDeleteChatId = null;
+        let mobileViewportFrame = null;
+        let mobileComposerResizeObserver = null;
+        let autoResizeFrame = null;
+        let pendingAutoResizeTextarea = null;
+        let chatScrollFrame = null;
+        let searchRenderFrame = null;
+        let lastMobileInputHeight = 0;
+        const composerModels = {
+            "llama-3.1-8b-instant": "Fast",
+            "llama-3.3-70b-versatile": "Pro"
+        };
+        const composerThemeProfiles = {
+            none: {
+                accent: [16, 163, 127],
+                accentStrong: [52, 211, 153],
+                surface: [11, 11, 13],
+                surfaceAlpha: 0.86,
+                focusAlpha: 0.91,
+                glowAlpha: 0.16,
+                shadowAlpha: 0.52,
+                blur: 22
+            },
+            aurora: {
+                accent: [45, 212, 191],
+                accentStrong: [125, 211, 252],
+                surface: [5, 18, 24],
+                surfaceAlpha: 0.72,
+                focusAlpha: 0.82,
+                glowAlpha: 0.24,
+                shadowAlpha: 0.5,
+                blur: 24
+            },
+            neon: {
+                accent: [34, 211, 238],
+                accentStrong: [14, 165, 233],
+                surface: [2, 10, 20],
+                surfaceAlpha: 0.66,
+                focusAlpha: 0.78,
+                glowAlpha: 0.3,
+                shadowAlpha: 0.48,
+                blur: 26
+            },
+            mesh: {
+                accent: [56, 189, 248],
+                accentStrong: [45, 212, 191],
+                surface: [3, 11, 22],
+                surfaceAlpha: 0.7,
+                focusAlpha: 0.82,
+                glowAlpha: 0.22,
+                shadowAlpha: 0.5,
+                blur: 24
+            },
+            starfall: {
+                accent: [147, 197, 253],
+                accentStrong: [254, 240, 138],
+                surface: [5, 8, 18],
+                surfaceAlpha: 0.68,
+                focusAlpha: 0.8,
+                glowAlpha: 0.18,
+                shadowAlpha: 0.54,
+                blur: 22
+            },
+            particlefield: {
+                accent: [125, 211, 252],
+                accentStrong: [45, 212, 191],
+                surface: [2, 8, 18],
+                surfaceAlpha: 0.64,
+                focusAlpha: 0.76,
+                glowAlpha: 0.28,
+                shadowAlpha: 0.48,
+                blur: 27
+            },
+            sunset: {
+                accent: [251, 146, 60],
+                accentStrong: [244, 114, 182],
+                bubbleAccent: [248, 113, 113],
+                bubbleAccentStrong: [244, 63, 94],
+                surface: [22, 10, 12],
+                surfaceAlpha: 0.72,
+                focusAlpha: 0.84,
+                glowAlpha: 0.24,
+                shadowAlpha: 0.52,
+                blur: 23
+            },
+            universe: {
+                accent: [168, 85, 247],
+                accentStrong: [96, 165, 250],
+                surface: [9, 7, 24],
+                surfaceAlpha: 0.7,
+                focusAlpha: 0.82,
+                glowAlpha: 0.26,
+                shadowAlpha: 0.52,
+                blur: 25
+            }
+        };
         
 
         async function getResponse(content, history = []) {
@@ -35,9 +130,119 @@
             return marked.parse(text);
         }
 
-        function autoResize(textarea) {
+        function applyAutoResize(textarea) {
+            if (!textarea) return;
+            const mobileMax = Math.min(window.innerHeight * 0.26, 120);
+            const maxHeight = isMobileViewport() ? mobileMax : 180;
             textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+            textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+            scheduleMobileViewportSync();
+        }
+
+        function autoResize(textarea) {
+            pendingAutoResizeTextarea = textarea;
+            if (autoResizeFrame) return;
+
+            autoResizeFrame = requestAnimationFrame(() => {
+                autoResizeFrame = null;
+                applyAutoResize(pendingAutoResizeTextarea);
+                pendingAutoResizeTextarea = null;
+            });
+        }
+
+        function isMobileViewport() {
+            return window.matchMedia("(max-width: 768px)").matches;
+        }
+
+        function syncMobileInputHeight() {
+            const inputArea = document.querySelector(".input-area");
+            if (!inputArea) return;
+
+            const height = Math.ceil(inputArea.getBoundingClientRect().height);
+            if (height > 0 && height !== lastMobileInputHeight) {
+                lastMobileInputHeight = height;
+                document.documentElement.style.setProperty("--mobile-input-height", `${height}px`);
+            }
+        }
+
+        function scrollMessagesToLatest(options = {}) {
+            const { smooth = false } = options;
+            if (chatScrollFrame) return;
+
+            chatScrollFrame = requestAnimationFrame(() => {
+                chatScrollFrame = null;
+                const messagesDiv = document.getElementById("chatMessages");
+                if (!messagesDiv) return;
+
+                const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                const behavior = smooth && !prefersReducedMotion ? "smooth" : "auto";
+                messagesDiv.scrollTo({
+                    top: messagesDiv.scrollHeight,
+                    behavior
+                });
+            });
+        }
+
+        function syncMobileViewport() {
+            const root = document.documentElement;
+            const isMobile = isMobileViewport();
+            document.body.classList.toggle("mobile-app-shell", isMobile);
+
+            if (!isMobile) {
+                root.style.setProperty("--app-height", "100dvh");
+                root.style.setProperty("--mobile-bottom-offset", "0px");
+                return;
+            }
+
+            const viewport = window.visualViewport;
+            const height = viewport ? viewport.height : window.innerHeight;
+            root.style.setProperty("--app-height", `${Math.round(height)}px`);
+            root.style.setProperty("--mobile-bottom-offset", "0px");
+            syncMobileInputHeight();
+        }
+
+        function scheduleMobileViewportSync() {
+            if (mobileViewportFrame) {
+                cancelAnimationFrame(mobileViewportFrame);
+            }
+
+            mobileViewportFrame = requestAnimationFrame(() => {
+                mobileViewportFrame = null;
+                syncMobileViewport();
+            });
+        }
+
+        function initMobileAppShell() {
+            syncMobileViewport();
+
+            window.addEventListener("resize", scheduleMobileViewportSync, { passive: true });
+            window.addEventListener("orientationchange", () => {
+                setTimeout(scheduleMobileViewportSync, 120);
+            }, { passive: true });
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener("resize", scheduleMobileViewportSync, { passive: true });
+                window.visualViewport.addEventListener("scroll", scheduleMobileViewportSync, { passive: true });
+            }
+
+            const inputArea = document.querySelector(".input-area");
+            if (inputArea && "ResizeObserver" in window) {
+                mobileComposerResizeObserver = new ResizeObserver(scheduleMobileViewportSync);
+                mobileComposerResizeObserver.observe(inputArea);
+            }
+
+            const input = document.getElementById("messageInput");
+            if (input) {
+                input.addEventListener("focus", () => {
+                    setTimeout(() => {
+                        scheduleMobileViewportSync();
+                        scrollMessagesToLatest({ smooth: true });
+                    }, 80);
+                });
+                input.addEventListener("blur", () => {
+                    setTimeout(scheduleMobileViewportSync, 80);
+                });
+            }
         }
 
         function toggleSidebar() {
@@ -77,6 +282,112 @@
             wallpaperLayer.className = `animated-wallpaper wallpaper-${safe}`;
             document.body.classList.toggle("wallpaper-enabled", safe !== "none");
             currentWallpaper = safe;
+            applyComposerTheme(safe);
+        }
+
+        function rgbaValue(rgb, alpha) {
+            return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+        }
+
+        function rgbTriplet(rgb) {
+            return `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
+        }
+
+        function mixRgb(from, to, amount) {
+            return from.map((value, index) => Math.round(value + (to[index] - value) * amount));
+        }
+
+        function getLuminance(rgb) {
+            const [r, g, b] = rgb.map((value) => {
+                const channel = value / 255;
+                return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        function getSaturationScore(rgb) {
+            const max = Math.max(...rgb);
+            const min = Math.min(...rgb);
+            return max === 0 ? 0 : (max - min) / max;
+        }
+
+        function extractAccentFromPreview(name) {
+            const preview = document.querySelector(`.preview-${name}`);
+            if (!preview) return null;
+
+            const background = getComputedStyle(preview).backgroundImage || "";
+            const matches = [...background.matchAll(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/g)]
+                .map((match) => [Number(match[1]), Number(match[2]), Number(match[3])]);
+
+            if (!matches.length) return null;
+
+            return matches.reduce((best, current) => {
+                const currentScore = getSaturationScore(current) + getLuminance(current);
+                const bestScore = getSaturationScore(best) + getLuminance(best);
+                return currentScore > bestScore ? current : best;
+            }, matches[0]);
+        }
+
+        function applyComposerTheme(name) {
+            const base = composerThemeProfiles.none;
+            const configured = composerThemeProfiles[name] || {};
+            const extractedAccent = configured.accent || extractAccentFromPreview(name) || base.accent;
+            const accentStrong = configured.accentStrong || extractedAccent;
+            const surface = configured.surface || base.surface;
+            const surfaceAlpha = configured.surfaceAlpha ?? base.surfaceAlpha;
+            const focusAlpha = configured.focusAlpha ?? Math.min(surfaceAlpha + 0.1, 0.94);
+            const glowAlpha = configured.glowAlpha ?? base.glowAlpha;
+            const shadowAlpha = configured.shadowAlpha ?? base.shadowAlpha;
+            const accentBrightness = getLuminance(extractedAccent);
+            const blur = Math.min((configured.blur ?? base.blur) + (accentBrightness > 0.42 ? 1.5 : 0), 30);
+            const lightSurface = getLuminance(surface) > 0.58;
+            const bubbleAccent = configured.bubbleAccent || extractedAccent;
+            const bubbleAccentStrong = configured.bubbleAccentStrong || accentStrong;
+            const bubbleSurface = configured.bubbleSurface || mixRgb(surface, [255, 255, 255], lightSurface ? 0.05 : 0.1);
+            const bubbleSurfaceAlpha = configured.bubbleSurfaceAlpha ?? (lightSurface ? 0.58 : Math.max(0.52, Math.min(0.76, surfaceAlpha - 0.07)));
+            const bubbleTintAlpha = configured.bubbleTintAlpha ?? (lightSurface ? 0.08 : Math.min(0.2, 0.11 + glowAlpha * 0.26));
+            const bubbleTintStrongAlpha = configured.bubbleTintStrongAlpha ?? Math.max(0.06, bubbleTintAlpha * 0.68);
+            const bubbleFrostAlpha = configured.bubbleFrostAlpha ?? (lightSurface ? 0.54 : 0.075);
+            const bubbleBorderAlpha = configured.bubbleBorderAlpha ?? (lightSurface ? 0.36 : 0.28);
+            const bubbleBorderHoverAlpha = Math.min(0.58, bubbleBorderAlpha + 0.12);
+            const bubbleGlowAlpha = configured.bubbleGlowAlpha ?? (lightSurface ? 0.12 : Math.min(0.32, 0.14 + glowAlpha * 0.42));
+            const bubbleGlowHoverAlpha = Math.min(0.42, bubbleGlowAlpha + 0.08);
+            const bubbleInnerAlpha = configured.bubbleInnerAlpha ?? (lightSurface ? 0.035 : 0.07);
+            const bubbleInnerHoverAlpha = Math.min(0.14, bubbleInnerAlpha + 0.025);
+            const bubbleBlur = Math.max(14, Math.round(blur * 0.72));
+            const root = document.documentElement;
+
+            root.style.setProperty("--composer-accent-rgb", rgbTriplet(extractedAccent));
+            root.style.setProperty("--composer-accent-strong-rgb", rgbTriplet(accentStrong));
+            root.style.setProperty("--composer-surface", rgbaValue(surface, surfaceAlpha));
+            root.style.setProperty("--composer-surface-focus", rgbaValue(surface, focusAlpha));
+            root.style.setProperty("--composer-border", rgbaValue(accentStrong, lightSurface ? 0.26 : 0.16));
+            root.style.setProperty("--composer-border-focus", rgbaValue(accentStrong, lightSurface ? 0.52 : 0.42));
+            root.style.setProperty("--composer-glow-alpha", String(glowAlpha));
+            root.style.setProperty("--composer-shadow-alpha", String(shadowAlpha));
+            root.style.setProperty("--composer-blur", `${blur}px`);
+            root.style.setProperty("--composer-inner-alpha", String(lightSurface ? 0.025 : 0.05));
+            root.style.setProperty("--composer-text", lightSurface ? "rgba(8, 11, 18, 0.94)" : "rgba(255, 255, 255, 0.94)");
+            root.style.setProperty("--composer-placeholder", lightSurface ? "rgba(8, 11, 18, 0.48)" : "rgba(245, 245, 247, 0.46)");
+            root.style.setProperty("--composer-icon", lightSurface ? "rgba(8, 11, 18, 0.66)" : rgbaValue(accentStrong, 0.78));
+            root.style.setProperty("--composer-icon-hover", lightSurface ? "rgba(8, 11, 18, 0.94)" : "rgba(255, 255, 255, 0.96)");
+            root.style.setProperty("--composer-muted-bg", lightSurface ? "rgba(255, 255, 255, 0.42)" : rgbaValue(extractedAccent, 0.07));
+            root.style.setProperty("--composer-muted-hover", lightSurface ? "rgba(255, 255, 255, 0.64)" : rgbaValue(extractedAccent, 0.13));
+            root.style.setProperty("--user-bubble-surface-rgb", rgbTriplet(bubbleSurface));
+            root.style.setProperty("--user-bubble-surface-alpha", String(bubbleSurfaceAlpha));
+            root.style.setProperty("--user-bubble-accent-rgb", rgbTriplet(bubbleAccent));
+            root.style.setProperty("--user-bubble-accent-strong-rgb", rgbTriplet(bubbleAccentStrong));
+            root.style.setProperty("--user-bubble-tint-alpha", String(bubbleTintAlpha));
+            root.style.setProperty("--user-bubble-tint-strong-alpha", String(bubbleTintStrongAlpha));
+            root.style.setProperty("--user-bubble-frost-alpha", String(bubbleFrostAlpha));
+            root.style.setProperty("--user-bubble-border-alpha", String(bubbleBorderAlpha));
+            root.style.setProperty("--user-bubble-border-hover-alpha", String(bubbleBorderHoverAlpha));
+            root.style.setProperty("--user-bubble-glow-alpha", String(bubbleGlowAlpha));
+            root.style.setProperty("--user-bubble-glow-hover-alpha", String(bubbleGlowHoverAlpha));
+            root.style.setProperty("--user-bubble-inner-alpha", String(bubbleInnerAlpha));
+            root.style.setProperty("--user-bubble-inner-hover-alpha", String(bubbleInnerHoverAlpha));
+            root.style.setProperty("--user-bubble-blur", `${bubbleBlur}px`);
+            root.style.setProperty("--user-bubble-text", lightSurface ? "rgba(8, 11, 18, 0.92)" : "rgba(248, 252, 255, 0.96)");
         }
 
         function updateWallpaperOptions() {
@@ -421,6 +732,15 @@
             });
         }
 
+        function scheduleSearchResultsRender() {
+            if (searchRenderFrame) return;
+
+            searchRenderFrame = requestAnimationFrame(() => {
+                searchRenderFrame = null;
+                renderSearchResults();
+            });
+        }
+
         function openSearchPanel() {
             const panel = document.getElementById("searchPanel");
             if (!panel) return;
@@ -594,7 +914,7 @@
 
         function handleSearchInput(value) {
             chatSearchQuery = (value || "").trim();
-            renderSearchResults();
+            scheduleSearchResultsRender();
         }
 
         function openChatSession(chatId) {
@@ -614,6 +934,8 @@
                 ? target.thread.map((m) => ({ role: m.role, content: m.content }))
                 : [];
             renderChatHistory();
+            scheduleMobileViewportSync();
+            scrollMessagesToLatest();
         }
 
         function saveChatState() {
@@ -712,6 +1034,7 @@
                 messagesDiv.innerHTML = first.html;
                 saveAllSessions();
                 renderChatHistory();
+                scheduleMobileViewportSync();
                 return true;
             }
 
@@ -723,6 +1046,8 @@
                 : [];
             messagesDiv.innerHTML = mostRecent.html || getEmptyStateMarkup();
             renderChatHistory();
+            scheduleMobileViewportSync();
+            scrollMessagesToLatest();
             return true;
         }
 
@@ -817,6 +1142,7 @@
 
         function useSuggestion(text) {
             document.getElementById('messageInput').value = text;
+            updateComposerState();
             sendMessage();
         }
 
@@ -857,6 +1183,8 @@
                 `;
                 div.appendChild(fileEl);
             });
+            updateComposerState();
+            scheduleMobileViewportSync();
         }
 
         function removeFile(index) {
@@ -880,6 +1208,8 @@
                 recognition.onstart = function() {
                     isRecording = true;
                     micBtn.classList.add('recording');
+                    micBtn.setAttribute('aria-label', 'Stop voice input');
+                    micBtn.title = 'Stop voice input';
                 };
                 
                 recognition.onresult = function(event) {
@@ -887,13 +1217,18 @@
                     for (let i = event.resultIndex; i < event.results.length; i++) {
                         transcript += event.results[i][0].transcript;
                     }
-                    document.getElementById('messageInput').value = transcript;
+                    const input = document.getElementById('messageInput');
+                    input.value = transcript;
+                    autoResize(input);
+                    updateComposerState();
                 };
                 
                 recognition.onerror = function(event) {
                     console.error('Speech recognition error', event.error);
                     isRecording = false;
                     micBtn.classList.remove('recording');
+                    micBtn.setAttribute('aria-label', 'Start voice input');
+                    micBtn.title = 'Voice input';
                 };
                 
                 recognition.start();
@@ -901,7 +1236,65 @@
                 recognition.stop();
                 isRecording = false;
                 micBtn.classList.remove('recording');
+                micBtn.setAttribute('aria-label', 'Start voice input');
+                micBtn.title = 'Voice input';
             }
+        }
+
+        function updateComposerState() {
+            const input = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            if (!input || !sendBtn) return;
+
+            const hasMessage = input.value.trim().length > 0;
+            const hasFiles = uploadedFiles.length > 0;
+            sendBtn.disabled = !hasMessage && !hasFiles;
+            syncMobileInputHeight();
+        }
+
+        function closeModelMenu() {
+            const selector = document.querySelector('.model-selector');
+            const button = document.getElementById('modelSelectorBtn');
+            if (!selector || !button) return;
+
+            selector.classList.remove('open');
+            button.setAttribute('aria-expanded', 'false');
+        }
+
+        function toggleModelMenu(event) {
+            if (event) event.stopPropagation();
+
+            const selector = document.querySelector('.model-selector');
+            const button = document.getElementById('modelSelectorBtn');
+            if (!selector || !button) return;
+
+            const isOpen = selector.classList.toggle('open');
+            button.setAttribute('aria-expanded', String(isOpen));
+        }
+
+        function selectComposerModel(label, value) {
+            const modelSelect = document.getElementById('modelSelect');
+            const modelLabel = document.getElementById('modelSelectorLabel');
+
+            if (modelSelect && value) {
+                modelSelect.value = value;
+            }
+            if (modelLabel) {
+                modelLabel.textContent = label;
+            }
+
+            document.querySelectorAll('.model-option').forEach((option) => {
+                const isActive = option.textContent.trim().startsWith(label);
+                option.classList.toggle('active', isActive);
+                option.setAttribute('aria-selected', String(isActive));
+            });
+            closeModelMenu();
+        }
+
+        function syncComposerModelFromSelect() {
+            const modelSelect = document.getElementById('modelSelect');
+            const selectedValue = modelSelect ? modelSelect.value : 'llama-3.1-8b-instant';
+            selectComposerModel(composerModels[selectedValue] || 'Fast', selectedValue);
         }
 
         async function sendMessage() {
@@ -936,6 +1329,7 @@
 
             input.value = '';
             input.style.height = 'auto';
+            updateComposerState();
 
             // Build content
             let content = [];
@@ -1019,7 +1413,7 @@
                 </div>
             `;
             wrapper.appendChild(typingMsg);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            scrollMessagesToLatest({ smooth: true });
 
             try {
                 const aiResponse = await getResponse(content, historyForApi);
@@ -1072,7 +1466,7 @@
                     </div>
                 `;
                 wrapper.appendChild(aiMsg);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                scrollMessagesToLatest({ smooth: true });
                 currentConversation.push({ role: "assistant", content: String(aiResponse || "") });
                 saveChatState();
             } catch (err) {
@@ -1088,7 +1482,7 @@
                     </div>
                 `;
                 wrapper.appendChild(errorMsg);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                scrollMessagesToLatest({ smooth: true });
                 saveChatState();
             }
         }
@@ -1200,6 +1594,7 @@
             
             messageDiv.style.opacity = '0.5';
             messagesWrapper.appendChild(typingMsg);
+            scrollMessagesToLatest({ smooth: true });
             
             try {
                 let latestUserText = originalUserMessage;
@@ -1219,6 +1614,7 @@
                 typingMsg.remove();
                 messageDiv.style.opacity = '1';
                 messageDiv.querySelector('.message-content div').innerHTML = renderMarkdown(newResponse);
+                scrollMessagesToLatest({ smooth: true });
                 if (currentConversation.length > 0 && currentConversation[currentConversation.length - 1].role === "assistant") {
                     currentConversation[currentConversation.length - 1].content = String(newResponse || "");
                 }
@@ -1244,6 +1640,7 @@
             const railAvatarBtn = document.getElementById('railAvatarBtn');
             const sidebarAccountMenu = document.getElementById('sidebarAccountMenu');
             const sidebarAccountBtn = document.getElementById('sidebarAccountBtn');
+            const modelSelector = document.querySelector('.model-selector');
             
             if (window.innerWidth <= 768 && 
                 sidebar &&
@@ -1300,6 +1697,14 @@
             ) {
                 closeSidebarAccountMenu();
             }
+
+            if (
+                modelSelector &&
+                modelSelector.classList.contains("open") &&
+                !modelSelector.contains(e.target)
+            ) {
+                closeModelMenu();
+            }
         });
 
         document.addEventListener('keydown', (e) => {
@@ -1311,12 +1716,21 @@
             closeChatContextMenu();
             closeRailQuickMenu();
             closeSidebarAccountMenu();
+            closeModelMenu();
         });
+
+        const modelSelectControl = document.getElementById('modelSelect');
+        if (modelSelectControl) {
+            modelSelectControl.addEventListener('change', syncComposerModelFromSelect);
+        }
 
         updateSidebarUI();
         updateTempModeUI();
         loadWallpaper();
         loadSidebarBrandImage();
         loadProfile();
+        initMobileAppShell();
+        syncComposerModelFromSelect();
+        updateComposerState();
         loadChatState();
     
