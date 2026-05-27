@@ -1894,9 +1894,9 @@
             margin: 0 !important;
             transform: none !important;
             width: 116px;
-            padding: 6px;
+            padding: 5px;
             border: 1px solid var(--profile-menu-border);
-            border-radius: 16px;
+            border-radius: 14px;
             background:
                 linear-gradient(145deg,
                     rgba(255, 255, 255, 0.08),
@@ -1931,10 +1931,10 @@
 
         .message-more-item {
             width: 100%;
-            min-height: 30px;
-            padding: 6px 8px;
+            min-height: 32px;
+            padding: 7px 9px;
             border: 1px solid transparent;
-            border-radius: 8px;
+            border-radius: 10px;
             background: transparent;
             color: color-mix(in srgb, var(--text-primary) 88%, rgba(var(--composer-accent-strong-rgb), 1));
             font: inherit;
@@ -1946,6 +1946,7 @@
             transition:
                 background-color var(--motion-fast) var(--ease-standard),
                 border-color var(--motion-fast) var(--ease-standard),
+                box-shadow var(--motion-fast) var(--ease-standard),
                 color var(--motion-fast) var(--ease-standard);
         }
 
@@ -1953,6 +1954,7 @@
         .message-more-item:focus-visible {
             background: var(--profile-menu-hover);
             border-color: rgba(var(--composer-accent-strong-rgb), 0.2);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
             color: var(--text-primary);
             outline: none;
         }
