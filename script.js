@@ -22,13 +22,17 @@
         let currentConversation = [];
         let contextMenuChatId = null;
         let pendingDeleteChatId = null;
+        let shareChatId = null;
         let mobileViewportFrame = null;
         let mobileComposerResizeObserver = null;
         let autoResizeFrame = null;
         let pendingAutoResizeTextarea = null;
         let chatScrollFrame = null;
         let searchRenderFrame = null;
+        let readAloudUtterance = null;
+        let readAloudSource = null;
         let lastMobileInputHeight = 0;
+        let chatOptionsTouchTimer = null;
         const composerModels = {
             "llama-3.1-8b-instant": "Fast",
             "llama-3.3-70b-versatile": "Pro"
@@ -597,12 +601,13 @@
             const html = typeof session.html === "string" ? session.html : getEmptyStateMarkup();
             const title = typeof session.title === "string" && session.title.trim() ? session.title.trim() : "New chat";
             const updatedAt = typeof session.updatedAt === "number" ? session.updatedAt : Date.now();
+            const pinned = session.pinned === true;
             const thread = Array.isArray(session.thread)
                 ? session.thread.filter((m) =>
                     m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
                 ).map((m) => ({ role: m.role, content: m.content }))
                 : [];
-            return { id, html, title, updatedAt, thread };
+            return { id, html, title, updatedAt, pinned, thread };
         }
 
         function createSessionId() {
@@ -631,11 +636,18 @@
             localStorage.setItem(CHAT_SESSIONS_STORAGE_KEY, JSON.stringify(chatSessions));
         }
 
+        function getOrderedChatSessions() {
+            return [...chatSessions].sort((a, b) => {
+                if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+                return (b.updatedAt || 0) - (a.updatedAt || 0);
+            });
+        }
+
         function renderChatHistory() {
             const history = getHistoryContainer();
             if (!history) return;
 
-            const sessions = [...chatSessions];
+            const sessions = getOrderedChatSessions();
 
             history.innerHTML = "";
             if (sessions.length === 0) {
@@ -650,7 +662,8 @@
             sessions.forEach((session) => {
                 const ageMs = Date.now() - session.updatedAt;
                 let label = "Older";
-                if (ageMs < 24 * 60 * 60 * 1000) label = "Today";
+                if (session.pinned) label = "Pinned";
+                else if (ageMs < 24 * 60 * 60 * 1000) label = "Today";
                 else if (ageMs < 2 * 24 * 60 * 60 * 1000) label = "Yesterday";
                 else if (ageMs < 7 * 24 * 60 * 60 * 1000) label = "Previous 7 Days";
 
@@ -658,7 +671,7 @@
                 groups[label].push(session);
             });
 
-            ["Today", "Yesterday", "Previous 7 Days", "Older"].forEach((label) => {
+            ["Pinned", "Today", "Yesterday", "Previous 7 Days", "Older"].forEach((label) => {
                 if (!groups[label] || groups[label].length === 0) return;
                 const groupEl = document.createElement("div");
                 groupEl.className = "chat-date-group";
@@ -670,11 +683,19 @@
 
                 groups[label].forEach((session) => {
                     const item = document.createElement("div");
-                    item.className = `chat-item${session.id === activeChatId ? " active" : ""}`;
-                    item.textContent = session.title || "New chat";
+                    item.className = `chat-item${session.id === activeChatId ? " active" : ""}${session.pinned ? " pinned" : ""}`;
+                    item.dataset.chatId = session.id;
+                    item.innerHTML = `
+                        <span class="chat-item-title">${escapeHtml(session.title || "New chat")}</span>
+                        <span class="chat-item-meta">
+                            ${session.pinned ? '<span class="chat-pin-indicator" aria-label="Pinned">&#9733;</span>' : ''}
+                            <button class="chat-item-options" onclick="openChatOptionsFromButton(event)" aria-label="Chat options">...</button>
+                        </span>
+                    `;
                     item.title = session.title || "New chat";
                     item.onclick = () => openChatSession(session.id);
                     item.oncontextmenu = (event) => openChatContextMenu(event, session.id);
+                    item.ontouchstart = primeChatOptionsForTouch;
                     groupEl.appendChild(item);
                 });
 
@@ -708,7 +729,7 @@
                 return;
             }
 
-            const matched = chatSessions.filter((session) => getSearchableText(session).includes(query));
+            const matched = getOrderedChatSessions().filter((session) => getSearchableText(session).includes(query));
             if (matched.length === 0) {
                 const empty = document.createElement("div");
                 empty.className = "chat-history-empty";
@@ -777,13 +798,24 @@
             }
             const menu = document.getElementById("railQuickMenu");
             if (!menu) return;
-            menu.classList.toggle("active");
+            const sidebar = document.getElementById("sidebar");
+            const isOpen = menu.classList.toggle("active");
+            closeSidebarAccountMenu();
+            document.getElementById("railAvatarBtn")?.setAttribute("aria-expanded", String(isOpen));
+            if (sidebar) sidebar.classList.toggle("account-menu-open", isOpen);
+            document.body.classList.toggle("profile-menu-open", isOpen);
         }
 
         function closeRailQuickMenu() {
             const menu = document.getElementById("railQuickMenu");
             if (!menu) return;
             menu.classList.remove("active");
+            const sidebar = document.getElementById("sidebar");
+            if (sidebar && !document.getElementById("sidebarAccountMenu")?.classList.contains("active")) {
+                sidebar.classList.remove("account-menu-open");
+                document.body.classList.remove("profile-menu-open");
+            }
+            document.getElementById("railAvatarBtn")?.setAttribute("aria-expanded", "false");
         }
 
         function toggleSidebarAccountMenu(event) {
@@ -792,13 +824,24 @@
             }
             const menu = document.getElementById("sidebarAccountMenu");
             if (!menu) return;
-            menu.classList.toggle("active");
+            const sidebar = document.getElementById("sidebar");
+            const isOpen = menu.classList.toggle("active");
+            closeRailQuickMenu();
+            document.getElementById("sidebarAccountBtn")?.setAttribute("aria-expanded", String(isOpen));
+            if (sidebar) sidebar.classList.toggle("account-menu-open", isOpen);
+            document.body.classList.toggle("profile-menu-open", isOpen);
         }
 
         function closeSidebarAccountMenu() {
             const menu = document.getElementById("sidebarAccountMenu");
             if (!menu) return;
             menu.classList.remove("active");
+            const sidebar = document.getElementById("sidebar");
+            if (sidebar && !document.getElementById("railQuickMenu")?.classList.contains("active")) {
+                sidebar.classList.remove("account-menu-open");
+                document.body.classList.remove("profile-menu-open");
+            }
+            document.getElementById("sidebarAccountBtn")?.setAttribute("aria-expanded", "false");
         }
 
         function logoutAccount() {
@@ -811,9 +854,10 @@
             if (!menu || !chatId) return;
 
             contextMenuChatId = chatId;
+            updateChatContextMenuLabels(chatId);
             const margin = 10;
             const menuWidth = 182;
-            const menuHeight = 52;
+            const menuHeight = 148;
             let x = event.clientX;
             let y = event.clientY;
 
@@ -827,6 +871,42 @@
             menu.style.left = `${x}px`;
             menu.style.top = `${y}px`;
             menu.classList.add("active");
+        }
+
+        function openChatOptionsFromButton(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const chatId = event.currentTarget.closest(".chat-item")?.dataset.chatId;
+            if (!chatId) return;
+            openChatContextMenu(event, chatId);
+        }
+
+        function clearChatOptionsTouchState() {
+            if (chatOptionsTouchTimer) {
+                clearTimeout(chatOptionsTouchTimer);
+                chatOptionsTouchTimer = null;
+            }
+            document.querySelectorAll(".chat-item.touch-options-visible").forEach((item) => {
+                item.classList.remove("touch-options-visible");
+            });
+        }
+
+        function primeChatOptionsForTouch(event) {
+            const item = event.currentTarget;
+            clearChatOptionsTouchState();
+            item.classList.add("touch-options-visible");
+            chatOptionsTouchTimer = setTimeout(() => {
+                item.classList.remove("touch-options-visible");
+                chatOptionsTouchTimer = null;
+            }, 1800);
+        }
+
+        function updateChatContextMenuLabels(chatId) {
+            const target = chatSessions.find((session) => session.id === chatId);
+            const pinAction = document.getElementById("pinChatContextAction");
+            if (pinAction && target) {
+                pinAction.textContent = target.pinned ? "Unpin Chat" : "Pin Chat";
+            }
         }
 
         function closeChatContextMenu() {
@@ -867,13 +947,24 @@
             deleteChatById(chatId);
         }
 
-        function deleteChatById(chatId) {
+        function deleteChatById(chatId, options = {}) {
             if (!chatId) return;
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
 
+            const item = Array.from(document.querySelectorAll(".chat-item")).find((chatItem) => chatItem.dataset.chatId === chatId);
+            const animate = options.animate !== false && item && !item.classList.contains("deleting");
+            if (animate) {
+                item.classList.add("deleting");
+                setTimeout(() => deleteChatById(chatId, { animate: false }), 180);
+                return;
+            }
+
             const wasActive = activeChatId === chatId;
             chatSessions = chatSessions.filter((s) => s.id !== chatId);
+            if (shareChatId === chatId) {
+                closeShareChatModal();
+            }
 
             if (previousNormalChatId === chatId) {
                 previousNormalChatId = chatSessions[0]?.id || null;
@@ -912,6 +1003,129 @@
             openDeleteConfirmModal(chatId);
         }
 
+        function shareChatFromContextMenu() {
+            const chatId = contextMenuChatId;
+            closeChatContextMenu();
+            openShareChatModal(chatId);
+        }
+
+        function togglePinChatFromContextMenu() {
+            const chatId = contextMenuChatId;
+            closeChatContextMenu();
+            togglePinChatById(chatId);
+        }
+
+        function togglePinChatById(chatId) {
+            const session = chatSessions.find((item) => item.id === chatId);
+            if (!session) return;
+
+            session.pinned = !session.pinned;
+            if (session.pinned) {
+                chatSessions = [
+                    session,
+                    ...chatSessions.filter((item) => item.id !== session.id)
+                ];
+            }
+            saveAllSessions();
+            renderChatHistory();
+            renderSearchResults();
+            updateMobileHeaderMenuLabels();
+        }
+
+        function getChatShareUrl(session) {
+            const url = new URL(window.location.href);
+            const payload = {
+                title: session?.title || "Lexino AI Chat",
+                thread: Array.isArray(session?.thread) ? session.thread : []
+            };
+            url.hash = `share=${encodeURIComponent(JSON.stringify(payload))}`;
+            return url.toString();
+        }
+
+        function getChatShareText(session) {
+            if (!session) return "";
+            const threadText = Array.isArray(session.thread)
+                ? session.thread.map((message) => `${message.role === "assistant" ? "Lexino AI" : "You"}: ${message.content}`).join("\n\n")
+                : "";
+            return `${session.title || "Lexino AI Chat"}${threadText ? `\n\n${threadText}` : ""}`.trim();
+        }
+
+        function openShareChatModal(chatId) {
+            const session = chatSessions.find((item) => item.id === chatId);
+            if (!session) return;
+
+            shareChatId = session.id;
+            const modal = document.getElementById("shareChatModal");
+            const title = document.getElementById("shareChatTitle");
+            const link = document.getElementById("shareChatLink");
+            if (title) title.textContent = session.title || "New chat";
+            if (link) link.value = getChatShareUrl(session);
+            if (modal) modal.classList.add("active");
+        }
+
+        function closeShareChatModal() {
+            const modal = document.getElementById("shareChatModal");
+            if (modal) modal.classList.remove("active");
+            shareChatId = null;
+        }
+
+        function copyTextToClipboard(text) {
+            if (!text) return Promise.resolve(false);
+            if (navigator.clipboard?.writeText) {
+                return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
+            }
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            const copied = document.execCommand("copy");
+            textarea.remove();
+            return Promise.resolve(copied);
+        }
+
+        async function copyShareChatLink() {
+            const link = document.getElementById("shareChatLink")?.value || "";
+            if (!link) return;
+            if (await copyTextToClipboard(link)) {
+                alert("Share link copied.");
+            }
+        }
+
+        async function copyShareChatText() {
+            const session = shareChatId ? chatSessions.find((item) => item.id === shareChatId) : null;
+            const text = getChatShareText(session);
+            if (!text) return;
+            if (await copyTextToClipboard(text)) {
+                alert("Chat copied.");
+            }
+        }
+
+        async function nativeShareCurrentChat() {
+            const session = shareChatId ? chatSessions.find((item) => item.id === shareChatId) : null;
+            if (!session) return;
+
+            const shareData = {
+                title: session.title || "Lexino AI Chat",
+                text: getChatShareText(session),
+                url: getChatShareUrl(session)
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                    closeShareChatModal();
+                    return;
+                } catch (error) {
+                    if (error?.name === "AbortError") return;
+                }
+            }
+
+            await copyShareChatLink();
+        }
+
         function handleSearchInput(value) {
             chatSearchQuery = (value || "").trim();
             scheduleSearchResultsRender();
@@ -929,6 +1143,7 @@
             const messagesDiv = getMessagesDiv();
             if (messagesDiv) {
                 messagesDiv.innerHTML = target.html || getEmptyStateMarkup();
+                ensureMessageMoreMenus(messagesDiv);
             }
             currentConversation = Array.isArray(target.thread)
                 ? target.thread.map((m) => ({ role: m.role, content: m.content }))
@@ -943,11 +1158,12 @@
 
             const messagesDiv = getMessagesDiv();
             if (!messagesDiv) return;
+            ensureMessageMoreMenus(messagesDiv);
 
             if (!activeChatId) {
                 const newSession = {
                     id: createSessionId(),
-                    html: messagesDiv.innerHTML || getEmptyStateMarkup(),
+                    html: getSavableChatHtml(messagesDiv),
                     title: "New chat",
                     updatedAt: Date.now(),
                     thread: []
@@ -960,7 +1176,7 @@
             const target = chatSessions.find((s) => s.id === activeChatId);
             if (!target) return;
 
-            target.html = messagesDiv.innerHTML;
+            target.html = getSavableChatHtml(messagesDiv);
             target.thread = currentConversation.map((m) => ({ role: m.role, content: m.content }));
             if ((target.title === "New chat" || !target.title) && currentConversation.length > 0) {
                 const firstUser = currentConversation.find((m) => m.role === "user" && m.content.trim());
@@ -1001,6 +1217,56 @@
             }
         }
 
+        function importSharedChatFromHash() {
+            const match = window.location.hash.match(/share=([^&]+)/);
+            if (!match) return null;
+
+            try {
+                const payload = JSON.parse(decodeURIComponent(match[1]));
+                const thread = Array.isArray(payload.thread)
+                    ? payload.thread.filter((message) =>
+                        message &&
+                        (message.role === "user" || message.role === "assistant") &&
+                        typeof message.content === "string"
+                    ).map((message) => ({ role: message.role, content: message.content }))
+                    : [];
+                if (thread.length === 0) return null;
+
+                const html = `
+                    <div class="messages-wrapper">
+                        ${thread.map((message) => {
+                            const isAssistant = message.role === "assistant";
+                            return `
+                                <div class="message ${isAssistant ? "ai" : "user"}">
+                                    <div class="message-avatar">${isAssistant ? "AI" : getUserInitial()}</div>
+                                    <div class="message-content">${isAssistant ? `<div>${escapeHtml(message.content)}</div>` : escapeHtml(message.content)}</div>
+                                </div>
+                            `;
+                        }).join("")}
+                    </div>
+                `;
+                const imported = normalizeSession({
+                    id: createSessionId(),
+                    html,
+                    title: typeof payload.title === "string" && payload.title.trim() ? payload.title.trim() : "Shared chat",
+                    updatedAt: Date.now(),
+                    thread
+                });
+                if (!imported) return null;
+
+                chatSessions = [
+                    imported,
+                    ...chatSessions.filter((session) => session.id !== imported.id)
+                ];
+                saveAllSessions();
+                window.history.replaceState(null, "", `#chat=${encodeURIComponent(imported.id)}`);
+                return imported.id;
+            } catch (error) {
+                console.error("Failed to import shared chat:", error);
+                return null;
+            }
+        }
+
         function loadChatState() {
             const messagesDiv = getMessagesDiv();
             if (!messagesDiv) return false;
@@ -1017,6 +1283,7 @@
             }
 
             migrateLegacyChatIfNeeded();
+            const importedChatId = importSharedChatFromHash();
             renderChatHistory();
 
             if (chatSessions.length === 0) {
@@ -1038,13 +1305,18 @@
                 return true;
             }
 
-            const mostRecent = chatSessions[0];
+            const hashChatId = (() => {
+                const match = window.location.hash.match(/chat=([^&]+)/);
+                return match ? decodeURIComponent(match[1]) : "";
+            })();
+            const mostRecent = chatSessions.find((session) => session.id === (importedChatId || hashChatId)) || getOrderedChatSessions()[0];
             activeChatId = mostRecent.id;
             previousNormalChatId = mostRecent.id;
             currentConversation = Array.isArray(mostRecent.thread)
                 ? mostRecent.thread.map((m) => ({ role: m.role, content: m.content }))
                 : [];
             messagesDiv.innerHTML = mostRecent.html || getEmptyStateMarkup();
+            ensureMessageMoreMenus(messagesDiv);
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
@@ -1138,6 +1410,57 @@
 
         function toggleAccountMenu() {
             openProfileModal();
+        }
+
+        function toggleMobileHeaderMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById("mobileHeaderMenu");
+            const button = document.getElementById("mobileMoreBtn");
+            if (!menu) return;
+
+            const isOpen = !menu.classList.contains("active");
+            if (isOpen) updateMobileHeaderMenuLabels();
+            menu.classList.toggle("active", isOpen);
+            if (button) button.setAttribute("aria-expanded", String(isOpen));
+        }
+
+        function closeMobileHeaderMenu() {
+            const menu = document.getElementById("mobileHeaderMenu");
+            const button = document.getElementById("mobileMoreBtn");
+            if (menu) menu.classList.remove("active");
+            if (button) button.setAttribute("aria-expanded", "false");
+        }
+
+        function getActiveChatSession() {
+            return activeChatId ? chatSessions.find((session) => session.id === activeChatId) : null;
+        }
+
+        function deleteCurrentChatFromHeader() {
+            const session = getActiveChatSession();
+            closeMobileHeaderMenu();
+            if (session) {
+                openDeleteConfirmModal(session.id);
+            }
+        }
+
+        function shareCurrentChatFromHeader() {
+            const session = getActiveChatSession();
+            closeMobileHeaderMenu();
+            if (session) openShareChatModal(session.id);
+        }
+
+        function togglePinCurrentChatFromHeader() {
+            const session = getActiveChatSession();
+            closeMobileHeaderMenu();
+            if (session) togglePinChatById(session.id);
+        }
+
+        function updateMobileHeaderMenuLabels() {
+            const session = getActiveChatSession();
+            const pinLabel = document.getElementById("mobilePinLabel");
+            if (pinLabel) {
+                pinLabel.textContent = session?.pinned ? "Unpin Chat" : "Pin Chat";
+            }
         }
 
         function useSuggestion(text) {
@@ -1455,17 +1778,24 @@
                                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                                 </svg>
                             </button>
-                            <button class="action-btn" title="More options">
+                            <button class="action-btn" onclick="toggleMessageMoreMenu(event, this)" title="More options" aria-label="More options" aria-expanded="false">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="1"></circle>
                                     <circle cx="12" cy="5" r="1"></circle>
                                     <circle cx="12" cy="19" r="1"></circle>
                                 </svg>
                             </button>
+                            <div class="message-more-menu" role="menu" aria-label="Message options">
+                                <button class="message-more-item" onclick="readMessageAloud(this)" role="menuitem">Read Aloud</button>
+                                <button class="message-more-item" onclick="pauseReadAloud()" role="menuitem">Pause</button>
+                                <button class="message-more-item" onclick="resumeReadAloud()" role="menuitem">Resume</button>
+                                <button class="message-more-item" onclick="stopReadAloud()" role="menuitem">Stop</button>
+                            </div>
                         </div>
                     </div>
                 `;
                 wrapper.appendChild(aiMsg);
+                ensureMessageMoreMenus(aiMsg);
                 scrollMessagesToLatest({ smooth: true });
                 currentConversation.push({ role: "assistant", content: String(aiResponse || "") });
                 saveChatState();
@@ -1574,6 +1904,127 @@
             alert('Share functionality - coming soon!');
         }
 
+        function ensureMessageMoreMenus(root = document) {
+            root.querySelectorAll('.message.ai .message-actions .action-btn[title="More options"]').forEach((btn) => {
+                btn.setAttribute("onclick", "toggleMessageMoreMenu(event, this)");
+                btn.setAttribute("aria-label", "More options");
+                btn.setAttribute("aria-expanded", btn.getAttribute("aria-expanded") || "false");
+
+                const next = btn.nextElementSibling;
+                if (next && next.classList.contains("message-more-menu")) return;
+
+                const menu = document.createElement("div");
+                menu.className = "message-more-menu";
+                menu.setAttribute("role", "menu");
+                menu.setAttribute("aria-label", "Message options");
+                menu.innerHTML = `
+                    <button class="message-more-item" onclick="readMessageAloud(this)" role="menuitem">Read Aloud</button>
+                    <button class="message-more-item" onclick="pauseReadAloud()" role="menuitem">Pause</button>
+                    <button class="message-more-item" onclick="resumeReadAloud()" role="menuitem">Resume</button>
+                    <button class="message-more-item" onclick="stopReadAloud()" role="menuitem">Stop</button>
+                `;
+                btn.insertAdjacentElement("afterend", menu);
+            });
+        }
+
+        function closeMessageMoreMenus(exceptMenu = null) {
+            document.querySelectorAll(".message-more-menu.active").forEach((menu) => {
+                if (menu === exceptMenu) return;
+                menu.classList.remove("active");
+                const button = menu.previousElementSibling;
+                if (button) button.setAttribute("aria-expanded", "false");
+            });
+        }
+
+        function getSavableChatHtml(messagesDiv) {
+            const clone = messagesDiv.cloneNode(true);
+            clone.querySelectorAll(".message-more-menu.active").forEach((menu) => {
+                menu.classList.remove("active");
+            });
+            clone.querySelectorAll(".message-actions .action-btn[title='More options']").forEach((button) => {
+                button.setAttribute("aria-expanded", "false");
+            });
+            return clone.innerHTML || getEmptyStateMarkup();
+        }
+
+        function toggleMessageMoreMenu(event, btn) {
+            if (event) event.stopPropagation();
+            const menu = btn?.nextElementSibling;
+            if (!menu || !menu.classList.contains("message-more-menu")) return;
+
+            const isOpen = !menu.classList.contains("active");
+            closeMessageMoreMenus(menu);
+            menu.classList.toggle("active", isOpen);
+            btn.setAttribute("aria-expanded", String(isOpen));
+        }
+
+        function getReadableMessageText(source) {
+            const message = source?.closest(".message");
+            const content = message?.querySelector(".message-content > div:first-child");
+            return (content?.innerText || content?.textContent || "").replace(/\s+/g, " ").trim();
+        }
+
+        function getPreferredSpeechVoice() {
+            const voices = window.speechSynthesis?.getVoices?.() || [];
+            return voices.find((voice) => /natural|online|neural/i.test(voice.name) && /^en/i.test(voice.lang))
+                || voices.find((voice) => /^en/i.test(voice.lang))
+                || voices[0]
+                || null;
+        }
+
+        function readMessageAloud(btn) {
+            closeMessageMoreMenus();
+
+            if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+                alert("Read Aloud is not supported in this browser.");
+                return;
+            }
+
+            const text = getReadableMessageText(btn);
+            if (!text) return;
+
+            stopReadAloud(false);
+            readAloudSource = btn.closest(".message");
+            readAloudUtterance = new SpeechSynthesisUtterance(text);
+            readAloudUtterance.voice = getPreferredSpeechVoice();
+            readAloudUtterance.rate = 0.96;
+            readAloudUtterance.pitch = 1;
+            readAloudUtterance.volume = 1;
+            readAloudUtterance.onend = () => {
+                readAloudUtterance = null;
+                readAloudSource = null;
+            };
+            readAloudUtterance.onerror = () => {
+                readAloudUtterance = null;
+                readAloudSource = null;
+            };
+
+            window.speechSynthesis.speak(readAloudUtterance);
+        }
+
+        function pauseReadAloud() {
+            closeMessageMoreMenus();
+            if ("speechSynthesis" in window && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+                window.speechSynthesis.pause();
+            }
+        }
+
+        function resumeReadAloud() {
+            closeMessageMoreMenus();
+            if ("speechSynthesis" in window && window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
+        }
+
+        function stopReadAloud(closeMenus = true) {
+            if (closeMenus) closeMessageMoreMenus();
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+            readAloudUtterance = null;
+            readAloudSource = null;
+        }
+
         async function regenerateMessage(btn) {
             const messageDiv = btn.closest('.message');
             const messagesWrapper = messageDiv.parentElement;
@@ -1630,9 +2081,11 @@
         document.addEventListener('click', (e) => {
             const sidebar = document.getElementById('sidebar');
             const menuToggle = document.querySelector('.menu-toggle');
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
             const settingsModal = document.getElementById('settingsModal');
             const profileModal = document.getElementById('profileModal');
             const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const shareChatModal = document.getElementById('shareChatModal');
             const searchPanel = document.getElementById('searchPanel');
             const searchMenu = document.getElementById('searchChatsMenu');
             const chatContextMenu = document.getElementById('chatContextMenu');
@@ -1641,11 +2094,17 @@
             const sidebarAccountMenu = document.getElementById('sidebarAccountMenu');
             const sidebarAccountBtn = document.getElementById('sidebarAccountBtn');
             const modelSelector = document.querySelector('.model-selector');
+            const mobileHeaderMenu = document.getElementById('mobileHeaderMenu');
+            const mobileMoreBtn = document.getElementById('mobileMoreBtn');
+            const messageMoreMenu = e.target.closest(".message-more-menu");
+            const messageMoreBtn = e.target.closest(".message-actions .action-btn[title='More options']");
+            const touchedChatItem = e.target.closest(".chat-item");
             
             if (window.innerWidth <= 768 && 
                 sidebar &&
                 !sidebar.contains(e.target) && 
                 (!menuToggle || !menuToggle.contains(e.target)) &&
+                (!mobileMenuBtn || !mobileMenuBtn.contains(e.target)) &&
                 !sidebar.classList.contains('hidden')) {
                 sidebar.classList.add('hidden');
                 updateSidebarUI();
@@ -1661,6 +2120,10 @@
 
             if (deleteConfirmModal && e.target === deleteConfirmModal) {
                 closeDeleteConfirmModal();
+            }
+
+            if (shareChatModal && e.target === shareChatModal) {
+                closeShareChatModal();
             }
 
             if (
@@ -1699,6 +2162,23 @@
             }
 
             if (
+                mobileHeaderMenu &&
+                mobileHeaderMenu.classList.contains("active") &&
+                !mobileHeaderMenu.contains(e.target) &&
+                (!mobileMoreBtn || !mobileMoreBtn.contains(e.target))
+            ) {
+                closeMobileHeaderMenu();
+            }
+
+            if (!messageMoreMenu && !messageMoreBtn) {
+                closeMessageMoreMenus();
+            }
+
+            if (!touchedChatItem) {
+                clearChatOptionsTouchState();
+            }
+
+            if (
                 modelSelector &&
                 modelSelector.classList.contains("open") &&
                 !modelSelector.contains(e.target)
@@ -1712,10 +2192,13 @@
             closeSettings();
             closeProfileModal();
             closeDeleteConfirmModal();
+            closeShareChatModal();
             closeSearchPanel();
             closeChatContextMenu();
+            closeMessageMoreMenus();
             closeRailQuickMenu();
             closeSidebarAccountMenu();
+            closeMobileHeaderMenu();
             closeModelMenu();
         });
 

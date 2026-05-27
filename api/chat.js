@@ -19,6 +19,16 @@ function extractMessage(body) {
   return "Hello";
 }
 
+const SYSTEM_PROMPT = `You are Lexino AI, a fast, intelligent, premium assistant.
+
+Response behavior:
+- For basic factual questions, answer in one short sentence only.
+- For simple math or direct lookups, answer with only the result when appropriate.
+- Avoid unnecessary greetings, introductions, summaries, filler, and over-explanation.
+- Be accurate, concise, clear, professional, and natural.
+- Give longer answers only when the user explicitly asks for detail, a guide, tutorial, step-by-step help, comparison, analysis, or deep research.
+- If the user asks a complex or ambiguous question, answer with the shortest useful response and ask a brief clarifying question only when needed.`;
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
@@ -61,7 +71,11 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: selectedModel,
-        messages: [...history, { role: "user", content: message }],
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...history,
+          { role: "user", content: message }
+        ],
         max_tokens: safeMaxTokens
       })
     });
