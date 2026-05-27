@@ -1887,10 +1887,12 @@
 
         .message-more-menu {
             position: fixed;
-            top: auto;
-            left: auto;
-            right: auto;
-            bottom: auto;
+            left: 0;
+            top: 0;
+            right: auto !important;
+            bottom: auto !important;
+            margin: 0 !important;
+            transform: none !important;
             width: 116px;
             padding: 6px;
             border: 1px solid var(--profile-menu-border);
@@ -1911,7 +1913,7 @@
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            z-index: 5000;
+            z-index: 99999;
             transition:
                 opacity var(--motion-fast) var(--ease-standard),
                 visibility var(--motion-fast) var(--ease-standard);

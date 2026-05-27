@@ -1985,7 +1985,7 @@
         function positionReadAloudMenu(button, popup) {
             const rect = button.getBoundingClientRect();
             const popupX = rect.left + (rect.width / 2) - (popup.offsetWidth / 2);
-            const popupY = rect.top - popup.offsetHeight - 6;
+            const popupY = rect.bottom + 8;
 
             popup.style.left = `${popupX}px`;
             popup.style.top = `${popupY}px`;
