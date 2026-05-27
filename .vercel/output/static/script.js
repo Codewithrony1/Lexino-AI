@@ -169,14 +169,21 @@
             }
         }
 
+        function isMessagesNearBottom(messagesDiv, threshold = 140) {
+            if (!messagesDiv) return true;
+            const distance = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight;
+            return distance <= threshold;
+        }
+
         function scrollMessagesToLatest(options = {}) {
-            const { smooth = false } = options;
+            const { smooth = false, force = false, onlyIfNearBottom = false } = options;
             if (chatScrollFrame) return;
 
             chatScrollFrame = requestAnimationFrame(() => {
                 chatScrollFrame = null;
                 const messagesDiv = document.getElementById("chatMessages");
                 if (!messagesDiv) return;
+                if (onlyIfNearBottom && !force && !isMessagesNearBottom(messagesDiv)) return;
 
                 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
                 const behavior = smooth && !prefersReducedMotion ? "smooth" : "auto";
@@ -1635,6 +1642,7 @@
 
             const messagesDiv = document.getElementById('chatMessages');
             const wrapper = messagesDiv.querySelector('.messages-wrapper') || createMessagesWrapper(messagesDiv);
+            const shouldFollowNewMessages = isMessagesNearBottom(messagesDiv);
             
             let displayMsg = message;
             if (currentFiles.length > 0) {
@@ -1736,7 +1744,7 @@
                 </div>
             `;
             wrapper.appendChild(typingMsg);
-            scrollMessagesToLatest({ smooth: true });
+            scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages });
 
             try {
                 const aiResponse = await getResponse(content, historyForApi);
@@ -1785,18 +1793,15 @@
                                     <circle cx="12" cy="19" r="1"></circle>
                                 </svg>
                             </button>
-                            <div class="message-more-menu" role="menu" aria-label="Message options">
-                                <button class="message-more-item" onclick="readMessageAloud(this)" role="menuitem">Read Aloud</button>
-                                <button class="message-more-item" onclick="pauseReadAloud()" role="menuitem">Pause</button>
-                                <button class="message-more-item" onclick="resumeReadAloud()" role="menuitem">Resume</button>
-                                <button class="message-more-item" onclick="stopReadAloud()" role="menuitem">Stop</button>
+                            <div class="message-more-menu" role="menu" aria-label="Read aloud options">
+                                <button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>
                             </div>
                         </div>
                     </div>
                 `;
                 wrapper.appendChild(aiMsg);
                 ensureMessageMoreMenus(aiMsg);
-                scrollMessagesToLatest({ smooth: true });
+                scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
                 currentConversation.push({ role: "assistant", content: String(aiResponse || "") });
                 saveChatState();
             } catch (err) {
@@ -1812,7 +1817,7 @@
                     </div>
                 `;
                 wrapper.appendChild(errorMsg);
-                scrollMessagesToLatest({ smooth: true });
+                scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
                 saveChatState();
             }
         }
@@ -1916,15 +1921,13 @@
                 const menu = document.createElement("div");
                 menu.className = "message-more-menu";
                 menu.setAttribute("role", "menu");
-                menu.setAttribute("aria-label", "Message options");
+                menu.setAttribute("aria-label", "Read aloud options");
                 menu.innerHTML = `
-                    <button class="message-more-item" onclick="readMessageAloud(this)" role="menuitem">Read Aloud</button>
-                    <button class="message-more-item" onclick="pauseReadAloud()" role="menuitem">Pause</button>
-                    <button class="message-more-item" onclick="resumeReadAloud()" role="menuitem">Resume</button>
-                    <button class="message-more-item" onclick="stopReadAloud()" role="menuitem">Stop</button>
+                    <button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>
                 `;
                 btn.insertAdjacentElement("afterend", menu);
             });
+            syncReadAloudMenuLabels();
         }
 
         function closeMessageMoreMenus(exceptMenu = null) {
@@ -1954,8 +1957,21 @@
 
             const isOpen = !menu.classList.contains("active");
             closeMessageMoreMenus(menu);
+            syncReadAloudMenuLabels();
             menu.classList.toggle("active", isOpen);
             btn.setAttribute("aria-expanded", String(isOpen));
+        }
+
+        function isReadAloudActive() {
+            return Boolean("speechSynthesis" in window && (window.speechSynthesis.speaking || window.speechSynthesis.paused));
+        }
+
+        function syncReadAloudMenuLabels() {
+            const active = isReadAloudActive();
+            document.querySelectorAll(".message-more-menu .message-more-item").forEach((item) => {
+                item.textContent = active ? "Stop" : "Read aloud";
+                item.setAttribute("aria-label", active ? "Stop read aloud" : "Read aloud");
+            });
         }
 
         function getReadableMessageText(source) {
@@ -1993,13 +2009,25 @@
             readAloudUtterance.onend = () => {
                 readAloudUtterance = null;
                 readAloudSource = null;
+                syncReadAloudMenuLabels();
             };
             readAloudUtterance.onerror = () => {
                 readAloudUtterance = null;
                 readAloudSource = null;
+                syncReadAloudMenuLabels();
             };
 
             window.speechSynthesis.speak(readAloudUtterance);
+            syncReadAloudMenuLabels();
+        }
+
+        function toggleReadAloudFromMenu(btn) {
+            if (isReadAloudActive()) {
+                stopReadAloud();
+                return;
+            }
+
+            readMessageAloud(btn);
         }
 
         function pauseReadAloud() {
@@ -2023,6 +2051,7 @@
             }
             readAloudUtterance = null;
             readAloudSource = null;
+            syncReadAloudMenuLabels();
         }
 
         async function regenerateMessage(btn) {
