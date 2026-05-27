@@ -1977,21 +1977,14 @@
         }
 
         function positionReadAloudMenu(btn, menu) {
-            const rect = btn.getBoundingClientRect();
-            const gap = 4;
-            const margin = 8;
-            const width = menu.offsetWidth || 116;
-            const height = menu.offsetHeight || 38;
-            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-            const buttonCenter = rect.left + (rect.width / 2);
-            const left = buttonCenter - (width / 2);
-            const top = Math.min(
-                Math.max(rect.top - height - gap, margin),
-                Math.max(margin, viewportHeight - height - margin)
-            );
+            const buttonRect = btn.getBoundingClientRect();
+            const popupWidth = menu.offsetWidth || 116;
+            const popupHeight = menu.offsetHeight || 38;
+            const popupLeft = buttonRect.left + (buttonRect.width / 2) - (popupWidth / 2);
+            const popupTop = buttonRect.top - popupHeight - 8;
 
-            menu.style.left = `${Math.round(left)}px`;
-            menu.style.top = `${Math.round(top)}px`;
+            menu.style.left = `${Math.round(popupLeft)}px`;
+            menu.style.top = `${Math.round(popupTop)}px`;
         }
 
         function handleMessageMoreOutsidePointer(event) {
