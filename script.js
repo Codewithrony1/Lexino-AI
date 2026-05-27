@@ -1788,15 +1788,13 @@
                                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                                 </svg>
                             </button>
-                            <span class="message-more-wrap">
-                                <button class="action-btn" onclick="toggleMessageMoreMenu(event, this)" title="More options" aria-label="More options" aria-expanded="false">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="1"></circle>
-                                        <circle cx="12" cy="5" r="1"></circle>
-                                        <circle cx="12" cy="19" r="1"></circle>
-                                    </svg>
-                                </button>
-                            </span>
+                            <button class="action-btn read-aloud-toggle" onclick="toggleReadAloudDirect(this)" title="Read aloud" aria-label="Read aloud" aria-pressed="false">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -1901,9 +1899,19 @@
 
         function ensureMessageMoreMenus(root = document) {
             root.querySelectorAll('.message.ai .message-actions .action-btn[title="More options"]').forEach((btn) => {
-                btn.setAttribute("onclick", "toggleMessageMoreMenu(event, this)");
-                btn.setAttribute("aria-label", "More options");
-                btn.setAttribute("aria-expanded", btn.getAttribute("aria-expanded") || "false");
+                btn.classList.add("read-aloud-toggle");
+                btn.setAttribute("onclick", "toggleReadAloudDirect(this)");
+                btn.setAttribute("title", "Read aloud");
+                btn.setAttribute("aria-label", "Read aloud");
+                btn.setAttribute("aria-pressed", "false");
+                btn.removeAttribute("aria-expanded");
+                btn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                `;
 
                 if (!btn.parentElement?.classList.contains("message-more-wrap")) {
                     const wrap = document.createElement("span");
@@ -1913,6 +1921,13 @@
                 }
 
                 btn.parentElement.querySelectorAll(".message-more-menu").forEach((menu) => menu.remove());
+            });
+            root.querySelectorAll(".message.ai .message-actions .read-aloud-toggle").forEach((btn) => {
+                btn.setAttribute("onclick", "toggleReadAloudDirect(this)");
+                btn.setAttribute("title", "Read aloud");
+                btn.setAttribute("aria-label", "Read aloud");
+                btn.setAttribute("aria-pressed", btn.getAttribute("aria-pressed") || "false");
+                btn.removeAttribute("aria-expanded");
             });
             syncReadAloudMenuLabels();
         }
@@ -1938,6 +1953,10 @@
             });
             clone.querySelectorAll(".message-actions .action-btn[title='More options']").forEach((button) => {
                 button.setAttribute("aria-expanded", "false");
+            });
+            clone.querySelectorAll(".message-actions .read-aloud-toggle").forEach((button) => {
+                button.classList.remove("active");
+                button.setAttribute("aria-pressed", "false");
             });
             return clone.innerHTML || getEmptyStateMarkup();
         }
@@ -2007,6 +2026,13 @@
                 item.textContent = active ? "Stop" : "Read aloud";
                 item.setAttribute("aria-label", active ? "Stop read aloud" : "Read aloud");
             });
+            document.querySelectorAll(".message-actions .read-aloud-toggle").forEach((button) => {
+                const isSource = active && readAloudSource && button.closest(".message") === readAloudSource;
+                button.classList.toggle("active", Boolean(isSource));
+                button.setAttribute("aria-pressed", String(Boolean(isSource)));
+                button.setAttribute("title", isSource ? "Stop" : "Read aloud");
+                button.setAttribute("aria-label", isSource ? "Stop read aloud" : "Read aloud");
+            });
         }
 
         function getReadableMessageText(source) {
@@ -2054,6 +2080,18 @@
 
             window.speechSynthesis.speak(readAloudUtterance);
             syncReadAloudMenuLabels();
+        }
+
+        function toggleReadAloudDirect(btn) {
+            const message = btn?.closest?.(".message");
+            if (!message) return;
+
+            if (isReadAloudActive() && readAloudSource === message) {
+                stopReadAloud();
+                return;
+            }
+
+            readMessageAloud(btn);
         }
 
         function toggleReadAloudFromMenu(btn) {

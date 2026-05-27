@@ -1885,6 +1885,17 @@
             color: var(--text-primary);
         }
 
+        .action-btn.read-aloud-toggle.active {
+            background: var(--profile-menu-active);
+            color: rgba(var(--composer-accent-strong-rgb), 1);
+            box-shadow: 0 0 14px rgba(var(--composer-accent-rgb), 0.22);
+        }
+
+        .action-btn.read-aloud-toggle.active:hover {
+            background: var(--profile-menu-hover);
+            color: rgba(var(--composer-accent-strong-rgb), 1);
+        }
+
         .message-more-menu {
             position: fixed;
             left: 0;
