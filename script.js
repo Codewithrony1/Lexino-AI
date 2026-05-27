@@ -1921,6 +1921,8 @@
             document.querySelectorAll(".message-more-menu.active").forEach((menu) => {
                 if (menu === exceptMenu) return;
                 menu.classList.remove("active");
+                menu.style.left = "";
+                menu.style.top = "";
             });
             if (!exceptMenu && readAloudMenuButton) {
                 readAloudMenuButton.setAttribute("aria-expanded", "false");
@@ -1978,20 +1980,19 @@
             const rect = btn.getBoundingClientRect();
             const gap = 6;
             const margin = 8;
-            const width = menu.offsetWidth || 124;
-            const height = menu.offsetHeight || 40;
-            const messageContent = readAloudMenuSource?.querySelector(".message-content");
-            const contentRect = messageContent?.getBoundingClientRect();
-            const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
-            let top = rect.top - height - gap;
+            const width = menu.offsetWidth || 116;
+            const height = menu.offsetHeight || 38;
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const maxLeft = Math.max(margin, viewportWidth - width - margin);
+            const left = Math.min(Math.max(rect.right - width, margin), maxLeft);
+            const spaceAbove = rect.top - margin;
+            const spaceBelow = viewportHeight - rect.bottom - margin;
+            let top = spaceAbove >= height + gap || spaceAbove >= spaceBelow
+                ? rect.top - height - gap
+                : rect.bottom + gap;
 
-            if (top < margin) {
-                top = rect.bottom + gap;
-            }
-
-            if (contentRect && top < contentRect.bottom + margin) {
-                top = rect.bottom + gap;
-            }
+            top = Math.min(Math.max(top, margin), Math.max(margin, viewportHeight - height - margin));
 
             menu.style.left = `${Math.round(left)}px`;
             menu.style.top = `${Math.round(top)}px`;

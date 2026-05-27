@@ -1843,7 +1843,7 @@
         .message-actions {
             display: flex;
             gap: 6px;
-            margin-top: 16px;
+            margin-top: 52px;
             align-items: center;
             position: relative;
             overflow: visible;
@@ -1886,13 +1886,15 @@
         }
 
         .message-more-menu {
-            position: absolute;
-            right: 0;
-            bottom: calc(100% + 8px);
-            width: 124px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: auto;
+            bottom: auto;
+            width: 116px;
             padding: 6px;
             border: 1px solid var(--profile-menu-border);
-            border-radius: 14px;
+            border-radius: 12px;
             background:
                 linear-gradient(145deg,
                     rgba(255, 255, 255, 0.075),
@@ -1910,19 +1912,14 @@
             pointer-events: none;
             transform: none;
             transform-origin: bottom right;
-            z-index: 100;
+            z-index: 5000;
             transition:
                 opacity var(--motion-fast) var(--ease-standard),
                 visibility var(--motion-fast) var(--ease-standard);
         }
 
         .read-aloud-floating-menu {
-            position: fixed;
-            right: auto;
-            bottom: auto;
-            width: 124px;
             height: auto;
-            z-index: 5000;
         }
 
         .message-more-menu.active {
@@ -1934,10 +1931,10 @@
 
         .message-more-item {
             width: 100%;
-            min-height: 32px;
-            padding: 7px 9px;
+            min-height: 30px;
+            padding: 6px 8px;
             border: 1px solid transparent;
-            border-radius: 10px;
+            border-radius: 8px;
             background: transparent;
             color: color-mix(in srgb, var(--text-primary) 88%, rgba(var(--composer-accent-strong-rgb), 1));
             font: inherit;
@@ -3313,7 +3310,7 @@
 
             .message-actions {
                 gap: 5px;
-                margin-top: 14px;
+                margin-top: 48px;
             }
 
             .message.user .message-content {
