@@ -1976,14 +1976,20 @@
 
         function positionReadAloudMenu(btn, menu) {
             const rect = btn.getBoundingClientRect();
-            const gap = 8;
+            const gap = 6;
             const margin = 8;
-            const width = menu.offsetWidth || 156;
-            const height = menu.offsetHeight || 48;
+            const width = menu.offsetWidth || 124;
+            const height = menu.offsetHeight || 40;
+            const messageContent = readAloudMenuSource?.querySelector(".message-content");
+            const contentRect = messageContent?.getBoundingClientRect();
             const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
             let top = rect.top - height - gap;
 
             if (top < margin) {
+                top = rect.bottom + gap;
+            }
+
+            if (contentRect && top < contentRect.bottom + margin) {
                 top = rect.bottom + gap;
             }
 
