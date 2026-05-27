@@ -1949,13 +1949,13 @@
             const menu = getReadAloudFloatingMenu();
             const isOpen = !(menu.classList.contains("active") && readAloudMenuButton === btn);
             closeMessageMoreMenus();
-            readAloudMenuButton = btn;
-            readAloudMenuSource = btn.closest(".message");
-            syncReadAloudMenuLabels();
-            menu.classList.toggle("active", isOpen);
             btn.setAttribute("aria-expanded", String(isOpen));
             if (isOpen) {
+                readAloudMenuButton = btn;
+                readAloudMenuSource = btn.closest(".message");
+                syncReadAloudMenuLabels();
                 positionReadAloudMenu(btn, menu);
+                menu.classList.add("active");
             } else {
                 readAloudMenuButton = null;
                 readAloudMenuSource = null;
@@ -1978,24 +1978,28 @@
 
         function positionReadAloudMenu(btn, menu) {
             const rect = btn.getBoundingClientRect();
-            const gap = 6;
+            const gap = 4;
             const margin = 8;
             const width = menu.offsetWidth || 116;
             const height = menu.offsetHeight || 38;
             const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
             const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
             const maxLeft = Math.max(margin, viewportWidth - width - margin);
-            const left = Math.min(Math.max(rect.right - width, margin), maxLeft);
-            const spaceAbove = rect.top - margin;
-            const spaceBelow = viewportHeight - rect.bottom - margin;
-            let top = spaceAbove >= height + gap || spaceAbove >= spaceBelow
-                ? rect.top - height - gap
-                : rect.bottom + gap;
-
-            top = Math.min(Math.max(top, margin), Math.max(margin, viewportHeight - height - margin));
+            const buttonCenter = rect.left + (rect.width / 2);
+            const left = Math.min(Math.max(buttonCenter - (width / 2), margin), maxLeft);
+            const top = Math.min(
+                Math.max(rect.top - height - gap, margin),
+                Math.max(margin, viewportHeight - height - margin)
+            );
 
             menu.style.left = `${Math.round(left)}px`;
             menu.style.top = `${Math.round(top)}px`;
+        }
+
+        function handleMessageMoreOutsidePointer(event) {
+            const menu = event.target.closest(".message-more-menu");
+            const btn = event.target.closest(".message-actions .action-btn[title='More options']");
+            if (!menu && !btn) closeMessageMoreMenus();
         }
 
         function isReadAloudActive() {
@@ -2267,6 +2271,7 @@
             closeModelMenu();
         });
 
+        document.addEventListener("pointerdown", handleMessageMoreOutsidePointer, true);
         window.addEventListener("resize", () => closeMessageMoreMenus());
         document.addEventListener("scroll", () => closeMessageMoreMenus(), true);
 
