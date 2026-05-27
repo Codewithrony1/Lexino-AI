@@ -1944,17 +1944,18 @@
 
         function toggleMessageMoreMenu(event, btn) {
             if (event) event.stopPropagation();
-            if (!btn) return;
+            const button = event?.currentTarget || btn;
+            if (!button) return;
 
             const menu = getReadAloudFloatingMenu();
-            const isOpen = !(menu.classList.contains("active") && readAloudMenuButton === btn);
+            const isOpen = !(menu.classList.contains("active") && readAloudMenuButton === button);
             closeMessageMoreMenus();
-            btn.setAttribute("aria-expanded", String(isOpen));
+            button.setAttribute("aria-expanded", String(isOpen));
             if (isOpen) {
-                readAloudMenuButton = btn;
-                readAloudMenuSource = btn.closest(".message");
+                readAloudMenuButton = button;
+                readAloudMenuSource = button.closest(".message");
                 syncReadAloudMenuLabels();
-                positionReadAloudMenu(btn, menu);
+                positionReadAloudMenu(button, menu);
                 menu.classList.add("active");
             } else {
                 readAloudMenuButton = null;
@@ -1964,7 +1965,12 @@
 
         function getReadAloudFloatingMenu() {
             let menu = document.getElementById("readAloudFloatingMenu");
-            if (menu) return menu;
+            if (menu) {
+                if (menu.parentElement !== document.body) {
+                    document.body.appendChild(menu);
+                }
+                return menu;
+            }
 
             menu = document.createElement("div");
             menu.id = "readAloudFloatingMenu";
@@ -1976,15 +1982,13 @@
             return menu;
         }
 
-        function positionReadAloudMenu(btn, menu) {
-            const buttonRect = btn.getBoundingClientRect();
-            const popupWidth = menu.offsetWidth || 116;
-            const popupHeight = menu.offsetHeight || 38;
-            const popupLeft = buttonRect.left + (buttonRect.width / 2) - (popupWidth / 2);
-            const popupTop = buttonRect.top - popupHeight - 8;
+        function positionReadAloudMenu(button, popup) {
+            const rect = button.getBoundingClientRect();
+            const popupX = rect.left + (rect.width / 2) - (popup.offsetWidth / 2);
+            const popupY = rect.top - popup.offsetHeight - 8;
 
-            menu.style.left = `${Math.round(popupLeft)}px`;
-            menu.style.top = `${Math.round(popupTop)}px`;
+            popup.style.left = `${popupX}px`;
+            popup.style.top = `${popupY}px`;
         }
 
         function handleMessageMoreOutsidePointer(event) {

@@ -1887,8 +1887,8 @@
 
         .message-more-menu {
             position: fixed;
-            top: 0;
-            left: 0;
+            top: auto;
+            left: auto;
             right: auto;
             bottom: auto;
             width: 116px;
@@ -1911,8 +1911,6 @@
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transform: none;
-            transform-origin: bottom right;
             z-index: 5000;
             transition:
                 opacity var(--motion-fast) var(--ease-standard),
@@ -1927,7 +1925,6 @@
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
-            transform: none;
         }
 
         .message-more-item {
