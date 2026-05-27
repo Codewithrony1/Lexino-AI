@@ -1982,11 +1982,9 @@
             const margin = 8;
             const width = menu.offsetWidth || 116;
             const height = menu.offsetHeight || 38;
-            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
             const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-            const maxLeft = Math.max(margin, viewportWidth - width - margin);
             const buttonCenter = rect.left + (rect.width / 2);
-            const left = Math.min(Math.max(buttonCenter - (width / 2), margin), maxLeft);
+            const left = buttonCenter - (width / 2);
             const top = Math.min(
                 Math.max(rect.top - height - gap, margin),
                 Math.max(margin, viewportHeight - height - margin)
