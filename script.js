@@ -1786,16 +1786,18 @@
                                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                                 </svg>
                             </button>
-                            <button class="action-btn" onclick="toggleMessageMoreMenu(event, this)" title="More options" aria-label="More options" aria-expanded="false">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="1"></circle>
-                                    <circle cx="12" cy="5" r="1"></circle>
-                                    <circle cx="12" cy="19" r="1"></circle>
-                                </svg>
-                            </button>
-                            <div class="message-more-menu" role="menu" aria-label="Read aloud options">
-                                <button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>
-                            </div>
+                            <span class="message-more-wrap">
+                                <button class="action-btn" onclick="toggleMessageMoreMenu(event, this)" title="More options" aria-label="More options" aria-expanded="false">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="1"></circle>
+                                        <circle cx="12" cy="5" r="1"></circle>
+                                        <circle cx="12" cy="19" r="1"></circle>
+                                    </svg>
+                                </button>
+                                <div class="message-more-menu" role="menu" aria-label="Read aloud options">
+                                    <button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>
+                                </div>
+                            </span>
                         </div>
                     </div>
                 `;
@@ -1914,6 +1916,18 @@
                 btn.setAttribute("onclick", "toggleMessageMoreMenu(event, this)");
                 btn.setAttribute("aria-label", "More options");
                 btn.setAttribute("aria-expanded", btn.getAttribute("aria-expanded") || "false");
+
+                const existingMenu = btn.nextElementSibling?.classList.contains("message-more-menu")
+                    ? btn.nextElementSibling
+                    : null;
+
+                if (!btn.parentElement?.classList.contains("message-more-wrap")) {
+                    const wrap = document.createElement("span");
+                    wrap.className = "message-more-wrap";
+                    btn.insertAdjacentElement("beforebegin", wrap);
+                    wrap.appendChild(btn);
+                    if (existingMenu) wrap.appendChild(existingMenu);
+                }
 
                 const next = btn.nextElementSibling;
                 if (next && next.classList.contains("message-more-menu")) return;

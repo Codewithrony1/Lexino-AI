@@ -1600,7 +1600,7 @@
             max-width: 100%;
             align-items: flex-start;
             flex-wrap: nowrap;
-            overflow-x: hidden;
+            overflow: visible;
             backface-visibility: hidden;
             animation: messageIn 0.28s cubic-bezier(0.2, 0.85, 0.28, 1) both;
         }
@@ -1674,8 +1674,7 @@
             line-height: 1.68;
             font-size: 14.5px;
             padding-top: 0;
-            overflow-x: hidden;
-            overflow-y: visible;
+            overflow: visible;
             overflow-wrap: anywhere;
             word-wrap: break-word;
             word-break: normal;
@@ -1846,6 +1845,17 @@
             margin-top: 12px;
             align-items: center;
             position: relative;
+            overflow: visible;
+            z-index: 4;
+        }
+
+        .message-more-wrap {
+            position: relative;
+            display: inline-flex;
+            flex: 0 0 auto;
+            width: 32px;
+            height: 32px;
+            overflow: visible;
         }
 
         .action-btn {
@@ -1899,7 +1909,7 @@
             pointer-events: none;
             transform: none;
             transform-origin: bottom right;
-            z-index: 30;
+            z-index: 100;
             transition:
                 opacity var(--motion-fast) var(--ease-standard),
                 visibility var(--motion-fast) var(--ease-standard);
@@ -3271,9 +3281,9 @@
                 padding-top: 2px;
                 word-break: normal;
                 word-wrap: break-word;
-            overflow-wrap: break-word;
+                overflow-wrap: anywhere;
                 white-space: pre-wrap;
-                overflow-x: hidden;
+                overflow: visible;
             }
 
             .message.user .message-content,
