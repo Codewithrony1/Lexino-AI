@@ -1915,6 +1915,15 @@
                 visibility var(--motion-fast) var(--ease-standard);
         }
 
+        .read-aloud-floating-menu {
+            position: fixed;
+            right: auto;
+            bottom: auto;
+            width: 156px;
+            height: auto;
+            z-index: 5000;
+        }
+
         .message-more-menu.active {
             opacity: 1;
             visibility: visible;

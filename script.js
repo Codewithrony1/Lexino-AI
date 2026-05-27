@@ -31,6 +31,8 @@
         let searchRenderFrame = null;
         let readAloudUtterance = null;
         let readAloudSource = null;
+        let readAloudMenuSource = null;
+        let readAloudMenuButton = null;
         let lastMobileInputHeight = 0;
         let chatOptionsTouchTimer = null;
         const composerModels = {
@@ -1722,9 +1724,9 @@
                 }
                 return text;
             })();
-            const historyForApi = currentConversation.slice(-20).map((m) => ({
+            const historyForApi = currentConversation.slice(-8).map((m) => ({
                 role: m.role,
-                content: m.content
+                content: String(m.content || "").slice(0, 1000)
             }));
             currentConversation.push({ role: "user", content: memoryUserText });
             saveChatState();
@@ -1794,9 +1796,6 @@
                                         <circle cx="12" cy="19" r="1"></circle>
                                     </svg>
                                 </button>
-                                <div class="message-more-menu" role="menu" aria-label="Read aloud options">
-                                    <button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>
-                                </div>
                             </span>
                         </div>
                     </div>
@@ -1828,41 +1827,30 @@
             const raw = (err && err.message ? String(err.message) : "Something went wrong").trim();
             const lower = raw.toLowerCase();
 
-            const isNetwork =
-                lower.includes("failed to fetch") ||
-                lower.includes("network error") ||
-                lower.includes("backend unreachable") ||
-                lower.includes("start server at");
+            if (lower.includes("token limit") || lower.includes("rate limit") || lower.includes("tpm") || lower.includes("too many")) {
+                return "Token limit reached. Please wait about 1 minute.";
+            }
 
-            const isAuth =
-                lower.includes("groq_api_key") ||
+            if (lower.includes("failed to fetch") || lower.includes("network error") || lower.includes("backend unreachable") || lower.includes("connection issue")) {
+                return "Connection issue detected. Please retry.";
+            }
+
+            if (
                 lower.includes("groq_api_key") ||
                 lower.includes("hf_token") ||
                 lower.includes("unauthorized") ||
                 lower.includes("forbidden") ||
                 lower.includes("token") ||
                 lower.includes("invalid api") ||
-                lower.includes("api key");
-
-            if (isNetwork) {
-                const isLocalHost =
-                    typeof window !== "undefined" &&
-                    window.location &&
-                    (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost");
-
-                if (!isLocalHost) {
-                    return `Error: ${raw}. Please try again in a moment.`;
-                }
-
-                const here = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "your UI URL";
-                return `Error: ${raw}. Backend not reachable — start the backend on http://127.0.0.1:3000 and keep/open the UI at ${here}`;
+                lower.includes("api key") ||
+                lower.includes("organization") ||
+                lower.includes("billing") ||
+                lower.includes("server is busy")
+            ) {
+                return "Server is busy right now. Please try again shortly.";
             }
 
-            if (isAuth) {
-                return `Error: ${raw}. Please check your Groq API key (GROQ_API_KEY) and try again.`;
-            }
-
-            return `Error: ${raw}.`;
+            return "Something went wrong. Please try again.";
         }
 
         function createMessagesWrapper(parent) {
@@ -1917,29 +1905,14 @@
                 btn.setAttribute("aria-label", "More options");
                 btn.setAttribute("aria-expanded", btn.getAttribute("aria-expanded") || "false");
 
-                const existingMenu = btn.nextElementSibling?.classList.contains("message-more-menu")
-                    ? btn.nextElementSibling
-                    : null;
-
                 if (!btn.parentElement?.classList.contains("message-more-wrap")) {
                     const wrap = document.createElement("span");
                     wrap.className = "message-more-wrap";
                     btn.insertAdjacentElement("beforebegin", wrap);
                     wrap.appendChild(btn);
-                    if (existingMenu) wrap.appendChild(existingMenu);
                 }
 
-                const next = btn.nextElementSibling;
-                if (next && next.classList.contains("message-more-menu")) return;
-
-                const menu = document.createElement("div");
-                menu.className = "message-more-menu";
-                menu.setAttribute("role", "menu");
-                menu.setAttribute("aria-label", "Read aloud options");
-                menu.innerHTML = `
-                    <button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>
-                `;
-                btn.insertAdjacentElement("afterend", menu);
+                btn.parentElement.querySelectorAll(".message-more-menu").forEach((menu) => menu.remove());
             });
             syncReadAloudMenuLabels();
         }
@@ -1948,9 +1921,12 @@
             document.querySelectorAll(".message-more-menu.active").forEach((menu) => {
                 if (menu === exceptMenu) return;
                 menu.classList.remove("active");
-                const button = menu.previousElementSibling;
-                if (button) button.setAttribute("aria-expanded", "false");
             });
+            if (!exceptMenu && readAloudMenuButton) {
+                readAloudMenuButton.setAttribute("aria-expanded", "false");
+                readAloudMenuButton = null;
+                readAloudMenuSource = null;
+            }
         }
 
         function getSavableChatHtml(messagesDiv) {
@@ -1966,14 +1942,53 @@
 
         function toggleMessageMoreMenu(event, btn) {
             if (event) event.stopPropagation();
-            const menu = btn?.nextElementSibling;
-            if (!menu || !menu.classList.contains("message-more-menu")) return;
+            if (!btn) return;
 
-            const isOpen = !menu.classList.contains("active");
-            closeMessageMoreMenus(menu);
+            const menu = getReadAloudFloatingMenu();
+            const isOpen = !(menu.classList.contains("active") && readAloudMenuButton === btn);
+            closeMessageMoreMenus();
+            readAloudMenuButton = btn;
+            readAloudMenuSource = btn.closest(".message");
             syncReadAloudMenuLabels();
             menu.classList.toggle("active", isOpen);
             btn.setAttribute("aria-expanded", String(isOpen));
+            if (isOpen) {
+                positionReadAloudMenu(btn, menu);
+            } else {
+                readAloudMenuButton = null;
+                readAloudMenuSource = null;
+            }
+        }
+
+        function getReadAloudFloatingMenu() {
+            let menu = document.getElementById("readAloudFloatingMenu");
+            if (menu) return menu;
+
+            menu = document.createElement("div");
+            menu.id = "readAloudFloatingMenu";
+            menu.className = "message-more-menu read-aloud-floating-menu";
+            menu.setAttribute("role", "menu");
+            menu.setAttribute("aria-label", "Read aloud options");
+            menu.innerHTML = `<button class="message-more-item" onclick="toggleReadAloudFromMenu(this)" role="menuitem">Read aloud</button>`;
+            document.body.appendChild(menu);
+            return menu;
+        }
+
+        function positionReadAloudMenu(btn, menu) {
+            const rect = btn.getBoundingClientRect();
+            const gap = 8;
+            const margin = 8;
+            const width = menu.offsetWidth || 156;
+            const height = menu.offsetHeight || 48;
+            const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
+            let top = rect.top - height - gap;
+
+            if (top < margin) {
+                top = rect.bottom + gap;
+            }
+
+            menu.style.left = `${Math.round(left)}px`;
+            menu.style.top = `${Math.round(top)}px`;
         }
 
         function isReadAloudActive() {
@@ -1989,7 +2004,7 @@
         }
 
         function getReadableMessageText(source) {
-            const message = source?.closest(".message");
+            const message = source?.closest?.(".message") || readAloudMenuSource;
             const content = message?.querySelector(".message-content > div:first-child");
             return (content?.innerText || content?.textContent || "").replace(/\s+/g, " ").trim();
         }
@@ -2041,7 +2056,7 @@
                 return;
             }
 
-            readMessageAloud(btn);
+            readMessageAloud(readAloudMenuSource || btn);
         }
 
         function pauseReadAloud() {
@@ -2091,15 +2106,15 @@
             scrollMessagesToLatest({ smooth: true });
             
             try {
-                let latestUserText = originalUserMessage;
+                let latestUserText = String(originalUserMessage || "").slice(0, 6000);
                 let historyForApi = [];
                 if (currentConversation.length >= 2) {
                     const maybeUser = currentConversation[currentConversation.length - 2];
                     if (maybeUser && maybeUser.role === "user") {
-                        latestUserText = maybeUser.content;
-                        historyForApi = currentConversation.slice(0, -2).map((m) => ({
+                        latestUserText = String(maybeUser.content || "").slice(0, 6000);
+                        historyForApi = currentConversation.slice(-10, -2).map((m) => ({
                             role: m.role,
-                            content: m.content
+                            content: String(m.content || "").slice(0, 1000)
                         }));
                     }
                 }
@@ -2244,6 +2259,9 @@
             closeMobileHeaderMenu();
             closeModelMenu();
         });
+
+        window.addEventListener("resize", () => closeMessageMoreMenus());
+        document.addEventListener("scroll", () => closeMessageMoreMenus(), true);
 
         const modelSelectControl = document.getElementById('modelSelect');
         if (modelSelectControl) {

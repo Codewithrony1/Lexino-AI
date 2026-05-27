@@ -21,19 +21,51 @@
         if (contentType.includes("application/json")) {
             const err = await response.json().catch(() => ({}));
             const message = err?.error?.message || err?.error || err?.message;
-            return message || `HTTP ${response.status}`;
+            return cleanClientError(response.status, message);
         }
 
-        const raw = await response.text().catch(() => "");
-        const clean = raw.replace(/\s+/g, " ").trim();
-        return clean ? `${clean.slice(0, 180)} (HTTP ${response.status})` : `HTTP ${response.status}`;
+        return cleanClientError(response.status, await response.text().catch(() => ""));
+    }
+
+    function cleanClientError(status, raw = "") {
+        const text = String(raw || "").toLowerCase();
+
+        if (
+            status === 429 ||
+            text.includes("rate limit") ||
+            text.includes("tpm") ||
+            text.includes("too many") ||
+            text.includes("context length") ||
+            (text.includes("token") && text.includes("limit"))
+        ) {
+            return "Token limit reached. Please wait about 1 minute.";
+        }
+
+        if (text.includes("failed to fetch") || text.includes("network") || text.includes("backend unreachable")) {
+            return "Connection issue detected. Please retry.";
+        }
+
+        if (
+            status === 401 ||
+            status === 403 ||
+            status >= 500 ||
+            text.includes("api key") ||
+            text.includes("groq_api_key") ||
+            text.includes("organization") ||
+            text.includes("billing")
+        ) {
+            return "Server is busy right now. Please try again shortly.";
+        }
+
+        return "Something went wrong. Please try again.";
     }
 
     async function getResponse(content, history = []) {
         const modelSelect = document.getElementById("modelSelect");
         const maxTokensSelect = document.getElementById("maxTokens");
         const selectedModelValue = modelSelect ? modelSelect.value : "llama-3.3-70b-versatile";
-        const maxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 2000;
+        const selectedMaxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 256;
+        const maxTokens = Number.isFinite(selectedMaxTokens) ? Math.min(selectedMaxTokens, 512) : 256;
         const requestBody = JSON.stringify({
             selectedModel: selectedModelValue,
             maxTokens,
@@ -65,13 +97,13 @@
                 return data.output || data.reply || "";
             } catch (error) {
                 const message = error?.message || "Network error";
-                networkFailures.push(`${endpoint} -> ${message}`);
-                lastError = message;
+                networkFailures.push(endpoint);
+                lastError = cleanClientError(0, message);
             }
         }
 
         if (networkFailures.length === endpoints.length) {
-            throw new Error(`Backend unreachable. Details: ${networkFailures.join(" | ")}`);
+            throw new Error("Connection issue detected. Please retry.");
         }
 
         throw new Error(lastError);
