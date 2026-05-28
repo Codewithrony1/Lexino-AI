@@ -35,7 +35,7 @@
         let readAloudMenuButton = null;
         let lastMobileInputHeight = 0;
         let chatOptionsTouchTimer = null;
-        const DEFAULT_SIDEBAR_BRAND_IMAGE = "logo/Lexino_AI_Logo-removebg-preview.png";
+        const DEFAULT_SIDEBAR_BRAND_IMAGE = "/lexino-logo.png";
         const composerModels = {
             "llama-3.1-8b-instant": "Fast",
             "llama-3.3-70b-versatile": "Pro"
