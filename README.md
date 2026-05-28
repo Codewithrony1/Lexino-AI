@@ -1,57 +1,89 @@
 # Lexino.ai
 
-Lexino.ai is a sophisticated, web-based AI chat interface designed for a seamless and customizable user experience. It features persistent chat history, multi-modal input support, and a responsive design that works across devices.
+Lexino.ai is a premium AI chat interface with a futuristic dark UI, persistent chat history, multi-modal input support, dynamic wallpapers, and protected authentication.
 
-## 🚀 Features
+## Features
 
-### Core Functionality
-- **Persistent Chat History**: Conversations are automatically saved and organized by time (Today, Yesterday, Previous 7 Days, Older).
-- **Search**: Instantly filter through your chat history to find specific discussions.
-- **Temporary Mode**: Toggle "Temp Mode" for ephemeral conversations that aren't saved to history.
-- **Markdown Support**: AI responses are rendered with Markdown, supporting code blocks and formatting.
+- Persistent local chat history grouped by time.
+- Search, pinned chats, sharing, and temporary chat mode.
+- Markdown rendering for AI responses.
+- File attachments and voice input.
+- Dynamic Lexino wallpapers and profile customization.
+- Clerk authentication with protected chat access.
 
-### Multi-Modal Inputs
-- **File Attachments**: Upload images and text files (up to 50 files, 100MB limit) to analyze with the AI.
-- **Voice Input**: Built-in speech-to-text functionality using the Web Speech API.
+## Authentication
 
-### Customization & UI
-- **Dynamic Wallpapers**: Choose from visual themes like Aurora, Neon, Mesh, Galaxy, and Sunset.
-- **Profile Settings**: Customize your display name, email, and bio.
-- **Branding**: Upload a custom brand image for the sidebar.
-- **Responsive Design**: Collapsible sidebar and mobile-friendly layout.
+Lexino AI uses Next.js App Router with Clerk authentication.
 
-## 🛠️ Technical Overview
+Routes:
+- `/` - Landing page
+- `/sign-in` - Clerk sign in
+- `/sign-up` - Clerk sign up
+- `/chat` - Protected Lexino AI chat
 
-The project is built with vanilla JavaScript and relies on LocalStorage for client-side persistence.
+Create `.env.local` from `.env.example` and add:
 
-- **`script.js`**: Manages the UI state, event handling, chat session management (`lexino_chat_sessions_v2`), and user preferences.
-- **`api.js`**: Handles communication with the backend LLM service. It intelligently switches between local (`http://127.0.0.1:3000`) and production endpoints.
+```bash
+GROQ_API_KEY=your_groq_api_key_here
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+```
 
-## 📦 Installation & Usage
+In Clerk Dashboard, enable Email/Password, Google, and GitHub providers. Add redirect URLs for local and production:
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/Lexino.ai.git
-   ```
+```text
+http://localhost:3000/sign-in
+http://localhost:3000/sign-up
+http://localhost:3000/chat
+https://lexinoai.vercel.app/sign-in
+https://lexinoai.vercel.app/sign-up
+https://lexinoai.vercel.app/chat
+```
 
-2. **Backend Setup**
-   Create a `.env` file with your Groq API key:
-   ```bash
-   GROQ_API_KEY=your_groq_api_key_here
-   ```
-   The frontend expects a POST endpoint at `/api/chat` (or `http://127.0.0.1:3000/api/chat` for local development) that accepts JSON bodies with `content`, `history`, `selectedModel`, and `maxTokens`.
+## Technical Overview
 
-3. **Launch**
-   Open the `index.html` file in your preferred web browser.
+The project uses Next.js for routing and route protection while preserving the existing vanilla chat UI for the authenticated `/chat` interface. Local chat state currently remains client-side, with the structure prepared for future Supabase-backed saved chats, pinned chats, user history, cloud sync, and premium plans.
 
-## ⚙️ Configuration
+- `app/` - Next.js routes, Clerk auth pages, protected chat route, and API route.
+- `script.js` - Existing chat UI state, event handling, sessions, and user preferences.
+- `style.css` - Existing Lexino chat visual system.
+- `api.js` - Browser API client for `/api/chat`.
+- `app/api/chat/route.ts` - Protected server-side LLM endpoint.
 
-### API Configuration
-The `api.js` file contains logic to determine the API endpoint based on the window's hostname.
+## Installation & Usage
 
-### Models
-The application defaults to Groq's `llama-3.3-70b-versatile` model and also includes `llama-3.1-8b-instant` as a faster option.
+1. Clone the repository.
 
-## 📄 License
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Configure `.env.local` using `.env.example`.
+
+4. Start the app:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000/sign-in`.
+
+## Deployment
+
+Deploy on Vercel and set these environment variables:
+
+```bash
+GROQ_API_KEY
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL=/chat
+NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL=/chat
+```
+
+## License
 
 [Add License Information Here]
