@@ -12,6 +12,7 @@ function getWebsiteBody() {
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '')
     .replaceAll('src="Lexino_AI_Logo-removebg-preview.png"', 'src="/lexino-logo.png"')
+    .replaceAll('src="./Lexino_AI_Logo-removebg-preview.png"', 'src="/lexino-logo.png"')
     .replaceAll('src="mp_.mp4"', 'src="/lexino-website/mp_.mp4"')
     .replaceAll(
       'src="/Lexino Website/Manifest Anything You Desire  10 Minute Meditation Music.mp3"',
