@@ -10,6 +10,7 @@ export default function SignInPage() {
         routing="path"
         signUpUrl="/sign-up"
         forceRedirectUrl="/chat"
+        fallbackRedirectUrl="/chat"
         appearance={lexinoClerkAppearance}
       />
     </AuthShell>

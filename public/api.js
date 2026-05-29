@@ -1,18 +1,6 @@
 (() => {
     function getApiCandidates() {
-        const sameOriginApi = "/api/chat";
-        const { hostname, port } = window.location;
-
-        const isLocal = hostname === "127.0.0.1" || hostname === "localhost";
-        const localNodeApi = "http://127.0.0.1:3000/api/chat";
-
-        if (isLocal) {
-            if (port === "3000") return [sameOriginApi];
-            if (port === "5500") return [localNodeApi, sameOriginApi];
-            return [sameOriginApi, localNodeApi];
-        }
-
-        return [sameOriginApi];
+        return ["/api/chat"];
     }
 
     async function parseErrorResponse(response) {

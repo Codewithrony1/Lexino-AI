@@ -94,9 +94,7 @@ window.addEventListener('DOMContentLoaded', () => {
 //  // Relative path, fast & instant
 
 function navigateToTry() {
-    const isStaticPreview = window.location.port === '5500' || window.location.protocol === 'file:';
-    const authBase = isStaticPreview ? 'http://localhost:3000' : '';
-    window.location.href = `${authBase}/sign-in?redirect_url=/chat`;
+    window.location.href = '/sign-in?redirect_url=/chat';
 }
 
 function navigateToHome() {

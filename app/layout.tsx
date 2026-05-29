@@ -14,6 +14,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       signUpUrl="/sign-up"
       signInForceRedirectUrl="/chat"
       signUpForceRedirectUrl="/chat"
+      signInFallbackRedirectUrl="/chat"
+      signUpFallbackRedirectUrl="/chat"
     >
       <html lang="en" suppressHydrationWarning>
         <body>{children}</body>
