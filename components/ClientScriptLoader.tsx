@@ -8,8 +8,6 @@ type ClientScriptLoaderProps = {
 
 export function ClientScriptLoader({ scripts }: ClientScriptLoaderProps) {
   useEffect(() => {
-    const loadedScripts: HTMLScriptElement[] = [];
-
     async function loadScripts() {
       for (const src of scripts) {
         if (document.querySelector(`script[data-lexino-loader="${src}"]`)) {
@@ -24,7 +22,6 @@ export function ClientScriptLoader({ scripts }: ClientScriptLoaderProps) {
           script.onload = () => resolve();
           script.onerror = () => reject(new Error(`Failed to load ${src}`));
           document.body.appendChild(script);
-          loadedScripts.push(script);
         });
       }
     }
@@ -33,11 +30,7 @@ export function ClientScriptLoader({ scripts }: ClientScriptLoaderProps) {
       console.error(error);
     });
 
-    return () => {
-      for (const script of loadedScripts) {
-        script.remove();
-      }
-    };
+    return undefined;
   }, [scripts]);
 
   return null;

@@ -11,7 +11,9 @@ function getLegacyChatBody() {
   const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
   return body
     .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '');
+    .replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '')
+    .replaceAll('src="Images/', 'src="/Images/')
+    .replaceAll("src='Images/", "src='/Images/");
 }
 
 export default async function ChatPage() {

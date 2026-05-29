@@ -631,11 +631,11 @@
             gap: 10px;
         }
 
-        .sidebar-brand-wrap {
+     /* .sidebar-brand-wrap {
             display: flex;
             align-items: center;
             gap: 10px;
-        }
+        } */
 
         .sidebar-logo-symbol {
             width: 50px;
