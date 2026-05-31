@@ -439,6 +439,7 @@
             if (name === "none") {
                 root.style.setProperty("--bg-primary", "#0d0d0d");
                 root.style.setProperty("--bg-secondary", "#1a1a1a");
+                root.style.setProperty("--bg-secondary-solid", "#1a1a1a");
                 root.style.setProperty("--bg-tertiary", "#262626");
                 root.style.setProperty("--border-color", "#333333");
                 root.style.setProperty("--accent-primary", "#10a37f");
@@ -446,6 +447,8 @@
             } else {
                 root.style.setProperty("--bg-primary", rgbaValue(surface, 0.92));
                 root.style.setProperty("--bg-secondary", rgbaValue(surface, 0.65));
+                const solidSecondary = rgbaValue(surface, 1);
+                root.style.setProperty("--bg-secondary-solid", solidSecondary);
                 root.style.setProperty("--bg-tertiary", rgbaValue(surface, 0.82));
                 root.style.setProperty("--border-color", rgbaValue(accentStrong, 0.22));
                 root.style.setProperty("--accent-primary", rgbaValue(extractedAccent, 1));

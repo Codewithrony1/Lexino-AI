@@ -16,6 +16,7 @@
         :root {
             --sidebar-mobile-bg: #081018;
             --sidebar-mobile-light-bg: #ffffff;
+            --bg-secondary-solid: #1a1a1a;
             --bg-primary: #0d0d0d;
             --bg-secondary: #1a1a1a;
             --bg-tertiary: #262626;
@@ -3359,7 +3360,7 @@
                 will-change: transform;
                 perspective: 1000px;
                 
-                background: var(--sidebar-mobile-bg) !important;
+                background: var(--bg-secondary-solid) !important;
                 opacity: 1 !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
@@ -3376,7 +3377,7 @@
             .sidebar-section,
             .sidebar-footer,
             .collapsed-rail {
-                background: var(--sidebar-mobile-bg) !important;
+                background: var(--bg-secondary-solid) !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
             }
