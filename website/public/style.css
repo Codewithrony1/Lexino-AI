@@ -3727,7 +3727,7 @@
                     linear-gradient(180deg, rgba(5, 5, 6, 0), rgba(5, 5, 6, 0.72) 18%, rgba(5, 5, 6, 0.95) 100%);
                 transform: translate3d(0, 0, 0);
                 will-change: transform;
-                contain: layout paint style;
+                contain: layout style;
             }
 
             .input-container {
@@ -3762,6 +3762,11 @@
 
             .model-menu {
                 min-width: 154px;
+                max-height: min(320px, 60vh);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                z-index: 9999;
             }
 
             .uploaded-files {

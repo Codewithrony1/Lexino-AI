@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function HelpPage() {
-  const [activeTab, setActiveTab] = useState<'faq' | 'support'>('faq');
+  const [activeTab, setActiveTab] = useState<'faq' | 'support' | 'releases'>('faq');
   const [faqOpen, setFaqOpen] = useState<Record<number, boolean>>({});
   
   // Form State
@@ -21,9 +21,13 @@ export default function HelpPage() {
       const section = params.get('section');
       const queryTopic = params.get('topic');
       
-      if (section === 'support') {
-        setActiveTab('support');
+      const validTabs = ['faq', 'support', 'releases'];
+      if (section && validTabs.includes(section)) {
+        setActiveTab(section as 'faq' | 'support' | 'releases');
+      } else if (section) {
+        setActiveTab('faq');
       }
+      
       if (queryTopic === 'bug') {
         setTopic('bug');
       }
@@ -502,6 +506,103 @@ export default function HelpPage() {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
+
+        /* Release Notes Panel Styles */
+        .release-timeline {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .release-card {
+          background: rgba(255, 255, 255, 0.015);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 16px;
+          padding: 24px;
+          transition: all 0.25s ease;
+        }
+
+        .release-card:hover {
+          border-color: rgba(0, 240, 255, 0.2);
+          background: rgba(255, 255, 255, 0.025);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .release-badge-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+
+        .release-version {
+          font-family: 'Orbitron', sans-serif;
+          font-weight: 700;
+          font-size: 13px;
+          background: rgba(0, 240, 255, 0.1);
+          border: 1px solid rgba(0, 240, 255, 0.25);
+          color: #00f0ff;
+          padding: 4px 12px;
+          border-radius: 100px;
+          letter-spacing: 0.5px;
+          text-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+        }
+
+        .release-date {
+          font-size: 12.5px;
+          color: #a6b6c8;
+          font-weight: 500;
+        }
+
+        .release-title {
+          font-size: 19px;
+          font-weight: 700;
+          color: #f8fafc;
+          margin: 0 0 20px;
+          font-family: 'Orbitron', sans-serif;
+        }
+
+        .release-section {
+          margin-bottom: 20px;
+        }
+
+        .release-section:last-child {
+          margin-bottom: 0;
+        }
+
+        .release-section-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #00f0ff;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin: 0 0 10px;
+        }
+
+        .release-list {
+          margin: 0;
+          padding-left: 20px;
+          color: #a6b6c8;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+
+        .release-list li {
+          margin-bottom: 8px;
+        }
+
+        .release-list li:last-child {
+          margin-bottom: 0;
+        }
+
+        .release-list code {
+          background: rgba(255, 255, 255, 0.08);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: monospace;
+          color: #e2e8f0;
+          font-size: 12.5px;
+        }
       `}} />
 
       <div className="decorative-glow-1" />
@@ -534,6 +635,12 @@ export default function HelpPage() {
               onClick={() => setActiveTab('support')}
             >
               <span className="nav-icon">🛠️</span> Customer Support
+            </button>
+            <button 
+              className={`help-nav-btn ${activeTab === 'releases' ? 'active' : ''}`}
+              onClick={() => setActiveTab('releases')}
+            >
+              <span className="nav-icon">📋</span> Release Notes
             </button>
           </nav>
 
@@ -579,7 +686,7 @@ export default function HelpPage() {
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : activeTab === 'support' ? (
               <div>
                 <h2 className="panel-heading">✉️ Create a Support Ticket</h2>
                 <p className="panel-desc">Need help with billing, credentials, or accounts? Submit a ticket to our developers.</p>
@@ -650,6 +757,47 @@ export default function HelpPage() {
                     <strong>Support Email:</strong> support@lexinotech.com<br />
                     <strong>Billing Queries:</strong> payments@lexinotech.com<br />
                     <strong>Enterprise:</strong> systems@lexinotech.com
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h2 className="panel-heading">📋 Release Notes</h2>
+                <p className="panel-desc">Stay updated with the latest features, enhancements, and infrastructure updates on Lexino AI.</p>
+                
+                <div className="release-timeline">
+                  <div className="release-card">
+                    <div className="release-badge-container">
+                      <span className="release-version">v2.1.0</span>
+                      <span className="release-date">May 31, 2026</span>
+                    </div>
+                    <h3 className="release-title">Next.js Core Restructure & Owner Panel</h3>
+                    
+                    <div className="release-section">
+                      <h4 className="release-section-title">Core Infrastructure</h4>
+                      <ul className="release-list">
+                        <li><strong>Next.js App Router Restructure:</strong> Restructured layout pages, API routes, and components to reside in the nested <code>website/</code> directory for clean monorepo builds.</li>
+                        <li><strong>Production Optimization:</strong> Set up target build actions in Vercel to compile files flawlessly using direct configurations.</li>
+                        <li><strong>Improved Routing Architecture:</strong> Standardized application redirects and routing path handlers.</li>
+                      </ul>
+                    </div>
+
+                    <div className="release-section">
+                      <h4 className="release-section-title">Admin Systems & Auth</h4>
+                      <ul className="release-list">
+                        <li><strong>Owner Admin Panel:</strong> Built the new <code>/lexino-owner-panel-x7a91</code> to let owners monitor system statistics, synchronize user data, and manage account levels directly.</li>
+                        <li><strong>Standardized Auth Routes:</strong> Renamed Clerk authentication landing routes to <code>/login</code> and <code>/signup</code> for enhanced routing simplicity.</li>
+                      </ul>
+                    </div>
+
+                    <div className="release-section">
+                      <h4 className="release-section-title">Premium Features & Mobile UI</h4>
+                      <ul className="release-list">
+                        <li><strong>Model Lock System:</strong> Integrated premium access locks on Pro & Claude models depending on account status (Free, Student, Pro).</li>
+                        <li><strong>Mobile Dropdown Fix:</strong> Fixed the CSS layout clipping bug where options other than Claude were hidden. The menu now opens cleanly without clipping on mobile screens.</li>
+                        <li><strong>Scroll & Touch Support:</strong> Enabled smooth touch-scrolling behavior and height limits on the model selection menu for smaller screens.</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
