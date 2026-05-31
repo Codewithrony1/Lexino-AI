@@ -1,0 +1,29 @@
+/* Theme Variables Setup */
+:root {
+  --color-bg-dark: #000000;
+  --color-bg-light: #ffffff;
+  --color-surface-dark: #0a0a0a;
+  --color-surface-light: #f5f5f5;
+  --color-text-dark: #ffffff;
+  --color-text-light: #000000;
+  --color-text-secondary-dark: rgba(255, 255, 255, 0.7);
+  --color-text-secondary-light: rgba(0, 0, 0, 0.7);
+  --color-primary: #4169ff;
+  --color-secondary: #a855f7;
+  --color-accent: #00f0ff;
+  --color-gradient: linear-gradient(135deg, #4169ff 0%, #a855f7 100%);
+  --color-card-dark: rgba(255, 255, 255, 0.05);
+  --color-card-light: rgba(0, 0, 0, 0.05);
+  --color-border-dark: rgba(255, 255, 255, 0.1);
+  --color-border-light: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode {
+  background: var(--color-bg-light);
+  color: var(--color-text-light);
+}
+
+body.light-mode nav {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom-color: var(--color-border-light);
+}

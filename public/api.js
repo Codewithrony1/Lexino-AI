@@ -33,9 +33,18 @@
             return "Connection issue detected. Please retry.";
         }
 
+        if (status === 401) {
+            setTimeout(() => {
+                window.location.href = "/login?redirect_url=/chat";
+            }, 2000);
+            return "Session expired. Redirecting to login...";
+        }
+
+        if (status === 403) {
+            return raw || "Access denied.";
+        }
+
         if (
-            status === 401 ||
-            status === 403 ||
             status >= 500 ||
             text.includes("api key") ||
             text.includes("groq_api_key") ||
@@ -45,7 +54,7 @@
             return "Server is busy right now. Please try again shortly.";
         }
 
-        return "Something went wrong. Please try again.";
+        return raw || "Something went wrong. Please try again.";
     }
 
     async function getResponse(content, history = []) {

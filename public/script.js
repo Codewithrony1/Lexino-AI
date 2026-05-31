@@ -1,13 +1,16 @@
         let isRecording = false;
         let uploadedFiles = [];
+        window.currentAssistant = "default";
         let recognition = null;
+        let recognitionActive = false;
+        let voiceInitialText = "";
         let isTempMode = false;
         const CHAT_STORAGE_KEY = "lexino_chat_state_v1";
         const CHAT_SESSIONS_STORAGE_KEY = "lexino_chat_sessions_v2";
         const PROFILE_STORAGE_KEY = "lexino_profile_v1";
-        const WALLPAPER_STORAGE_KEY = "lexino_wallpaper_v1";
+        const WALLPAPER_STORAGE_KEY = "lexino_wallpaper";
         const SIDEBAR_BRAND_IMAGE_KEY = "lexino_sidebar_brand_image_v1";
-        const allowedWallpapers = ["none", "aurora", "neon", "mesh", "starfall", "particlefield", "sunset", "universe"];
+        const allowedWallpapers = ["none", "aurora", "neon", "mesh", "starfall", "particlefield", "sunset", "universe", "fallingstarfield", "nebulastars", "minimalspace", "galaxydrift", "interstellar"];
         const defaultProfile = {
             name: "Ritik",
             email: "",
@@ -38,7 +41,10 @@
         const DEFAULT_SIDEBAR_BRAND_IMAGE = "/lexino-logo.png";
         const composerModels = {
             "llama-3.1-8b-instant": "Fast",
-            "llama-3.3-70b-versatile": "Pro"
+            "llama-3.3-70b-versatile": "Pro",
+            "gpt-4o": "ChatGPT",
+            "claude-3-5-sonnet": "Claude",
+            "timetable-ai": "Timetable AI"
         };
         const composerThemeProfiles = {
             none: {
@@ -133,8 +139,34 @@
             return window.LexinoApi.getResponse(content, history);
         }
 
+        function appendCopyButton(codeEl) {
+            const pre = codeEl.parentElement;
+            if (!pre || pre.querySelector('.copy-code-btn')) return;
+            pre.style.position = 'relative';
+            const btn = document.createElement('button');
+            btn.className = 'copy-code-btn';
+            btn.innerHTML = 'Copy';
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(codeEl.textContent).then(() => {
+                    btn.innerHTML = 'Copied!';
+                    setTimeout(() => { btn.innerHTML = 'Copy'; }, 2000);
+                });
+            };
+            pre.appendChild(btn);
+        }
+
         function renderMarkdown(text) {
-            return marked.parse(text);
+            const rawHtml = marked.parse(text);
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = rawHtml;
+            if (window.hljs) {
+                tempDiv.querySelectorAll('pre code').forEach((el) => {
+                    window.hljs.highlightElement(el);
+                    appendCopyButton(el);
+                });
+            }
+            return tempDiv.innerHTML;
         }
 
         function applyAutoResize(textarea) {
@@ -402,15 +434,156 @@
             root.style.setProperty("--user-bubble-inner-hover-alpha", String(bubbleInnerHoverAlpha));
             root.style.setProperty("--user-bubble-blur", `${bubbleBlur}px`);
             root.style.setProperty("--user-bubble-text", lightSurface ? "rgba(8, 11, 18, 0.92)" : "rgba(248, 252, 255, 0.96)");
+
+            // Dynamically synchronize the general application theme variables with the selected wallpaper
+            if (name === "none") {
+                root.style.setProperty("--bg-primary", "#0d0d0d");
+                root.style.setProperty("--bg-secondary", "#1a1a1a");
+                root.style.setProperty("--bg-tertiary", "#262626");
+                root.style.setProperty("--border-color", "#333333");
+                root.style.setProperty("--accent-primary", "#10a37f");
+                root.style.setProperty("--accent-hover", "#0d8c6d");
+            } else {
+                root.style.setProperty("--bg-primary", rgbaValue(surface, 0.92));
+                root.style.setProperty("--bg-secondary", rgbaValue(surface, 0.65));
+                root.style.setProperty("--bg-tertiary", rgbaValue(surface, 0.82));
+                root.style.setProperty("--border-color", rgbaValue(accentStrong, 0.22));
+                root.style.setProperty("--accent-primary", rgbaValue(extractedAccent, 1));
+                root.style.setProperty("--accent-hover", rgbaValue(accentStrong, 1));
+            }
         }
 
         function updateWallpaperOptions() {
+            const currentTier = window.lexinoUserTier || "FREE";
             document.querySelectorAll(".wallpaper-option").forEach((option) => {
-                option.classList.toggle("active", option.dataset.wallpaper === currentWallpaper);
+                const wallpaperName = option.dataset.wallpaper;
+                if (wallpaperName) {
+                    option.classList.toggle("active", wallpaperName === currentWallpaper);
+                    const allowed = isWallpaperAllowedForTier(wallpaperName, currentTier);
+                    option.classList.toggle("locked", !allowed);
+                }
             });
         }
 
+        let cooldownIntervalId = null;
+        
+        function isWallpaperAllowedForTier(name, tier) {
+            if (!tier) tier = "FREE";
+            if (tier === "PRO" || tier === "STUDENT") return true;
+            
+            const freeAllowed = ["none", "starfall", "minimalspace", "sunset", "fallingstarfield", "mesh"];
+            return freeAllowed.includes(name);
+        }
+
+        function triggerCooldownTimer(cooldownDate) {
+            const cooldownContainer = document.getElementById("cooldownContainer");
+            const inputWrapper = document.getElementById("inputWrapper");
+            const cooldownTimer = document.getElementById("cooldownTimer");
+            const cooldownProgressFill = document.getElementById("cooldownProgressFill");
+            
+            if (!cooldownContainer || !inputWrapper || !cooldownTimer) return;
+            
+            const targetTime = new Date(cooldownDate).getTime();
+            const totalDuration = 60 * 60 * 1000; // 1 hour max standard
+            
+            if (cooldownIntervalId) clearInterval(cooldownIntervalId);
+            
+            cooldownContainer.style.display = "flex";
+            inputWrapper.style.display = "none";
+            
+            const micBtn = document.getElementById("micBtn");
+            if (micBtn) micBtn.disabled = true;
+            
+            cooldownIntervalId = setInterval(() => {
+                const now = Date.now();
+                const timeLeft = targetTime - now;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(cooldownIntervalId);
+                    cooldownIntervalId = null;
+                    cooldownContainer.style.display = "none";
+                    inputWrapper.style.display = "block";
+                    window.lexinoCooldownUntil = null;
+                    
+                    localStorage.removeItem("lexino_local_cooldown_until");
+                    localStorage.setItem("lexino_local_msg_count", "0");
+                    
+                    const micBtn = document.getElementById("micBtn");
+                    if (micBtn) micBtn.disabled = false;
+                    return;
+                }
+                
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                cooldownTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                const elapsedPercent = Math.max(0, Math.min(100, (timeLeft / totalDuration) * 100));
+                if (cooldownProgressFill) {
+                    cooldownProgressFill.style.transform = `scaleX(${elapsedPercent / 100})`;
+                }
+            }, 1000);
+        }
+
+        function checkClientSideRateLimit() {
+            if (window.lexinoCooldownUntil && new Date(window.lexinoCooldownUntil) > new Date()) {
+                triggerCooldownTimer(new Date(window.lexinoCooldownUntil));
+                return true;
+            }
+            
+            const localCooldown = localStorage.getItem("lexino_local_cooldown_until");
+            if (localCooldown && new Date(localCooldown) > new Date()) {
+                triggerCooldownTimer(new Date(localCooldown));
+                return true;
+            }
+            
+            const currentTier = window.lexinoUserTier || "FREE";
+            if (currentTier === "PRO") return false;
+            
+            const limit = currentTier === "STUDENT" ? 300 : 50;
+            
+            const now = new Date();
+            const rawLastMsgAt = localStorage.getItem("lexino_local_last_msg_at");
+            const countStr = localStorage.getItem("lexino_local_msg_count") || "0";
+            let msgCount = parseInt(countStr, 10);
+            
+            if (rawLastMsgAt) {
+                const lastMsgAt = new Date(rawLastMsgAt);
+                const isDifferentDay = lastMsgAt.getUTCFullYear() !== now.getUTCFullYear() ||
+                                       lastMsgAt.getUTCMonth() !== now.getUTCMonth() ||
+                                       lastMsgAt.getUTCDate() !== now.getUTCDate();
+                if (isDifferentDay) {
+                    msgCount = 0;
+                    localStorage.setItem("lexino_local_msg_count", "0");
+                }
+            }
+            
+            if (msgCount >= limit) {
+                const duration = currentTier === "STUDENT" ? 30 * 60 * 1000 : 60 * 60 * 1000;
+                const cooldownEnd = new Date(Date.now() + duration);
+                localStorage.setItem("lexino_local_cooldown_until", cooldownEnd.toISOString());
+                triggerCooldownTimer(cooldownEnd);
+                return true;
+            }
+            
+            return false;
+        }
+
+        function incrementClientSideMsgCount() {
+            const countStr = localStorage.getItem("lexino_local_msg_count") || "0";
+            const msgCount = parseInt(countStr, 10) + 1;
+            localStorage.setItem("lexino_local_msg_count", msgCount.toString());
+            localStorage.setItem("lexino_local_last_msg_at", new Date().toISOString());
+        }
+
         function setWallpaper(name) {
+            const currentTier = window.lexinoUserTier || "FREE";
+            if (!isWallpaperAllowedForTier(name, currentTier)) {
+                if (confirm(`The "${name.charAt(0).toUpperCase() + name.slice(1)}" celestial wallpaper is exclusive to the Student+ plan. Would you like to view our plans to upgrade?`)) {
+                    window.location.href = "/#pricing";
+                }
+                return;
+            }
             const safe = allowedWallpapers.includes(name) ? name : "none";
             applyWallpaper(safe);
             localStorage.setItem(WALLPAPER_STORAGE_KEY, safe);
@@ -419,7 +592,9 @@
 
         function loadWallpaper() {
             const saved = localStorage.getItem(WALLPAPER_STORAGE_KEY) || "none";
-            applyWallpaper(saved);
+            const currentTier = window.lexinoUserTier || "FREE";
+            const validated = isWallpaperAllowedForTier(saved, currentTier) ? saved : "none";
+            applyWallpaper(validated);
             updateWallpaperOptions();
         }
 
@@ -476,6 +651,13 @@
             return name ? name.charAt(0).toUpperCase() : "U";
         }
 
+        function getUserAvatarMarkup() {
+            if (currentProfile.imageUrl) {
+                return `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+            }
+            return getUserInitial();
+        }
+
         function syncProfileUI() {
             const nameEl = document.getElementById("headerProfileName");
             const avatarEl = document.querySelector(".header-avatar");
@@ -492,7 +674,11 @@
             }
 
             if (avatarEl) {
-                avatarEl.textContent = initial;
+                if (currentProfile.imageUrl) {
+                    avatarEl.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                } else {
+                    avatarEl.textContent = initial;
+                }
                 avatarEl.title = safeName;
             }
 
@@ -502,7 +688,11 @@
             }
 
             if (sidebarAccountInitial) {
-                sidebarAccountInitial.textContent = initial;
+                if (currentProfile.imageUrl) {
+                    sidebarAccountInitial.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                } else {
+                    sidebarAccountInitial.textContent = initial;
+                }
             }
 
             if (sidebarAccountName) {
@@ -516,9 +706,73 @@
                 sidebarAccountHandle.textContent = handle;
                 sidebarAccountHandle.title = handle;
             }
+            updateModelLocksUI(window.lexinoUserTier || "FREE");
+        }
+
+        function updateModelLocksUI(tier) {
+            const options = document.querySelectorAll('.model-option');
+            options.forEach((option) => {
+                const onclickAttr = option.getAttribute('onclick') || '';
+                
+                let spanEl = option.querySelector('.lock-label');
+                if (spanEl) spanEl.remove();
+
+                let isLocked = false;
+                if (onclickAttr.includes('gpt-4o') && tier === 'FREE') {
+                    isLocked = true;
+                } else if (onclickAttr.includes('claude-3-5-sonnet') && (tier === 'FREE' || tier === 'STUDENT')) {
+                    isLocked = true;
+                }
+
+                if (isLocked) {
+                    option.classList.add('premium-locked-option');
+                    const lockLabel = document.createElement('span');
+                    lockLabel.className = 'lock-label';
+                    lockLabel.innerHTML = ' 🔒';
+                    lockLabel.style.marginLeft = 'auto';
+                    lockLabel.style.fontSize = '12px';
+                    lockLabel.style.opacity = '0.65';
+                    option.style.display = 'flex';
+                    option.style.alignItems = 'center';
+                    option.appendChild(lockLabel);
+                } else {
+                    option.classList.remove('premium-locked-option');
+                }
+            });
         }
 
         function loadProfile() {
+            const clerkEl = document.getElementById("clerk-user-data");
+            if (clerkEl) {
+                try {
+                    const data = JSON.parse(clerkEl.textContent);
+                    if (data && data.name) {
+                        currentProfile = {
+                            name: data.name,
+                            email: data.email || "",
+                            bio: "",
+                            imageUrl: data.imageUrl || ""
+                        };
+                        window.lexinoUserTier = data.tier || "FREE";
+                        window.lexinoCooldownUntil = data.cooldownUntil || null;
+                        
+                        if (window.lexinoCooldownUntil && new Date(window.lexinoCooldownUntil) > new Date()) {
+                            triggerCooldownTimer(new Date(window.lexinoCooldownUntil));
+                        } else {
+                            checkClientSideRateLimit();
+                        }
+                        
+                        syncProfileUI();
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to load Clerk profile details:", e);
+                }
+            }
+            
+            // Check client rate limit as a local fallback
+            checkClientSideRateLimit();
+
             const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
             if (!raw) {
                 currentProfile = { ...defaultProfile };
@@ -542,18 +796,7 @@
         }
 
         function openProfileModal() {
-            const modal = document.getElementById("profileModal");
-            if (!modal) return;
-
-            const nameInput = document.getElementById("profileNameInput");
-            const emailInput = document.getElementById("profileEmailInput");
-            const bioInput = document.getElementById("profileBioInput");
-
-            if (nameInput) nameInput.value = currentProfile.name || "";
-            if (emailInput) emailInput.value = currentProfile.email || "";
-            if (bioInput) bioInput.value = currentProfile.bio || "";
-
-            modal.classList.add("active");
+            window.location.href = '/account';
         }
 
         function closeProfileModal() {
@@ -579,6 +822,35 @@
         }
 
         function getEmptyStateMarkup() {
+            if (window.currentAssistant === "timetable-lai") {
+                return `
+                    <div class="empty-state timetable-lai-empty" id="emptyState">
+                        <div class="lai-badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px; letter-spacing: 0.5px; text-transform: uppercase;">
+                            <span>✨</span> Specialized Mentor Mode
+                        </div>
+                        <h2 style="color: #fbbf24; text-shadow: 0 0 15px rgba(251, 191, 36, 0.35); font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px;">✨ Timetable LAI</h2>
+                        <p style="color: #94a3b8; font-size: 1rem; max-width: 500px; margin: 0 auto 25px; line-height: 1.5; font-weight: 500;">Your AI Academic Strategist & Disciplined Life Architect. Powered by Llama 3.3 (70B) with 45+ years of strategic mentoring experience.</p>
+                        <div class="suggestion-chips">
+                            <div class="chip" onclick="useSuggestion('Build SSC CGL strategy')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
+                                Build SSC CGL strategy
+                            </div>
+                            <div class="chip" onclick="useSuggestion('Create a 16-hour discipline plan')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
+                                Create a 16-hour discipline plan
+                            </div>
+                            <div class="chip" onclick="useSuggestion('Fix inconsistent study habits')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
+                                Fix inconsistent study habits
+                            </div>
+                            <div class="chip" onclick="useSuggestion('Optimize revision cycles')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
+                                Optimize revision cycles
+                            </div>
+                            <div class="chip" onclick="useSuggestion('Build a realistic UPSC roadmap')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
+                                Build a realistic UPSC roadmap
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             const subtitle = isTempMode
                 ? 'Temporary chat is active. This conversation will not be saved.'
                 : 'How can I help you today?';
@@ -846,6 +1118,15 @@
             const menu = document.getElementById("sidebarAccountMenu");
             if (!menu) return;
             menu.classList.remove("active");
+            
+            const submenu = document.getElementById("sidebarHelpSubmenu");
+            if (submenu) submenu.classList.remove("active");
+            const helpBtn = document.getElementById("helpMenuBtn");
+            if (helpBtn) {
+                const arrow = helpBtn.querySelector(".arrow-right");
+                if (arrow) arrow.style.transform = "rotate(0deg)";
+            }
+
             const sidebar = document.getElementById("sidebar");
             if (sidebar && !document.getElementById("railQuickMenu")?.classList.contains("active")) {
                 sidebar.classList.remove("account-menu-open");
@@ -855,7 +1136,245 @@
         }
 
         function logoutAccount() {
-            alert("Logout action can be connected to auth later.");
+            const modal = document.getElementById("logoutConfirmModal");
+            if (modal) {
+                modal.classList.add("active");
+            } else {
+                confirmLogout();
+            }
+        }
+
+        window.closeLogoutConfirmModal = function() {
+            const modal = document.getElementById("logoutConfirmModal");
+            if (modal) modal.classList.remove("active");
+        }
+
+        window.confirmLogout = function() {
+            if (window.clerkSignOut) {
+                window.clerkSignOut();
+            } else if (window.Clerk) {
+                window.Clerk.signOut(() => {
+                    window.location.href = "/login";
+                });
+            } else {
+                window.location.href = "/login";
+            }
+        }
+
+        window.closePremiumLockModal = function() {
+            const modal = document.getElementById("premiumLockModal");
+            if (modal) modal.classList.remove("active");
+        }
+
+        window.navigateToPricingFromLock = function() {
+            window.closePremiumLockModal();
+            window.location.href = "/pricing";
+        }
+
+        window.showPremiumLockModal = function(mode) {
+            const modal = document.getElementById("premiumLockModal");
+            if (!modal) return;
+
+            const iconEl = document.getElementById("lockModalIcon");
+            const titleEl = document.getElementById("lockModalTitle");
+            const subtitleEl = document.getElementById("lockModalSubtitle");
+            const featuresEl = document.getElementById("lockModalFeatures");
+
+            if (mode === 'timetable-lai') {
+                if (iconEl) iconEl.textContent = "📅";
+                if (titleEl) titleEl.textContent = "Timetable LAI";
+                if (subtitleEl) subtitleEl.textContent = "Your AI Academic Strategist";
+                if (featuresEl) {
+                    featuresEl.innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #e2e8f0; font-weight: 500;">
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #fbbf24; font-weight: bold;">✔</span> Deep Goal Analysis</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #fbbf24; font-weight: bold;">✔</span> Burnout Prevention</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #fbbf24; font-weight: bold;">✔</span> Strategic Planning</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #fbbf24; font-weight: bold;">✔</span> 45+ Years Mentor Intelligence</div>
+                        </div>
+                    `;
+                }
+            } else if (mode === 'predict-lai') {
+                if (iconEl) iconEl.textContent = "🔮";
+                if (titleEl) titleEl.textContent = "Predict LAI";
+                if (subtitleEl) subtitleEl.textContent = "Your AI Prediction Engine";
+                if (featuresEl) {
+                    featuresEl.innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #e2e8f0; font-weight: 500;">
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #a855f7; font-weight: bold;">✔</span> Advanced Trend Forecasting</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #a855f7; font-weight: bold;">✔</span> Academic Outcome Simulation</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #a855f7; font-weight: bold;">✔</span> Pattern Analytics & Insights</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #a855f7; font-weight: bold;">✔</span> Real-Time Statistical Projections</div>
+                        </div>
+                    `;
+                }
+            } else if (mode === 'gpt-4o') {
+                if (iconEl) iconEl.textContent = "💬";
+                if (titleEl) titleEl.textContent = "ChatGPT (GPT-4o)";
+                if (subtitleEl) subtitleEl.textContent = "Balanced & Creative AI Partner";
+                if (featuresEl) {
+                    featuresEl.innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #e2e8f0; font-weight: 500;">
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10a37f; font-weight: bold;">✔</span> Fast & Balanced Reasoning</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10a37f; font-weight: bold;">✔</span> Advanced Creative Generation</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10a37f; font-weight: bold;">✔</span> High-Accuracy Student Queries</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10a37f; font-weight: bold;">✔</span> Included in Student+ Tier</div>
+                        </div>
+                    `;
+                }
+            } else if (mode === 'claude-3-5-sonnet') {
+                if (iconEl) iconEl.textContent = "✍️";
+                if (titleEl) titleEl.textContent = "Claude 3.5 Sonnet";
+                if (subtitleEl) subtitleEl.textContent = "Nuanced & Deep Reasoning Engine";
+                if (featuresEl) {
+                    featuresEl.innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #e2e8f0; font-weight: 500;">
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #d97757; font-weight: bold;">✔</span> Elite Coding & Analytical Skills</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #d97757; font-weight: bold;">✔</span> Long-Form Composition & Writing</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #d97757; font-weight: bold;">✔</span> Nuanced Logic & Problem Solving</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #d97757; font-weight: bold;">✔</span> Exclusive to Pro (Unlimited) Tier</div>
+                        </div>
+                    `;
+                }
+            } else {
+                if (iconEl) iconEl.textContent = "🧭";
+                if (titleEl) titleEl.textContent = "Explore LAIs";
+                if (subtitleEl) subtitleEl.textContent = "Explore Specialized AI Models";
+                if (featuresEl) {
+                    featuresEl.innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #e2e8f0; font-weight: 500;">
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #3b82f6; font-weight: bold;">✔</span> Instant Access to Premium Agents</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #3b82f6; font-weight: bold;">✔</span> Curated Domain-Specific Strategic AIs</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #3b82f6; font-weight: bold;">✔</span> High-Performance Reasoning Engines</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #3b82f6; font-weight: bold;">✔</span> Personalized Learning Ecosystem</div>
+                        </div>
+                    `;
+                }
+            }
+
+            modal.classList.add("active");
+        }
+
+        window.setAssistantMode = function(mode) {
+            window.currentAssistant = mode;
+
+            const headerLogo = document.getElementById("headerLogo");
+            const headerSubtitle = document.getElementById("headerSubtitle");
+            const textarea = document.getElementById("messageInput");
+
+            if (mode === 'timetable-lai') {
+                if (headerLogo) {
+                    headerLogo.innerHTML = "✨ Timetable LAI";
+                    headerLogo.style.background = "linear-gradient(110deg, #fbbf24 0%, #f59e0b 28%, #fef3c7 43%, #ffffff 50%, #fde047 57%, #fbbf24 78%, #d97706 100%)";
+                    headerLogo.style.backgroundSize = "260% 100%";
+                    headerLogo.style.webkitBackgroundClip = "text";
+                    headerLogo.style.webkitTextFillColor = "transparent";
+                    headerLogo.style.filter = "drop-shadow(0 0 14px rgba(251, 191, 36, 0.25))";
+                }
+                if (headerSubtitle) {
+                    headerSubtitle.style.display = "block";
+                    headerSubtitle.textContent = "Your AI Academic Strategist";
+                    headerSubtitle.style.color = "#fbbf24";
+                }
+                if (textarea) {
+                    textarea.placeholder = "Tell me your goal, weaknesses, schedule, and study capacity...";
+                }
+                applyModelAccent("timetable-ai");
+            } else {
+                if (headerLogo) {
+                    headerLogo.innerHTML = "LEXINO AI";
+                    headerLogo.style.background = "linear-gradient(110deg, #10a37f 0%, #34d399 28%, #d1fae5 43%, #ffffff 50%, #86efac 57%, #10a37f 78%, #0d8c6d 100%)";
+                    headerLogo.style.backgroundSize = "260% 100%";
+                    headerLogo.style.webkitBackgroundClip = "text";
+                    headerLogo.style.webkitTextFillColor = "transparent";
+                    headerLogo.style.filter = "drop-shadow(0 0 14px rgba(16, 163, 127, 0.18))";
+                }
+                if (headerSubtitle) {
+                    headerSubtitle.style.display = "none";
+                }
+                if (textarea) {
+                    textarea.placeholder = "Ask anything...";
+                }
+                const modelSelect = document.getElementById('modelSelect');
+                const savedModel = modelSelect ? modelSelect.value : 'llama-3.1-8b-instant';
+                applyModelAccent(savedModel);
+            }
+
+            const messagesDiv = document.getElementById('chatMessages');
+            if (messagesDiv && (messagesDiv.querySelector(".empty-state") || messagesDiv.innerHTML.trim() === "" || currentConversation.length === 0)) {
+                messagesDiv.style.transition = "opacity 0.15s ease-in-out";
+                messagesDiv.style.opacity = "0";
+                setTimeout(() => {
+                    messagesDiv.innerHTML = getEmptyStateMarkup();
+                    messagesDiv.style.opacity = "1";
+                }, 150);
+            }
+        }
+
+        window.laiConfig = {
+            "timetable-lai": true,
+            "predict-lai": false,
+            "explore-lais": true
+        };
+
+        function updateLaiMenuUI() {
+            const predictBtn = document.getElementById("predictMenuBtn");
+            const timetableBtn = document.getElementById("timetableMenuBtn");
+            const exploreBtn = document.getElementById("exploreMenuBtn");
+
+            if (predictBtn) {
+                const active = window.laiConfig["predict-lai"] !== false;
+                predictBtn.style.opacity = active ? "1" : "0.45";
+                predictBtn.style.pointerEvents = active ? "auto" : "none";
+                predictBtn.title = active ? "" : "Predict LAI (Deactivated)";
+            }
+
+            if (timetableBtn) {
+                const active = window.laiConfig["timetable-lai"] !== false;
+                timetableBtn.style.opacity = active ? "1" : "0.45";
+                timetableBtn.title = active ? "" : "Timetable LAI (Deactivated)";
+            }
+
+            if (exploreBtn) {
+                const active = window.laiConfig["explore-lais"] !== false;
+                exploreBtn.style.opacity = active ? "1" : "0.45";
+                timetableBtn.title = active ? "" : "Explore LAIs (Deactivated)";
+            }
+        }
+
+        async function fetchLaiConfig() {
+            try {
+                const res = await fetch('/api/config');
+                if (res.ok) {
+                    window.laiConfig = await res.json();
+                    updateLaiMenuUI();
+                }
+            } catch (e) {
+                console.warn('Failed to load LAI config:', e);
+            }
+        }
+
+        window.triggerLAIMode = function(mode) {
+            // Admin toggle override check
+            if (mode !== 'default' && window.laiConfig && window.laiConfig[mode] === false) {
+                alert(`The ${mode === 'predict-lai' ? 'Predict LAI' : (mode === 'timetable-lai' ? 'Timetable LAI' : 'Explore LAIs')} agent is currently deactivated by the administrator for system maintenance.`);
+                return;
+            }
+
+            const tier = window.lexinoUserTier || "FREE";
+            
+            if (mode === 'default') {
+                window.setAssistantMode('default');
+                startNewChat();
+                return;
+            }
+
+            if (tier === "FREE") {
+                window.showPremiumLockModal(mode);
+            } else {
+                window.setAssistantMode(mode);
+                startNewChat();
+            }
         }
 
         function openChatContextMenu(event, chatId) {
@@ -1248,7 +1767,7 @@
                             const isAssistant = message.role === "assistant";
                             return `
                                 <div class="message ${isAssistant ? "ai" : "user"}">
-                                    <div class="message-avatar">${isAssistant ? "AI" : getUserInitial()}</div>
+                                    <div class="message-avatar">${isAssistant ? "AI" : getUserAvatarMarkup()}</div>
                                     <div class="message-content">${isAssistant ? `<div>${escapeHtml(message.content)}</div>` : escapeHtml(message.content)}</div>
                                 </div>
                             `;
@@ -1394,12 +1913,149 @@
             }
         }
 
-        function openHelp() {
-            alert('Help section will be available soon.');
-        }
+        window.openFeedbackModal = function() {
+            const modal = document.getElementById("feedbackModal");
+            if (modal) {
+                modal.classList.add("active");
+                window.resetFeedbackForm();
+            }
+        };
+
+        window.closeFeedbackModal = function() {
+            const modal = document.getElementById("feedbackModal");
+            if (modal) modal.classList.remove("active");
+        };
+
+        window.toggleHelpSubmenu = function(event) {
+            event.stopPropagation();
+            const submenu = document.getElementById("sidebarHelpSubmenu");
+            const btn = document.getElementById("helpMenuBtn");
+            if (submenu && btn) {
+                const isActive = submenu.classList.toggle("active");
+                const arrow = btn.querySelector(".arrow-right");
+                if (arrow) {
+                    arrow.style.transform = isActive ? "rotate(90deg)" : "rotate(0deg)";
+                }
+            }
+        };
+
+        window.handleFeedbackSubmit = function(event) {
+            event.preventDefault();
+            const name = document.getElementById("feedbackName").value;
+            const email = document.getElementById("feedbackEmail").value;
+            const rating = document.getElementById("feedbackRating") ? document.getElementById("feedbackRating").value : 5;
+            const msg = document.getElementById("feedbackMessage").value;
+            
+            if (!name || !email || !msg) return;
+            
+            const btn = document.getElementById("feedbackSubmitBtn");
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Sending...`;
+            
+            fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, email, msg, rating })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("feedbackFormContainer");
+                container.innerHTML = `
+                    <div class="success-animation" style="text-align: center; padding: 2rem 0;">
+                        <div class="success-checkmark" style="width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0, 240, 255, 0.1); border: 2px solid var(--color-accent); font-size: 2rem; color: var(--color-accent); text-shadow: 0 0 10px var(--color-accent); animation: pulse 1.5s infinite alternate;">✓</div>
+                        <h3 style="color: var(--color-accent); font-family: 'Orbitron', sans-serif; text-align: center; margin-top: 1rem;">Feedback Received!</h3>
+                        <p style="text-align: center; opacity: 0.8; font-size: 0.9rem;">Thank you for helping us shape Lexino AI.</p>
+                        <button class="profile-btn primary" style="margin: 1.5rem auto 0; display: block;" onclick="resetFeedbackForm()">Send Another</button>
+                    </div>
+                `;
+            })
+            .catch(err => {
+                console.error('Error submitting feedback:', err);
+                btn.disabled = false;
+                btn.textContent = 'Submit Feedback';
+            });
+        };
+
+        window.handleSupportSubmit = function(event) {
+            event.preventDefault();
+            const email = document.getElementById("supportEmail").value;
+            const topic = document.getElementById("supportTopic").value;
+            const msg = document.getElementById("supportMessage").value;
+            
+            if (!email || !msg) return;
+            
+            const btn = document.getElementById("supportSubmitBtn");
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Processing...`;
+            
+            setTimeout(() => {
+                const container = document.getElementById("supportFormContainer");
+                container.innerHTML = `
+                    <div class="success-animation" style="text-align: center; padding: 2rem 0;">
+                        <div class="success-checkmark" style="width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0, 240, 255, 0.1); border: 2px solid var(--color-accent); font-size: 2rem; color: var(--color-accent); text-shadow: 0 0 10px var(--color-accent); animation: pulse 1.5s infinite alternate;">✓</div>
+                        <h3 style="color: var(--color-accent); font-family: 'Orbitron', sans-serif; text-align: center; margin-top: 1rem;">Ticket Logged!</h3>
+                        <p style="text-align: center; opacity: 0.8; font-size: 0.9rem;">Our neural support matrix will contact you shortly.</p>
+                        <button class="profile-btn primary" style="margin: 1.5rem auto 0; display: block;" onclick="resetSupportForm()">New Ticket</button>
+                    </div>
+                `;
+            }, 1000);
+        };
+
+        window.resetFeedbackForm = function() {
+            const container = document.getElementById("feedbackFormContainer");
+            if (container) {
+                container.innerHTML = `
+                    <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)">
+                        <div class="setting-item">
+                            <label>Name</label>
+                            <input type="text" id="feedbackName" placeholder="Your name" required>
+                        </div>
+                        <div class="setting-item">
+                            <label>Email</label>
+                            <input type="email" id="feedbackEmail" placeholder="yourname@domain.com" required>
+                        </div>
+                        <div class="setting-item">
+                            <label>Feedback Message</label>
+                            <textarea id="feedbackMessage" rows="4" placeholder="Share your thoughts with Lexino AI..." required></textarea>
+                        </div>
+                        <button type="submit" id="feedbackSubmitBtn" class="profile-btn primary" style="width: 100%; margin-top: 1rem;">Submit Feedback</button>
+                    </form>
+                `;
+            }
+        };
+
+        window.resetSupportForm = function() {
+            const container = document.getElementById("supportFormContainer");
+            if (container) {
+                container.innerHTML = `
+                    <form id="supportForm" onsubmit="handleSupportSubmit(event)">
+                        <div class="setting-item">
+                            <label>Email Address</label>
+                            <input type="email" id="supportEmail" placeholder="yourname@domain.com" required>
+                        </div>
+                        <div class="setting-item">
+                            <label>Category</label>
+                            <select id="supportTopic" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 8px; width: 100%; outline: none; margin-bottom: 1rem;">
+                                <option value="general" style="background: #0d0d0d;">General Query</option>
+                                <option value="bug" style="background: #0d0d0d;">Report a Problem / Bug</option>
+                                <option value="billing" style="background: #0d0d0d;">Billing & Account</option>
+                                <option value="abuse" style="background: #0d0d0d;">Report Abuse</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>Description</label>
+                            <textarea id="supportMessage" rows="4" placeholder="Describe your query or issue..." required></textarea>
+                        </div>
+                        <button type="submit" id="supportSubmitBtn" class="profile-btn primary" style="width: 100%; margin-top: 1rem;">Submit Ticket</button>
+                    </form>
+                `;
+            }
+        };
 
         function upgradePlan() {
-            alert('Upgrade to Pro for unlimited access!');
+            window.location.href = "/pricing";
         }
 
         function startTempChat() {
@@ -1534,9 +2190,16 @@
             }
 
             if (!isRecording) {
+                const input = document.getElementById('messageInput');
+                voiceInitialText = input ? input.value : '';
+                if (voiceInitialText && !voiceInitialText.endsWith(' ')) {
+                    voiceInitialText += ' ';
+                }
+
                 recognition = new webkitSpeechRecognition();
                 recognition.continuous = true;
                 recognition.interimResults = true;
+                recognitionActive = true;
                 
                 recognition.onstart = function() {
                     isRecording = true;
@@ -1546,26 +2209,62 @@
                 };
                 
                 recognition.onresult = function(event) {
-                    let transcript = '';
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        transcript += event.results[i][0].transcript;
+                    let finalSessionText = '';
+                    let interimSessionText = '';
+                    for (let i = 0; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalSessionText += event.results[i][0].transcript + ' ';
+                        } else {
+                            interimSessionText += event.results[i][0].transcript;
+                        }
                     }
-                    const input = document.getElementById('messageInput');
-                    input.value = transcript;
-                    autoResize(input);
-                    updateComposerState();
+                    
+                    finalSessionText = finalSessionText.replace(/\s+/g, ' ');
+                    
+                    const inputEl = document.getElementById('messageInput');
+                    if (inputEl) {
+                        let combined = voiceInitialText + finalSessionText + interimSessionText;
+                        inputEl.value = combined.trim();
+                        autoResize(inputEl);
+                        updateComposerState();
+                    }
                 };
                 
                 recognition.onerror = function(event) {
                     console.error('Speech recognition error', event.error);
-                    isRecording = false;
-                    micBtn.classList.remove('recording');
-                    micBtn.setAttribute('aria-label', 'Start voice input');
-                    micBtn.title = 'Voice input';
+                    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                        recognitionActive = false;
+                        isRecording = false;
+                        micBtn.classList.remove('recording');
+                        micBtn.setAttribute('aria-label', 'Start voice input');
+                        micBtn.title = 'Voice input';
+                    }
+                };
+
+                recognition.onend = function() {
+                    if (recognitionActive) {
+                        const inputEl = document.getElementById('messageInput');
+                        if (inputEl) {
+                            voiceInitialText = inputEl.value;
+                            if (voiceInitialText && !voiceInitialText.endsWith(' ')) {
+                                voiceInitialText += ' ';
+                            }
+                        }
+                        setTimeout(() => {
+                            if (recognitionActive) {
+                                try {
+                                    recognition.start();
+                                } catch (e) {
+                                    console.error('Failed to restart recognition:', e);
+                                }
+                            }
+                        }, 300);
+                    }
                 };
                 
                 recognition.start();
             } else {
+                recognitionActive = false;
                 recognition.stop();
                 isRecording = false;
                 micBtn.classList.remove('recording');
@@ -1605,7 +2304,70 @@
             button.setAttribute('aria-expanded', String(isOpen));
         }
 
-        function selectComposerModel(label, value) {
+        function applyModelAccent(model) {
+            const root = document.documentElement;
+            let accentRgb = "16, 163, 127";
+            let accentStrongRgb = "52, 211, 153";
+            let hexAccent = "#10a37f";
+            let hexHover = "#0d8c6d";
+
+            if (model === "llama-3.1-8b-instant") {
+                accentRgb = "6, 182, 212";
+                accentStrongRgb = "34, 211, 238";
+                hexAccent = "#06b6d4";
+                hexHover = "#0891b2";
+            } else if (model === "llama-3.3-70b-versatile") {
+                accentRgb = "139, 92, 246";
+                accentStrongRgb = "168, 85, 247";
+                hexAccent = "#8b5cf6";
+                hexHover = "#7c3aed";
+            } else if (model === "gpt-4o") {
+                accentRgb = "16, 163, 127";
+                accentStrongRgb = "52, 211, 153";
+                hexAccent = "#10a37f";
+                hexHover = "#0d8c6d";
+            } else if (model === "claude-3-5-sonnet") {
+                accentRgb = "217, 119, 87";
+                accentStrongRgb = "244, 164, 96";
+                hexAccent = "#d97757";
+                hexHover = "#cc6c4c";
+            } else if (model === "timetable-ai") {
+                accentRgb = "251, 191, 36";
+                accentStrongRgb = "245, 158, 11";
+                hexAccent = "#fbbf24";
+                hexHover = "#d97706";
+            }
+
+            root.style.setProperty("--composer-accent-rgb", accentRgb);
+            root.style.setProperty("--composer-accent-strong-rgb", accentStrongRgb);
+            root.style.setProperty("--user-bubble-accent-rgb", accentRgb);
+            root.style.setProperty("--user-bubble-accent-strong-rgb", accentStrongRgb);
+            root.style.setProperty("--accent-primary", hexAccent);
+            root.style.setProperty("--accent-hover", hexHover);
+            root.style.setProperty("--composer-border-focus", `rgba(${accentStrongRgb}, 0.42)`);
+        }
+
+        function selectComposerModel(label, value, isInitialSync = false) {
+            const tier = window.lexinoUserTier || "FREE";
+            
+            // Check tier permissions
+            if (value === 'gpt-4o' && tier === 'FREE') {
+                if (isInitialSync) {
+                    selectComposerModel('Fast', 'llama-3.1-8b-instant', false);
+                } else {
+                    window.showPremiumLockModal('gpt-4o');
+                }
+                return;
+            }
+            if (value === 'claude-3-5-sonnet' && (tier === 'FREE' || tier === 'STUDENT')) {
+                if (isInitialSync) {
+                    selectComposerModel('Fast', 'llama-3.1-8b-instant', false);
+                } else {
+                    window.showPremiumLockModal('claude-3-5-sonnet');
+                }
+                return;
+            }
+
             const modelSelect = document.getElementById('modelSelect');
             const modelLabel = document.getElementById('modelSelectorLabel');
 
@@ -1621,16 +2383,20 @@
                 option.classList.toggle('active', isActive);
                 option.setAttribute('aria-selected', String(isActive));
             });
+
+            applyModelAccent(value);
+            localStorage.setItem("lexino_selected_model", value);
             closeModelMenu();
         }
 
         function syncComposerModelFromSelect() {
             const modelSelect = document.getElementById('modelSelect');
             const selectedValue = modelSelect ? modelSelect.value : 'llama-3.1-8b-instant';
-            selectComposerModel(composerModels[selectedValue] || 'Fast', selectedValue);
+            selectComposerModel(composerModels[selectedValue] || 'Fast', selectedValue, true);
         }
 
         async function sendMessage() {
+            if (checkClientSideRateLimit()) return;
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             
@@ -1656,7 +2422,7 @@
             const userMsg = document.createElement('div');
             userMsg.className = 'message user';
             userMsg.innerHTML = `
-                <div class="message-avatar">${getUserInitial()}</div>
+                <div class="message-avatar">${getUserAvatarMarkup()}</div>
                 <div class="message-content">${escapeHtml(displayMsg)}</div>
             `;
             wrapper.appendChild(userMsg);
@@ -1750,16 +2516,46 @@
             scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages });
 
             try {
-                const aiResponse = await getResponse(content, historyForApi);
+                const modelSelect = document.getElementById('modelSelect');
+                const maxTokensSelect = document.getElementById('maxTokens');
+                let selectedModelValue = modelSelect ? modelSelect.value : 'llama-3.1-8b-instant';
+                if (window.currentAssistant === 'timetable-lai') {
+                    selectedModelValue = 'timetable-ai';
+                }
+                const selectedMaxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 512;
+
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        selectedModel: selectedModelValue,
+                        maxTokens: selectedMaxTokens,
+                        content: memoryUserText,
+                        history: historyForApi,
+                        sessionId: activeChatId
+                    })
+                });
+
                 typingMsg.remove();
-                
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    if (response.status === 429 && errData.cooldownUntil) {
+                        window.lexinoCooldownUntil = errData.cooldownUntil;
+                        triggerCooldownTimer(errData.cooldownUntil);
+                    }
+                    throw new Error(errData?.error || `Server error (${response.status})`);
+                }
+
+                incrementClientSideMsgCount();
+
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'message ai';
                 aiMsg.innerHTML = `
                     <div class="message-avatar">AI</div>
                     <div class="message-content">
-                        <div>${renderMarkdown(aiResponse)}</div>
-                        <div class="message-actions">
+                        <div class="streaming-text-container"></div>
+                        <div class="message-actions" style="display: none;">
                             <button class="action-btn" onclick="copyMessage(this)" title="Copy">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1800,9 +2596,47 @@
                     </div>
                 `;
                 wrapper.appendChild(aiMsg);
+                const textContainer = aiMsg.querySelector('.streaming-text-container');
+                const actionsContainer = aiMsg.querySelector('.message-actions');
+
+                if (!response.body) {
+                    throw new Error("No readable response stream found.");
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let accumulatedReply = '';
+                let streamBuffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    streamBuffer += decoder.decode(value, { stream: true });
+                    const lines = streamBuffer.split('\n');
+                    streamBuffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (trimmed.startsWith('data: ')) {
+                            try {
+                                const parsed = JSON.parse(trimmed.slice(6));
+                                if (parsed.text) {
+                                    accumulatedReply += parsed.text;
+                                    textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
+                                    scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                if (actionsContainer) {
+                    actionsContainer.style.display = 'flex';
+                }
                 ensureMessageMoreMenus(aiMsg);
                 scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
-                currentConversation.push({ role: "assistant", content: String(aiResponse || "") });
+                currentConversation.push({ role: "assistant", content: accumulatedReply });
                 saveChatState();
             } catch (err) {
                 typingMsg.remove();
@@ -2303,6 +3137,7 @@
             closeSidebarAccountMenu();
             closeMobileHeaderMenu();
             closeModelMenu();
+            closeFeedbackModal();
         });
 
         document.addEventListener("pointerdown", handleMessageMoreOutsidePointer, true);
@@ -2317,10 +3152,69 @@
         updateSidebarUI();
         updateTempModeUI();
         loadWallpaper();
+        fetchLaiConfig();
         loadSidebarBrandImage();
         loadProfile();
         initMobileAppShell();
+        
+        // Restore preferred model on startup
+        const savedModel = localStorage.getItem("lexino_selected_model") || "llama-3.1-8b-instant";
+        const modelSelect = document.getElementById('modelSelect');
+        if (modelSelect) {
+            modelSelect.value = savedModel;
+        }
         syncComposerModelFromSelect();
         updateComposerState();
         loadChatState();
+
+        // Performance Optimization & Feedback Popup triggers
+        initPerformanceModeDetection();
+        checkIntelligentFeedbackPopup();
+
+        function initPerformanceModeDetection() {
+            try {
+                const isMobile = window.innerWidth <= 768;
+                const isLowHardware = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+                                      (navigator.deviceMemory && navigator.deviceMemory <= 4);
+                if (isMobile || isLowHardware) {
+                    document.body.classList.add("performance-mode");
+                }
+            } catch (e) {
+                console.warn("Performance mode detection error:", e);
+            }
+        }
+
+        function checkIntelligentFeedbackPopup() {
+            try {
+                let start = localStorage.getItem("lexino_usage_start");
+                if (!start) {
+                    localStorage.setItem("lexino_usage_start", Date.now().toString());
+                    return;
+                }
+                if (localStorage.getItem("feedback_popup_shown") === "true") return;
+
+                const elapsed = Date.now() - parseInt(start, 10);
+                const tenMinutes = 10 * 60 * 1000;
+                if (elapsed >= tenMinutes) {
+                    setTimeout(() => {
+                        if (typeof openFeedbackModal === 'function') {
+                            openFeedbackModal();
+                            localStorage.setItem("feedback_popup_shown", "true");
+                        }
+                    }, 4000);
+                }
+            } catch (e) {
+                console.warn("Feedback popup check error:", e);
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            const wallpaperLayer = document.getElementById("animatedWallpaper");
+            if (!wallpaperLayer) return;
+            if (document.hidden) {
+                wallpaperLayer.classList.add("wallpaper-paused");
+            } else {
+                wallpaperLayer.classList.remove("wallpaper-paused");
+            }
+        });
     

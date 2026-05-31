@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import { ClientScriptLoader } from '../components/ClientScriptLoader';
 
-function getWebsiteBody() {
+export function getWebsiteBody() {
   const html = fs
     .readFileSync(path.join(process.cwd(), 'Lexino Website', 'index.html'), 'utf8')
     .replace(/\r\n/g, '\n');
@@ -20,13 +22,24 @@ function getWebsiteBody() {
     );
 }
 
-export default function LandingPage() {
-  const websiteMarkup = getWebsiteBody();
+export default async function LandingPage() {
+  const { userId } = await auth();
+
+  let websiteMarkup = getWebsiteBody();
+
+  if (userId) {
+    websiteMarkup = websiteMarkup
+      .replaceAll('Experience Lexino AI Now 🚀', 'Go to Chat Dashboard 🚀')
+      .replaceAll('Get Started', 'Go to Chat')
+      .replaceAll('Get Student Plan', 'Go to Chat')
+      .replaceAll('Get Pro Access', 'Go to Chat')
+      .replaceAll('navigateToTry()', "window.location.href='/chat'");
+  }
 
   return (
     <>
       <link rel="stylesheet" href="/lexino-website/styles.css" />
-      <div dangerouslySetInnerHTML={{ __html: websiteMarkup }} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: websiteMarkup }} />
       <ClientScriptLoader scripts={['/lexino-website/script.js']} />
     </>
   );

@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
+      signInUrl="/login"
+      signUpUrl="/signup"
       signInForceRedirectUrl="/chat"
       signUpForceRedirectUrl="/chat"
       signInFallbackRedirectUrl="/chat"

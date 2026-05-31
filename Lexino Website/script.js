@@ -94,7 +94,7 @@ window.addEventListener('DOMContentLoaded', () => {
 //  // Relative path, fast & instant
 
 function navigateToTry() {
-    window.location.href = '/sign-in?redirect_url=/chat';
+    window.location.href = '/login?redirect_url=/chat';
 }
 
 function navigateToHome() {

@@ -12,3 +12,8 @@ dist/
 
 .vercel
 .env*
+
+# Local data / config files
+admin-security-logs.json
+lai-config.json
+feedback.json

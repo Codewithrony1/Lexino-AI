@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { ChatUserButtonMount } from '../../components/ChatUserButtonMount';
 import { ClientScriptLoader } from '../../components/ClientScriptLoader';
+import { prisma } from '../../lib/prisma';
 
 function getLegacyChatBody() {
   const html = fs
@@ -18,14 +19,63 @@ function getLegacyChatBody() {
 
 export default async function ChatPage() {
   await auth.protect();
+  
+  const user = await currentUser();
+  let userData = { id: '', name: 'Ritik', email: '', imageUrl: '', tier: 'FREE', cooldownUntil: null as string | null, messageCountToday: 0 };
+  
+  if (user) {
+    const email = user.emailAddresses[0]?.emailAddress || '';
+    const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+    const avatarUrl = user.imageUrl;
+    
+    let dbUser: any = null;
+    if (process.env.DATABASE_URL) {
+      try {
+        dbUser = await prisma.user.upsert({
+          where: { id: user.id },
+          update: { email, name, avatarUrl },
+          create: { id: user.id, email, name, avatarUrl },
+        });
+      } catch (err) {
+        console.error('Error auto-syncing user on page load:', err);
+      }
+    } else {
+      console.warn('DATABASE_URL is not set. Running in database-offline mode.');
+    }
+    
+    userData = {
+      id: user.id,
+      name,
+      email,
+      imageUrl: avatarUrl,
+      tier: dbUser?.tier || 'FREE',
+      cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
+      messageCountToday: dbUser?.messageCountToday || 0,
+    };
+  }
+
   const chatMarkup = getLegacyChatBody();
 
   return (
     <>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
       <link rel="stylesheet" href="/style.css" />
-      <div dangerouslySetInnerHTML={{ __html: chatMarkup }} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: chatMarkup }} />
+      
+      {/* Inject clerk user data payload */}
+      <script
+        id="clerk-user-data"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(userData) }}
+      />
+      
       <ChatUserButtonMount />
-      <ClientScriptLoader scripts={['https://cdn.jsdelivr.net/npm/marked/marked.min.js', '/api.js', '/script.js']} />
+      <ClientScriptLoader scripts={[
+        'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
+        '/api.js',
+        '/script.js'
+      ]} />
     </>
   );
 }
