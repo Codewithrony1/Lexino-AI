@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexino AI - Your Smartest Digital Partner | Advanced AI Assistant</title>
+    <meta name="description" content="Lexino AI is an advanced Artificial Intelligence assistant designed to simplify daily tasks, generate ideas, automate work, and boost creativity for creators, developers, and dreamers.">
+    <meta name="keywords" content="Lexino AI, Artificial Intelligence Assistant, AI automation, text generation, smart recommendations, voice chat AI">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+    <!-- Background Music -->
+   <audio id="bgMusic" loop preload="auto" style="display: none;">
+    <source src="/Lexino Website/Manifest Anything You Desire  10 Minute Meditation Music.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+    <!-- Navigation -->
+    <nav>
+       <div class="logo-container" style="display: flex; align-items: center; gap: 12px;">
+    <img src="./Lexino_AI_Logo-removebg-preview.png" alt="Lexino AI logo" class="brand-logo" style="height:45px;width:auto;object-fit:contain;">
+    
+    <div class="logo" style="margin: 0;">LEXINO AI</div>
+</div>
+        <div class="nav-right">
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#why">Why Lexino</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#" onclick="event.preventDefault(); navigateToTerms();">Terms</a></li>
+                <li><a href="#" onclick="event.preventDefault(); navigateToPrivacy();">Privacy</a></li>
+            </ul>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+            <button class="music-toggle" id="musicToggle" onclick="toggleMusic()">🔊</button>
+        </div>
+    </nav>
+    <div class="page-content">
+        <!-- Home Page -->
+        <div class="home-page" id="home-page">
+            <!-- Hero Section -->
+            <section class="hero" id="home">
+                <h1>Empowering Imagination with Lexino AI — Your Creative Digital Mind.</h1>
+                <p>Lexino AI isn't just another assistant — it's your thinking partner, your creative spark, and your digital mirror that learns, evolves, and grows with you.</p>
+                <button class="cta-button" onclick="navigateToTry()">Experience Lexino AI Now 🚀</button>
+                <video class="demo-preview" src="mp_.mp4" autoplay loop muted playsinline style="object-fit: cover; width: 100%; background: #000;"></video>
+            </section>
+            <!-- About Section -->
+            <section class="section" id="about">
+                <h2>Designed for Minds That Never Stop Thinking.</h2>
+                <p style="text-align: center; max-width: 800px; margin: 0 auto 3rem; font-size: 1.2rem; line-height: 1.8; opacity: 0.9;">
+                    Lexino AI is a next-gen intelligent assistant that adapts to your style, learns from your inputs, and helps you create, plan, and innovate faster than ever. Whether you're writing a new idea, building a startup, or exploring possibilities, Lexino brings clarity, creativity, and control to your digital life.
+                </p>
+
+                <!-- Leadership & Creator Section -->
+                <div class="team-container">
+                    <div class="team-member-card">
+                        <div class="card-glow"></div>
+                        <div class="member-header">
+                            <div class="avatar-wrapper">
+                                <img src="/lexino-website/founder_avatar.png" alt="Sumit Ravindra Choudhary" class="member-avatar">
+                                <div class="avatar-glow"></div>
+                            </div>
+                            <div class="member-badge-wrapper">
+                                <span class="member-badge">FOUNDER & CEO</span>
+                                <span class="badge-sub">BUILT WITH LEXINO SYSTEMS</span>
+                            </div>
+                        </div>
+                        <div class="member-identity">
+                            <h3 class="member-name">Sumit Ravindra Choudhary</h3>
+                            <p class="member-role">Full Stack Developer & AI Systems Builder</p>
+                        </div>
+                        <p class="member-bio">
+                            Sumit Ravindra Choudhary is the Founder and CEO of Lexino AI. He is a Full Stack Developer and AI Systems Builder dedicated to architecting next-generation AI platforms, productivity ecosystems, and intelligent student mentor systems. He specializes in building high-performance backend infrastructures, secure API architectures, LLM integrations, and modern glassmorphic interface designs.
+                        </p>
+                        <div class="skills-section">
+                            <h4 class="skills-title">Skills & Expertise</h4>
+                            <div class="skills-list">
+                                <span class="skill-tag">Full Stack Development</span>
+                                <span class="skill-tag">AI Systems Development</span>
+                                <span class="skill-tag">Node.js</span>
+                                <span class="skill-tag">Next.js</span>
+                                <span class="skill-tag">JavaScript / TypeScript</span>
+                                <span class="skill-tag">Backend Architecture</span>
+                                <span class="skill-tag">AI Integration Systems</span>
+                                <span class="skill-tag">API Infrastructure</span>
+                                <span class="skill-tag">SaaS Development</span>
+                                <span class="skill-tag">UI/UX Systems</span>
+                                <span class="skill-tag">Authentication & Security</span>
+                                <span class="skill-tag">Performance Optimization</span>
+                            </div>
+                        </div>
+                        <div class="member-socials">
+                            <a href="https://github.com/Codewithrony1" target="_blank" rel="noopener noreferrer" class="member-social-link">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                                <span>GitHub</span>
+                            </a>
+                            <a href="#" onclick="event.preventDefault()" class="member-social-link placeholder" title="Future LinkedIn Link">
+                                <span class="placeholder-dot"></span>
+                                <span>LinkedIn</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Features Section -->
+            <section class="section" id="features">
+                <h2>What Makes Lexino AI Different</h2>
+                <div class="cards-container" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <div class="card">
+                        <div class="card-icon">🧠</div>
+                        <h3>Adaptive Intelligence</h3>
+                        <p>Learns your workflow, remembers your style, and adapts to how you think — making every interaction more intuitive and personal.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Seamless Automation</h3>
+                        <p>Get results instantly. Automate repetitive tasks, generate content, and complete projects in seconds with intelligent processing.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🔒</div>
+                        <h3>Data-Safe Design</h3>
+                        <p>100% privacy-focused architecture with end-to-end encryption. Your data stays yours — secure, private, and protected.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🎨</div>
+                        <h3>3D Wallpapers</h3>
+                        <p>Transform your interface into a digital landscape with custom animated 3D wallpapers like Deep Aurora, Neon Matrix, and Smoky Universe.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🌌</div>
+                        <h3>Personalized Spaces</h3>
+                        <p>Create organized workspaces with pinned conversations, custom theme accents, and history synced seamlessly across all devices.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Ultra-Fast Streaming</h3>
+                        <p>A highly optimized, lag-free UI utilizing Server-Sent Events (SSE) to stream responses token-by-token at maximum speed.</p>
+                    </div>
+                </div>
+            </section>
+            <!-- Why Section -->
+            <section class="section" id="why">
+                <div class="why-section">
+                    <h2>Not Just Artificial — Intuitive.</h2>
+                    <p style="text-align: center; font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">
+                        Lexino is built for creators, dreamers, and innovators who don't wait for the future — they design it. It's fast, privacy-first, and powered by a continuously learning system that never stops improving.
+                    </p>
+                    <ul class="why-list">
+                        <li>⚡ <strong>Lightning Fast:</strong> Process requests and generate responses in milliseconds with cutting-edge optimization</li>
+                        <li>🔒 <strong>Privacy First:</strong> Your data stays secure with end-to-end encryption and zero data retention policies</li>
+                        <li>🎯 <strong>Unmatched Accuracy:</strong> Advanced language models trained on diverse datasets ensure precise and relevant outputs</li>
+                        <li>🚀 <strong>Always Improving:</strong> Continuous learning and updates keep Lexino AI at the forefront of AI technology</li>
+                        <li>💡 <strong>Intuitive Interface:</strong> User-friendly design makes powerful AI accessible to everyone, regardless of technical expertise</li>
+                    </ul>
+                </div>
+            </section>
+            <!-- Technology Section -->
+            <section class="section" id="technology">
+                <h2>Powered by Intelligence. Protected by Trust.</h2>
+                <p style="text-align: center; max-width: 800px; margin: 0 auto; font-size: 1.2rem; line-height: 1.8; opacity: 0.9;">
+                    Lexino's hybrid AI core blends neural precision with real-world understanding. Your data stays encrypted and private — because true intelligence respects boundaries.
+                </p>
+            </section>
+            <!-- Community Section -->
+            <section class="section" id="community">
+                <div class="why-section">
+                    <h2>Join the Lexino Era.</h2>
+                    <p style="text-align: center; font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">
+                        From students to entrepreneurs, Lexino AI is redfining how people create, think, and grow. Step into the next generation of innovation — where ideas meet intelligence.
+                    </p>
+                </div>
+            </section>
+            <!-- Newsletter Section -->
+            <section class="section" id="newsletter">
+                <div class="why-section" style="max-width: 700px; margin: 0 auto;">
+                    <h2>Stay Updated with Lexino AI</h2>
+                    <p style="text-align: center; font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                        Get the latest updates, AI tips, and exclusive features delivered to your inbox.
+                    </p>
+                    <form class="newsletter-form" onsubmit="subscribeNewsletter(event)">
+                        <div class="newsletter-input-group">
+                            <input type="email" id="newsletter-email" placeholder="Enter your email address" required>
+                            <button type="submit" class="newsletter-button">Subscribe</button>
+                        </div>
+                        <p class="newsletter-message" id="newsletter-message"></p>
+                    </form>
+                </div>
+            </section>
+            <!-- Pricing Section -->
+            <section class="section" id="pricing">
+                <h2>Choose Your Intelligence Plan</h2>
+                <p style="text-align: center; max-width: 700px; margin: 0 auto 3rem; font-size: 1.1rem; opacity: 0.9;">
+                    Flexible pricing for everyone — from curious explorers to power users. Start free, scale as you grow.
+                </p>
+                <div class="pricing-container">
+                    <div class="pricing-card">
+                        <div class="plan-badge">FREE</div>
+                        <h3>Explorer</h3>
+                        <div class="price">
+                            <div class="original-price">
+                                <span>₹199</span>
+                                <div class="strike-line"></div>
+                            </div>
+                            <div class="current-price">
+                                <span class="amount">₹0</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>✓ 50 queries per day</li>
+                            <li>✓ Basic text generation</li>
+                            <li>✓ Standard response speed</li>
+                            <li>✓ 6 smooth celestial wallpapers</li>
+                            <li>✓ Access to core features</li>
+                        </ul>
+                        <button class="pricing-button secondary" onclick="navigateToTry()">Get Started</button>
+                    </div>
+                    <div class="pricing-card">
+                        <div class="plan-badge">STUDENT</div>
+                        <h3>Student</h3>
+                        <div class="price">
+                            <div class="original-price">
+                                <span>₹499</span>
+                                <div class="strike-line"></div>
+                            </div>
+                            <div class="current-price">
+                                <span class="amount">₹149</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>✓ 300 queries per day</li>
+                            <li>✓ ChatGPT (GPT-4o) access included</li>
+                            <li>✓ Advanced text generation</li>
+                            <li>✓ Priority response speed</li>
+                            <li>✓ Unlock all 13 premium space & 3D wallpapers</li>
+                            <li>✓ Code generation support</li>
+                            <li>✓ Save conversations</li>
+                            <li>✓ Valid student ID required</li>
+                        </ul>
+                        <button class="pricing-button secondary" onclick="navigateToTry()">Get Student Plan</button>
+                    </div>
+                    <div class="pricing-card featured">
+                        <div class="plan-badge popular">BEST VALUE</div>
+                        <h3>Pro</h3>
+                        <div class="price">
+                            <div class="original-price">
+                                <span>₹999</span>
+                                <div class="strike-line"></div>
+                            </div>
+                            <div class="current-price">
+                                <span class="amount">₹399</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>✓ 1500 queries per day</li>
+                            <li>✓ Both ChatGPT & Claude Sonnet included</li>
+                            <li>✓ Priority response speed</li>
+                            <li>✓ Code generation & debugging</li>
+                            <li>✓ Voice & chat integration</li>
+                            <li>✓ Unlimited premium & 3D wallpapers</li>
+                            <li>✓ Deep personalization & workspaces</li>
+                            <li>✓ Priority support</li>
+                        </ul>
+                        <button class="pricing-button primary" onclick="navigateToTry()">Get Pro Access</button>
+                    </div>
+                </div>
+            </section>
+            <!-- Footer -->
+            <footer class="futuristic-footer">
+                <div class="footer-divider"></div>
+                <div class="footer-content">
+                    <p class="footer-credit">Founded & Built by Sumit Ravindra Choudhary • Lexino Systems</p>
+                    <div class="footer-socials">
+                        <a href="https://www.instagram.com/lexino.ai/" target="_blank" rel="noopener noreferrer" class="social-icon instagram" title="Instagram">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                            </svg>
+                            <span>Instagram</span>
+                        </a>
+                        <a href="#" onclick="event.preventDefault()" class="social-icon placeholder" title="Future Social Matrix">
+                            <span class="placeholder-dot"></span>
+                            <span>Matrix</span>
+                        </a>
+                        <a href="#" onclick="event.preventDefault()" class="social-icon placeholder" title="Future Social Discord">
+                            <span class="placeholder-dot"></span>
+                            <span>Discord</span>
+                        </a>
+                    </div>
+                    <div class="footer-links">
+                        <a href="/terms">Terms</a>
+                        <a href="/privacy">Privacy</a>
+                        <a href="#contact">Contact</a>
+                        <a href="#careers">Careers</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

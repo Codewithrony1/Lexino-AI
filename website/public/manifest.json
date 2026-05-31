@@ -1,0 +1,39 @@
+{
+  "name": "Lexino AI",
+  "short_name": "Lexino",
+  "description": "Cinematic Cyberpunk Multi-Model AI Chat Platform",
+  "start_url": "/chat",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#00f0ff",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/lexino-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/lexino-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "New Chat",
+      "description": "Start a new conversation in Lexino",
+      "url": "/chat?action=new-chat",
+      "icons": [{ "src": "/lexino-logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Search Chats",
+      "short_name": "Search",
+      "description": "Search your conversation history",
+      "url": "/chat?action=search",
+      "icons": [{ "src": "/lexino-logo.png", "sizes": "192x192" }]
+    }
+  ]
+}
