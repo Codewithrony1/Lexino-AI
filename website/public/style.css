@@ -14,6 +14,8 @@
         }
 
         :root {
+            --sidebar-mobile-bg: #081018;
+            --sidebar-mobile-light-bg: #ffffff;
             --bg-primary: #0d0d0d;
             --bg-secondary: #1a1a1a;
             --bg-tertiary: #262626;
@@ -3351,11 +3353,63 @@
                 top: 0;
                 left: 0;
                 height: var(--app-height);
-                z-index: 100;
-                overflow: hidden;
+                z-index: 9999;
                 max-width: min(86vw, 320px);
-                transform: translateZ(0);
+                transform: translate3d(0, 0, 0);
                 will-change: transform;
+                perspective: 1000px;
+                
+                background: var(--sidebar-mobile-bg) !important;
+                opacity: 1 !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                isolation: isolate;
+                contain: layout style;
+                overflow-y: auto;
+            }
+
+            .sidebar * {
+                backface-visibility: hidden;
+            }
+
+            .sidebar-topbar,
+            .sidebar-section,
+            .sidebar-footer,
+            .collapsed-rail {
+                background: var(--sidebar-mobile-bg) !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+
+            html[data-theme="light"] .sidebar,
+            html[data-theme="light"] .sidebar-topbar,
+            html[data-theme="light"] .sidebar-section,
+            html[data-theme="light"] .sidebar-footer,
+            html[data-theme="light"] .collapsed-rail,
+            body[data-theme="light"] .sidebar,
+            body[data-theme="light"] .sidebar-topbar,
+            body[data-theme="light"] .sidebar-section,
+            body[data-theme="light"] .sidebar-footer,
+            body[data-theme="light"] .collapsed-rail {
+                background: var(--sidebar-mobile-light-bg) !important;
+                border-color: rgba(0, 0, 0, 0.1) !important;
+            }
+
+            html[data-theme="light"] .sidebar-menu-item,
+            body[data-theme="light"] .sidebar-menu-item {
+                color: #2c3e50 !important;
+            }
+            
+            html[data-theme="light"] .sidebar-menu-item:hover,
+            body[data-theme="light"] .sidebar-menu-item:hover,
+            html[data-theme="light"] .chat-item:hover,
+            body[data-theme="light"] .chat-item:hover {
+                background: rgba(0, 0, 0, 0.05) !important;
+            }
+
+            html[data-theme="light"] .sidebar-brand-wrap,
+            body[data-theme="light"] .sidebar-brand-wrap {
+                filter: invert(1) brightness(0.2);
             }
 
             .chat-container {

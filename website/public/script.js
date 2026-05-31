@@ -598,6 +598,29 @@
             updateWallpaperOptions();
         }
 
+        window.changeTheme = function(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
+            document.body.setAttribute('data-theme', themeName);
+            localStorage.setItem('theme', themeName);
+            
+            const darkBtn = document.getElementById('themeBtnDark');
+            const lightBtn = document.getElementById('themeBtnLight');
+            if (darkBtn && lightBtn) {
+                darkBtn.classList.toggle('active', themeName === 'dark');
+                darkBtn.style.borderColor = themeName === 'dark' ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)';
+                darkBtn.style.color = themeName === 'dark' ? '#00f0ff' : 'white';
+                
+                lightBtn.classList.toggle('active', themeName === 'light');
+                lightBtn.style.borderColor = themeName === 'light' ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)';
+                lightBtn.style.color = themeName === 'light' ? '#00f0ff' : 'white';
+            }
+        };
+
+        window.initTheme = function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            window.changeTheme(savedTheme);
+        };
+
         function updateSidebarBrandImage(src) {
             const img = document.getElementById("sidebarBrandImage");
             const placeholder = document.getElementById("sidebarBrandPlaceholder");
@@ -3154,6 +3177,9 @@
             modelSelectControl.addEventListener('change', syncComposerModelFromSelect);
         }
 
+        if (typeof window.initTheme === 'function') {
+            window.initTheme();
+        }
         updateSidebarUI();
         updateTempModeUI();
         loadWallpaper();
