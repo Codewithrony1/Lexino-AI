@@ -726,17 +726,22 @@
 
                 if (isLocked) {
                     option.classList.add('premium-locked-option');
+                    option.style.position = 'relative';
+                    option.style.paddingRight = '32px';
                     const lockLabel = document.createElement('span');
                     lockLabel.className = 'lock-label';
-                    lockLabel.innerHTML = ' 🔒';
-                    lockLabel.style.marginLeft = 'auto';
+                    lockLabel.innerHTML = '🔒';
+                    lockLabel.style.position = 'absolute';
+                    lockLabel.style.right = '12px';
+                    lockLabel.style.top = '50%';
+                    lockLabel.style.transform = 'translateY(-50%)';
                     lockLabel.style.fontSize = '12px';
                     lockLabel.style.opacity = '0.65';
-                    option.style.display = 'flex';
-                    option.style.alignItems = 'center';
                     option.appendChild(lockLabel);
                 } else {
                     option.classList.remove('premium-locked-option');
+                    option.style.position = '';
+                    option.style.paddingRight = '';
                 }
             });
         }
