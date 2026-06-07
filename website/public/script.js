@@ -935,10 +935,15 @@
             }
 
             if (sidebarAccountHandle) {
-                const handleSource = (currentProfile.email || safeName).toLowerCase().replace(/[^a-z0-9]+/g, "");
-                const handle = handleSource ? `@${handleSource.slice(0, 16)}` : "@user";
-                sidebarAccountHandle.textContent = handle;
-                sidebarAccountHandle.title = handle;
+                const tier = (window.lexinoUserTier || "FREE").toUpperCase();
+                let planName = "Free Plan";
+                if (tier === "PRO") {
+                    planName = "Pro Plan";
+                } else if (tier === "STUDENT") {
+                    planName = "Student Plan";
+                }
+                sidebarAccountHandle.textContent = planName;
+                sidebarAccountHandle.title = planName;
             }
             updateModelLocksUI(window.lexinoUserTier || "FREE");
         }
