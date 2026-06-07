@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 
@@ -7,6 +8,14 @@ type AuthShellProps = {
 };
 
 export function AuthShell({ children, mode }: AuthShellProps) {
+  const [logoHref, setLogoHref] = useState('/');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+      setLogoHref('/chat');
+    }
+  }, []);
+
   return (
     <main className="auth-page">
       <div className="auth-wallpaper" aria-hidden="true">
@@ -16,7 +25,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
       </div>
 
       <section className="auth-brand-panel" aria-label="Lexino AI">
-        <Link href="/" className="auth-logo" aria-label="Lexino AI home">
+        <Link href={logoHref} className="auth-logo" aria-label="Lexino AI home">
           <span className="auth-logo-mark">L</span>
           <span>Lexino AI</span>
         </Link>

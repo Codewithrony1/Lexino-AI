@@ -1,5 +1,14 @@
         let isRecording = false;
         let uploadedFiles = [];
+
+        function openExternal(url) {
+            if (window.__TAURI__) {
+                window.__TAURI__.core.invoke('open_in_browser', { url: url });
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+        window.openExternal = openExternal;
         window.currentAssistant = "default";
         let recognition = null;
         let recognitionActive = false;
@@ -1348,14 +1357,12 @@
             if (event) {
                 event.stopPropagation();
             }
+            closeDownloadMenu();
             const menu = document.getElementById("sidebarAccountMenu");
             if (!menu) return;
             const sidebar = document.getElementById("sidebar");
             const isOpen = menu.classList.toggle("active");
             closeRailQuickMenu();
-            if (isOpen) {
-                closeDownloadMenu();
-            }
             document.getElementById("sidebarAccountBtn")?.setAttribute("aria-expanded", String(isOpen));
             if (sidebar) sidebar.classList.toggle("account-menu-open", isOpen);
             document.body.classList.toggle("profile-menu-open", isOpen);
@@ -1386,12 +1393,12 @@
             if (event) {
                 event.stopPropagation();
             }
+            closeSidebarAccountMenu();
             const menu = document.getElementById("downloadMenu");
             if (!menu) return;
+            const sidebar = document.getElementById("sidebar");
             const isOpen = menu.classList.toggle("active");
-            if (isOpen) {
-                closeSidebarAccountMenu();
-            }
+            if (sidebar) sidebar.classList.toggle("account-menu-open", isOpen);
             document.getElementById("sidebarStoreBtn")?.setAttribute("aria-expanded", String(isOpen));
         }
 
@@ -1399,6 +1406,8 @@
             const menu = document.getElementById("downloadMenu");
             if (!menu) return;
             menu.classList.remove("active");
+            const sidebar = document.getElementById("sidebar");
+            if (sidebar) sidebar.classList.remove("account-menu-open");
             document.getElementById("sidebarStoreBtn")?.setAttribute("aria-expanded", "false");
         }
 
@@ -1439,7 +1448,7 @@
 
         window.navigateToPricingFromLock = function() {
             window.closePremiumLockModal();
-            window.location.href = "/pricing";
+            openExternal("https://lexino.ai/pricing");
         }
 
         window.showPremiumLockModal = function(mode) {
@@ -2351,7 +2360,7 @@
         };
 
         function upgradePlan() {
-            window.location.href = "/pricing";
+            openExternal("https://lexino.ai/pricing");
         }
 
         function startTempChat() {

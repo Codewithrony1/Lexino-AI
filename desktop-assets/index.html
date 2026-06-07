@@ -145,20 +145,35 @@
     </div>
 
     <script>
-        const targetUrl = 'https://lexino.ai/chat';
-
         function checkConnection() {
             document.getElementById('loader').style.display = 'inline-block';
             document.getElementById('offlineNotice').style.display = 'none';
 
-            // Check if online by fetching a small resource from the host
-            fetch('https://lexino.ai/api/config', { mode: 'no-cors', cache: 'no-store' })
+            // Check if Tauri is present in window context
+            if (window.__TAURI__) {
+                window.__TAURI__.core.invoke('check_connection')
+                    .then((isOnline) => {
+                        if (!isOnline) {
+                            document.getElementById('loader').style.display = 'none';
+                            document.getElementById('offlineNotice').style.display = 'flex';
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Tauri invoke error:", err);
+                        fallbackFetchCheck();
+                    });
+            } else {
+                fallbackFetchCheck();
+            }
+        }
+
+        function fallbackFetchCheck() {
+            const defaultUrl = 'https://lexinoai.vercel.app';
+            fetch(`${defaultUrl}/api/config`, { mode: 'no-cors', cache: 'no-store' })
                 .then(() => {
-                    // Success, redirect to remote web app
-                    window.location.href = targetUrl;
+                    window.location.href = `${defaultUrl}/chat`;
                 })
                 .catch(() => {
-                    // Fail, show offline screen
                     document.getElementById('loader').style.display = 'none';
                     document.getElementById('offlineNotice').style.display = 'flex';
                 });

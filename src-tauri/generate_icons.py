@@ -36,13 +36,9 @@ def generate_icons():
         print(f"Saved {filename} ({size}x{size})")
 
     # 3. Save multi-size icon.ico for Windows
-    ico_sizes = [16, 32, 48, 64, 128, 256]
-    ico_images = []
-    for s in ico_sizes:
-        ico_images.append(square_img.resize((s, s), Image.Resampling.LANCZOS))
-    
+    ico_sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
     ico_path = os.path.join(dest_dir, "icon.ico")
-    ico_images[0].save(ico_path, format="ICO", sizes=[(s, s) for s in ico_sizes], append_images=ico_images[1:])
+    square_img.save(ico_path, format="ICO", sizes=ico_sizes)
     print("Saved icon.ico with multi-sizes")
 
     # 4. Dummy icon.icns (a copy of png or simple file to satisfy macOS compilers if they run, though not needed for Windows build)

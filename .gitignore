@@ -18,3 +18,4 @@ dist/
 admin-security-logs.json
 lai-config.json
 feedback.json
+src-tauri/target/

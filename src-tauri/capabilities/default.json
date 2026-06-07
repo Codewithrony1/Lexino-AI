@@ -3,6 +3,14 @@
   "identifier": "default",
   "description": "Default capabilities for the Lexino AI desktop app",
   "windows": ["main"],
+  "remote": {
+    "urls": [
+      "https://lexinoai.vercel.app/**",
+      "https://lexino.ai/**",
+      "https://www.lexino.ai/**",
+      "http://localhost:3000/**"
+    ]
+  },
   "permissions": [
     "core:default",
     "shell:allow-open",

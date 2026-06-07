@@ -26,7 +26,9 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: 'website/package-lock.json'
+          cache-dependency-path: |
+            package-lock.json
+            website/package-lock.json
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -35,6 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          npm ci
           cd website
           npm ci
 
@@ -44,6 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          LEXINO_PRODUCTION_URL: ${{ secrets.LEXINO_PRODUCTION_URL || 'https://lexinoai.vercel.app' }}
         with:
           tagName: lexino-v__VERSION__
           releaseName: "Lexino AI v__VERSION__"
