@@ -518,14 +518,33 @@
 
             <div class="chat-history" id="chatHistory"></div>
             <div class="sidebar-footer">
-                <button class="sidebar-account-card" id="sidebarAccountBtn" onclick="toggleSidebarAccountMenu(event)" title="Account menu">
+                <div class="sidebar-account-card" id="sidebarAccountBtn" onclick="toggleSidebarAccountMenu(event)" onkeydown="if(event.key === 'Enter' || event.key === ' ') { toggleSidebarAccountMenu(event); }" title="Account menu" role="button" tabindex="0">
                     <div class="sidebar-account-avatar" id="sidebarAccountInitial">R</div>
                     <div class="sidebar-account-text">
                         <div class="sidebar-account-name" id="sidebarAccountName">Ritik</div>
                         <div class="sidebar-account-handle" id="sidebarAccountHandle">@ritik</div>
                     </div>
+                    <div class="sidebar-store-container" onclick="event.stopPropagation()">
+                        <button class="sidebar-store-btn" id="sidebarStoreBtn" onclick="toggleDownloadMenu(event)" title="Download Apps">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </button>
+                        <div class="sidebar-download-menu" id="downloadMenu" onclick="event.stopPropagation()" role="menu" aria-label="Download menu">
+                            <button class="sidebar-account-item" onclick="closeDownloadMenu(); window.open('https://lexino.ai/desktop', '_blank');">
+                                <span class="icon">💻</span>
+                                <span>Get Lexino AI Desktop</span>
+                            </button>
+                            <button class="sidebar-account-item" onclick="closeDownloadMenu(); window.open('https://lexino.ai/mobile', '_blank');">
+                                <span class="icon">📱</span>
+                                <span>Get Lexino AI Mobile</span>
+                            </button>
+                        </div>
+                    </div>
                     <span class="sidebar-account-arrow">&#8250;</span>
-                </button>
+                </div>
                 <div class="sidebar-account-menu" id="sidebarAccountMenu" onclick="event.stopPropagation()" role="menu" aria-label="Account menu">
                     <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); upgradePlan();">
                         <span class="icon">&#10024;</span>
@@ -565,9 +584,12 @@
                     <span class="mobile-header-icon-text" style="display: none;">&#9776;</span>
                     <span class="mobile-header-label"></span>
                 </button>
-                <div class="header-center">
-                    <div class="header-logo">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></div>
-                    <div class="temp-mode-badge" id="tempModeBadge">Temp Mode</div>
+                <div class="header-center" style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; flex: 1; min-width: 0; padding-left: 16px;">
+                    <div class="header-brand-group" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 0;">
+                        <div class="header-logo" id="headerLogo">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></div>
+                        <div class="header-subtitle" id="headerSubtitle" style="display: none; font-size: 11px; opacity: 0.8; font-weight: 500; letter-spacing: 0.5px; color: #fbbf24; margin-top: 1px; text-transform: none; text-shadow: 0 0 8px rgba(251, 191, 36, 0.25);">Your AI Academic Strategist</div>
+                    </div>
+                    <div class="temp-mode-badge" id="tempModeBadge" style="margin-left: auto; margin-right: 24px;">Temp Mode</div>
                 </div>
                 <div class="header-actions">
                     <div class="mobile-more-wrap">

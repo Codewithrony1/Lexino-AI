@@ -1348,6 +1348,9 @@
             const sidebar = document.getElementById("sidebar");
             const isOpen = menu.classList.toggle("active");
             closeRailQuickMenu();
+            if (isOpen) {
+                closeDownloadMenu();
+            }
             document.getElementById("sidebarAccountBtn")?.setAttribute("aria-expanded", String(isOpen));
             if (sidebar) sidebar.classList.toggle("account-menu-open", isOpen);
             document.body.classList.toggle("profile-menu-open", isOpen);
@@ -1373,6 +1376,30 @@
             }
             document.getElementById("sidebarAccountBtn")?.setAttribute("aria-expanded", "false");
         }
+
+        function toggleDownloadMenu(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            const menu = document.getElementById("downloadMenu");
+            if (!menu) return;
+            const isOpen = menu.classList.toggle("active");
+            if (isOpen) {
+                closeSidebarAccountMenu();
+            }
+            document.getElementById("sidebarStoreBtn")?.setAttribute("aria-expanded", String(isOpen));
+        }
+
+        function closeDownloadMenu() {
+            const menu = document.getElementById("downloadMenu");
+            if (!menu) return;
+            menu.classList.remove("active");
+            document.getElementById("sidebarStoreBtn")?.setAttribute("aria-expanded", "false");
+        }
+
+        // Expose to window context
+        window.toggleDownloadMenu = toggleDownloadMenu;
+        window.closeDownloadMenu = closeDownloadMenu;
 
         function logoutAccount() {
             const modal = document.getElementById("logoutConfirmModal");
@@ -3360,6 +3387,17 @@
                 (!sidebarAccountBtn || !sidebarAccountBtn.contains(e.target))
             ) {
                 closeSidebarAccountMenu();
+            }
+
+            const downloadMenu = document.getElementById('downloadMenu');
+            const sidebarStoreBtn = document.getElementById('sidebarStoreBtn');
+            if (
+                downloadMenu &&
+                downloadMenu.classList.contains("active") &&
+                !downloadMenu.contains(e.target) &&
+                (!sidebarStoreBtn || !sidebarStoreBtn.contains(e.target))
+            ) {
+                closeDownloadMenu();
             }
 
             if (
