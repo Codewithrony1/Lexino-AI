@@ -12,220 +12,457 @@
     <div class="animated-wallpaper wallpaper-none" id="animatedWallpaper" aria-hidden="true"></div>
     <!-- Settings Modal -->
     <div class="settings-modal" id="settingsModal">
-        <div class="settings-content">
+        <div class="settings-content personalization-hub-content">
             <div class="settings-header">
                 <h2>
                     <svg class="personalization-header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px; vertical-align: middle;">
-                        <path d="M9 2L11.5 7.5L17 10L11.5 12.5L9 18L6.5 12.5L1 10L6.5 7.5L9 2Z" fill="#00f0ff"/>
-                        <path d="M19 12L20.25 14.75L23 16L20.25 17.25L19 20L17.75 17.25L15 16L17.75 14.75L19 12Z" fill="#00f0ff"/>
+                        <path d="M9 2L11.5 7.5L17 10L11.5 12.5L9 18L6.5 12.5L1 10L6.5 7.5L9 2Z" fill="var(--accent-primary)"/>
+                        <path d="M19 12L20.25 14.75L23 16L20.25 17.25L19 20L17.75 17.25L15 16L17.75 14.75L19 12Z" fill="var(--accent-primary)"/>
                     </svg>
-                    Personalization
+                    Personalization Hub
                 </h2>
                 <button class="close-btn" onclick="closeSettings()">×</button>
             </div>
-            <div class="setting-item">
-                <div class="settings-subheader">WALLPAPER THEME</div>
-                <div class="wallpaper-grid" id="wallpaperGrid">
-                    <!-- Free Tiers -->
-                    <button class="wallpaper-option active" data-wallpaper="none" onclick="setWallpaper('none')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-none"></span>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Default</span>
-                            <span class="wallpaper-desc">Clean space grid</span>
-                        </span>
+            
+            <div class="hub-container">
+                <!-- Left Nav Pane -->
+                <div class="hub-nav">
+                    <button class="hub-nav-btn active" id="hub-tab-appearance" onclick="switchHubTab('appearance')">
+                        <span class="hub-icon">🎨</span>
+                        Appearance
                     </button>
-                    <button class="wallpaper-option" data-wallpaper="minimalspace" onclick="setWallpaper('minimalspace')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-minimalspace"></span>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Minimal Space</span>
-                            <span class="wallpaper-desc">Deep dark cosmos void</span>
-                        </span>
+                    <button class="hub-nav-btn" id="hub-tab-workspace" onclick="switchHubTab('workspace')">
+                        <span class="hub-icon">🖥️</span>
+                        Workspace
                     </button>
-                    <button class="wallpaper-option" data-wallpaper="starfall" onclick="setWallpaper('starfall')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-starfall"></span>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Quiet Stars</span>
-                            <span class="wallpaper-desc">Twinkling stellar points</span>
-                        </span>
+                    <button class="hub-nav-btn" id="hub-tab-effects" onclick="switchHubTab('effects')">
+                        <span class="hub-icon">✨</span>
+                        Visual Effects
                     </button>
-                    <button class="wallpaper-option" data-wallpaper="mesh" onclick="setWallpaper('mesh')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-mesh"></span>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Signal Mesh</span>
-                            <span class="wallpaper-desc">Light node animation</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="fallingstarfield" onclick="setWallpaper('fallingstarfield')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-fallingstarfield"></span>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Falling Starfield</span>
-                            <span class="wallpaper-desc">Simple meteor effect</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="sunset" onclick="setWallpaper('sunset')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-sunset"></span>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Solar Dusk</span>
-                            <span class="wallpaper-desc">Warm solar flare gradient</span>
-                        </span>
-                    </button>
-                    
-                    <!-- Premium Tiers (Locked for Free) -->
-                    <button class="wallpaper-option" data-wallpaper="aurora" onclick="setWallpaper('aurora')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-aurora"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                            <div class="recommended-badge">✨ Recommended</div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Deep Aurora</span>
-                            <span class="wallpaper-desc">Fluid mesh flows</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="neon" onclick="setWallpaper('neon')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-neon"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Neon Matrix</span>
-                            <span class="wallpaper-desc">Neon cyber-grids</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="particlefield" onclick="setWallpaper('particlefield')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-particlefield"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Particle Field</span>
-                            <span class="wallpaper-desc">Interactive cursor dust</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="nebulastars" onclick="setWallpaper('nebulastars')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-nebulastars"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Nebula + Stars</span>
-                            <span class="wallpaper-desc">Vibrant stellar dust clouds</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="universe" onclick="setWallpaper('universe')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-universe"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Smoky Universe</span>
-                            <span class="wallpaper-desc">Cosmic nebula cloud cover</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="galaxydrift" onclick="setWallpaper('galaxydrift')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-galaxydrift"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Galaxy Drift</span>
-                            <span class="wallpaper-desc">Spiral cosmic rotation</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    <button class="wallpaper-option" data-wallpaper="interstellar" onclick="setWallpaper('interstellar')">
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-interstellar"></span>
-                            <div class="wallpaper-lock-overlay">
-                                <svg class="lock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Unlock with Student+</span>
-                            </div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">Interstellar</span>
-                            <span class="wallpaper-desc">Warp-speed dimensional transit</span>
-                            <span class="wallpaper-tier-info">Included in Student+</span>
-                        </span>
-                    </button>
-                    
-                    <!-- Coming Soon Slot -->
-                    <button class="wallpaper-option coming-soon" disabled>
-                        <div class="preview-wrapper">
-                            <span class="wallpaper-preview preview-comingsoon"></span>
-                            <div class="coming-soon-badge">Soon</div>
-                        </div>
-                        <span class="wallpaper-info">
-                            <span class="wallpaper-name">AI Reactive Theme</span>
-                            <span class="wallpaper-desc">Dynamic context reactive flow</span>
-                        </span>
+                    <button class="hub-nav-btn" id="hub-tab-accessibility" onclick="switchHubTab('accessibility')">
+                        <span class="hub-icon">♿</span>
+                        Accessibility
                     </button>
                 </div>
-            </div>
-            <div class="setting-item" style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px;">
-                <div class="settings-subheader">INTERFACE THEME</div>
-                <div style="display: flex; gap: 12px; margin-top: 10px;">
-                    <button class="theme-option-btn" id="themeBtnDark" onclick="changeTheme('dark')" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;">
-                        <span>🌙</span> Dark Theme
-                    </button>
-                    <button class="theme-option-btn" id="themeBtnLight" onclick="changeTheme('light')" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;">
-                        <span>☀️</span> Light Theme
-                    </button>
+                
+                <!-- Right Content Pane -->
+                <div class="hub-body">
+                    <!-- Tab: Appearance -->
+                    <div class="hub-tab-panel active" id="hub-panel-appearance">
+                        <div class="hub-section">
+                            <div class="theme-search-controls">
+                                <div class="theme-search-box">
+                                    <span class="theme-search-icon">🔍</span>
+                                    <input type="text" id="themeSearchInput" placeholder="Search themes..." oninput="filterThemes()">
+                                </div>
+                                <div class="theme-filter-group">
+                                    <button class="theme-filter-btn active" id="filter-btn-all" onclick="setThemeFilter('all')">All</button>
+                                    <button class="theme-filter-btn" id="filter-btn-free" onclick="setThemeFilter('free')">Free</button>
+                                    <button class="theme-filter-btn" id="filter-btn-premium" onclick="setThemeFilter('premium')">Premium</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="theme-category-header" id="free-themes-header">Free Themes</div>
+                            <div class="wallpaper-grid" id="freeWallpaperGrid">
+                                <button class="wallpaper-option active" data-wallpaper="none" data-category="free" onclick="setWallpaper('none')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-none"></span>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Midnight</span>
+                                        <span class="wallpaper-desc">Default clean space grid</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="minimalspace" data-category="free" onclick="setWallpaper('minimalspace')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-minimalspace"></span>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Graphite</span>
+                                        <span class="wallpaper-desc">Deep dark cosmos void</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="starfall" data-category="free" onclick="setWallpaper('starfall')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-starfall"></span>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Slate</span>
+                                        <span class="wallpaper-desc">Twinkling stellar points</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="mesh" data-category="free" onclick="setWallpaper('mesh')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-mesh"></span>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Deep Ocean</span>
+                                        <span class="wallpaper-desc">Light node connection mesh</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="sunset" data-category="free" onclick="setWallpaper('sunset')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-sunset"></span>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Solar Horizon</span>
+                                        <span class="wallpaper-desc">Warm solar flare gradient</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="fallingstarfield" data-category="free" onclick="setWallpaper('fallingstarfield')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-fallingstarfield"></span>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Stellar Motion</span>
+                                        <span class="wallpaper-desc">Dynamic meteor animation</span>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="theme-category-header" id="premium-themes-header">Premium Themes</div>
+                            <div class="wallpaper-grid" id="premiumWallpaperGrid">
+                                <button class="wallpaper-option" data-wallpaper="aurora" data-category="premium" onclick="setWallpaper('aurora')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-aurora"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Aurora Flow</span>
+                                        <span class="wallpaper-desc">Fluid mesh northern lights</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="neon" data-category="premium" onclick="setWallpaper('neon')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-neon"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Digital Grid</span>
+                                        <span class="wallpaper-desc">Neon cyberspace lattices</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="particlefield" data-category="premium" onclick="setWallpaper('particlefield')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-particlefield"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Dynamic Particles</span>
+                                        <span class="wallpaper-desc">Interactive cursor space dust</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="nebulastars" data-category="premium" onclick="setWallpaper('nebulastars')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-nebulastars"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Cosmic Nebula</span>
+                                        <span class="wallpaper-desc">Vibrant stellar dust clouds</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="universe" data-category="premium" onclick="setWallpaper('universe')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-universe"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Quantum Space</span>
+                                        <span class="wallpaper-desc">High-dimensional cosmic cover</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="galaxydrift" data-category="premium" onclick="setWallpaper('galaxydrift')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-galaxydrift"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Eclipse Glow</span>
+                                        <span class="wallpaper-desc">Deep spiral galaxy drift</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                                <button class="wallpaper-option" data-wallpaper="interstellar" data-category="premium" onclick="setWallpaper('interstellar')">
+                                    <div class="preview-wrapper">
+                                        <span class="wallpaper-preview preview-interstellar"></span>
+                                        <div class="wallpaper-lock-overlay">
+                                            <svg class="lock-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                            <span>Premium Theme</span>
+                                        </div>
+                                    </div>
+                                    <span class="wallpaper-info">
+                                        <span class="wallpaper-name">Stellar Transit</span>
+                                        <span class="wallpaper-desc">Warp-speed cosmic transition</span>
+                                        <span class="wallpaper-tier-info">Available in Pro</span>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Accent Color</div>
+                            <div class="accent-grid">
+                                <button class="accent-color-option active" data-accent="cyan" onclick="setAccentColor('cyan')">
+                                    <span class="accent-dot cyan"></span> Cyan
+                                </button>
+                                <button class="accent-color-option" data-accent="emerald" onclick="setAccentColor('emerald')">
+                                    <span class="accent-dot emerald"></span> Emerald
+                                </button>
+                                <button class="accent-color-option" data-accent="blue" onclick="setAccentColor('blue')">
+                                    <span class="accent-dot blue"></span> Blue
+                                </button>
+                                <button class="accent-color-option" data-accent="violet" onclick="setAccentColor('violet')">
+                                    <span class="accent-dot violet"></span> Violet
+                                </button>
+                                <button class="accent-color-option" data-accent="amber" onclick="setAccentColor('amber')">
+                                    <span class="accent-dot amber"></span> Amber
+                                </button>
+                                <button class="accent-color-option" data-accent="rose" onclick="setAccentColor('rose')">
+                                    <span class="accent-dot rose"></span> Rose
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Interface Theme</div>
+                            <div style="display: flex; gap: 12px;">
+                                <button class="theme-option-btn active" id="themeBtnDark" onclick="changeTheme('dark')" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 240, 255, 0.4); color: #00f0ff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;">
+                                    <span>🌙</span> Dark Theme
+                                </button>
+                                <button class="theme-option-btn" id="themeBtnLight" onclick="changeTheme('light')" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 255, 255, 0.08); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;">
+                                    <span>☀️</span> Light Theme
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Workspace -->
+                    <div class="hub-tab-panel" id="hub-panel-workspace">
+                        <div class="hub-section">
+                            <div class="hub-section-title">Interface Density</div>
+                            <div class="hub-control-row">
+                                <button class="hub-control-card" id="density-default" onclick="setDensity('default')">
+                                    <span class="hub-control-card-icon">📏</span>
+                                    Default
+                                </button>
+                                <button class="hub-control-card" id="density-cozy" onclick="setDensity('cozy')">
+                                    <span class="hub-control-card-icon">🔲</span>
+                                    Cozy
+                                </button>
+                                <button class="hub-control-card" id="density-compact" onclick="setDensity('compact')">
+                                    <span class="hub-control-card-icon">🔍</span>
+                                    Compact
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Font Size</div>
+                            <div class="hub-control-row">
+                                <button class="hub-control-card" id="font-small" onclick="setFontSize('small')">
+                                    <span class="hub-control-card-icon">a</span>
+                                    Small
+                                </button>
+                                <button class="hub-control-card" id="font-medium" onclick="setFontSize('medium')">
+                                    <span class="hub-control-card-icon">A</span>
+                                    Medium
+                                </button>
+                                <button class="hub-control-card" id="font-large" onclick="setFontSize('large')">
+                                    <span class="hub-control-card-icon">A+</span>
+                                    Large
+                                </button>
+                                <button class="hub-control-card" id="font-xlarge" onclick="setFontSize('xlarge')">
+                                    <span class="hub-control-card-icon">A++</span>
+                                    XL
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Sidebar Behavior</div>
+                            <div class="hub-control-row">
+                                <button class="hub-control-card" id="sidebar-fixed" onclick="setSidebarBehavior('fixed')">
+                                    <span class="hub-control-card-icon">📌</span>
+                                    Always Visible
+                                </button>
+                                <button class="hub-control-card" id="sidebar-collapsed" onclick="setSidebarBehavior('collapsed')">
+                                    <span class="hub-control-card-icon">🗄️</span>
+                                    Collapsed Rail
+                                </button>
+                                <button class="hub-control-card" id="sidebar-auto-hide" onclick="setSidebarBehavior('auto-hide')">
+                                    <span class="hub-control-card-icon">🙈</span>
+                                    Auto Hide
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Chat Max Width</div>
+                            <div class="hub-control-row">
+                                <button class="hub-control-card" id="width-default" onclick="setChatWidth('default')">
+                                    <span class="hub-control-card-icon">📟</span>
+                                    Standard (900px)
+                                </button>
+                                <button class="hub-control-card" id="width-wide" onclick="setChatWidth('wide')">
+                                    <span class="hub-control-card-icon">🖥️</span>
+                                    Wide (1200px)
+                                </button>
+                                <button class="hub-control-card" id="width-full" onclick="setChatWidth('full')">
+                                    <span class="hub-control-card-icon">↔️</span>
+                                    Full Width
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Message Style</div>
+                            <div class="hub-control-row">
+                                <button class="hub-control-card" id="msg-style-bubble" onclick="setMessageStyle('bubble')">
+                                    <span class="hub-control-card-icon">💬</span>
+                                    Bubble Bubbles
+                                </button>
+                                <button class="hub-control-card" id="msg-style-modern-clean" onclick="setMessageStyle('modern-clean')">
+                                    <span class="hub-control-card-icon">📄</span>
+                                    Modern Clean
+                                </button>
+                                <button class="hub-control-card" id="msg-style-compact-list" onclick="setMessageStyle('compact-list')">
+                                    <span class="hub-control-card-icon">📋</span>
+                                    Compact List
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Effects -->
+                    <div class="hub-tab-panel" id="hub-panel-effects">
+                        <div class="hub-section">
+                            <div class="hub-section-title">Animation Intensity</div>
+                            <div class="hub-control-row">
+                                <button class="hub-control-card" id="anim-normal" onclick="setAnimationIntensity('normal')">
+                                    <span class="hub-control-card-icon">⚡</span>
+                                    Normal
+                                </button>
+                                <button class="hub-control-card" id="anim-soft" onclick="setAnimationIntensity('soft')">
+                                    <span class="hub-control-card-icon">🍃</span>
+                                    Soft & Smooth
+                                </button>
+                                <button class="hub-control-card" id="anim-none" onclick="setAnimationIntensity('none')">
+                                    <span class="hub-control-card-icon">⏹️</span>
+                                    Disabled
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Background Elements</div>
+                            <div class="hub-toggle-row">
+                                <div class="hub-toggle-label-group">
+                                    <span class="hub-toggle-title">Glow Orbs</span>
+                                    <span class="hub-toggle-desc">Show subtle colorful glowing ambient background lights</span>
+                                </div>
+                                <label class="hub-switch">
+                                    <input type="checkbox" id="toggle-glow-orbs" onchange="toggleBackgroundEffect('glow-orbs')">
+                                    <span class="hub-slider"></span>
+                                </label>
+                            </div>
+                            <div class="hub-toggle-row">
+                                <div class="hub-toggle-label-group">
+                                    <span class="hub-toggle-title">Grid Overlay</span>
+                                    <span class="hub-toggle-desc">Show the futuristic tech alignment grids</span>
+                                </div>
+                                <label class="hub-switch">
+                                    <input type="checkbox" id="toggle-grid-overlay" onchange="toggleBackgroundEffect('grid-overlay')">
+                                    <span class="hub-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Accessibility -->
+                    <div class="hub-tab-panel" id="hub-panel-accessibility">
+                        <div class="hub-section">
+                            <div class="hub-section-title">Visual Assistance</div>
+                            <div class="hub-toggle-row">
+                                <div class="hub-toggle-label-group">
+                                    <span class="hub-toggle-title">High Contrast Mode</span>
+                                    <span class="hub-toggle-desc">Optimize borders and solid colors for maximum readability</span>
+                                </div>
+                                <label class="hub-switch">
+                                    <input type="checkbox" id="toggle-high-contrast" onchange="toggleAccessibilitySetting('high-contrast')">
+                                    <span class="hub-slider"></span>
+                                </label>
+                            </div>
+                            <div class="hub-toggle-row">
+                                <div class="hub-toggle-label-group">
+                                    <span class="hub-toggle-title">Dyslexic-Friendly Font</span>
+                                    <span class="hub-toggle-desc">Change the workspace font to Comic Sans for reading assistance</span>
+                                </div>
+                                <label class="hub-switch">
+                                    <input type="checkbox" id="toggle-dyslexic-font" onchange="toggleAccessibilitySetting('dyslexic-font')">
+                                    <span class="hub-slider"></span>
+                                </label>
+                            </div>
+                            <div class="hub-toggle-row">
+                                <div class="hub-toggle-label-group">
+                                    <span class="hub-toggle-title">Reduced Motion Mode</span>
+                                    <span class="hub-toggle-desc">Disable all moving stars, auroras, and fluid transitions</span>
+                                </div>
+                                <label class="hub-switch">
+                                    <input type="checkbox" id="toggle-reduced-motion" onchange="toggleAccessibilitySetting('reduced-motion')">
+                                    <span class="hub-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

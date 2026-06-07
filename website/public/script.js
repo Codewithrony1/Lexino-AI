@@ -582,9 +582,7 @@
         function setWallpaper(name) {
             const currentTier = window.lexinoUserTier || "FREE";
             if (!isWallpaperAllowedForTier(name, currentTier)) {
-                if (confirm(`The "${name.charAt(0).toUpperCase() + name.slice(1)}" celestial wallpaper is exclusive to the Student+ plan. Would you like to view our plans to upgrade?`)) {
-                    window.location.href = "/#pricing";
-                }
+                window.showPremiumLockModal('theme-' + name);
                 return;
             }
             const safe = allowedWallpapers.includes(name) ? name : "none";
@@ -622,6 +620,216 @@
         window.initTheme = function() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             window.changeTheme(savedTheme);
+        };
+
+        // Tab switching in Personalization Hub
+        window.switchHubTab = function(tabId) {
+            document.querySelectorAll('.hub-nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.id === 'hub-tab-' + tabId);
+            });
+            document.querySelectorAll('.hub-tab-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.id === 'hub-panel-' + tabId);
+            });
+        };
+
+        // Theme Search & Filter Logic
+        let currentThemeFilter = 'all';
+        window.setThemeFilter = function(filter) {
+            currentThemeFilter = filter;
+            document.querySelectorAll('.theme-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.id === 'filter-btn-' + filter);
+            });
+            filterThemes();
+        };
+
+        window.filterThemes = function() {
+            const searchVal = (document.getElementById('themeSearchInput')?.value || '').toLowerCase().trim();
+            const currentTier = window.lexinoUserTier || "FREE";
+            
+            let visibleFree = 0;
+            let visiblePremium = 0;
+
+            document.querySelectorAll('.wallpaper-option').forEach(card => {
+                if (card.classList.contains('coming-soon')) return;
+                
+                const wName = (card.querySelector('.wallpaper-name')?.textContent || '').toLowerCase();
+                const wDesc = (card.querySelector('.wallpaper-desc')?.textContent || '').toLowerCase();
+                const category = card.dataset.category || 'free';
+                const wallpaperName = card.dataset.wallpaper;
+                
+                const matchesSearch = wName.includes(searchVal) || wDesc.includes(searchVal);
+                
+                let matchesFilter = true;
+                if (currentThemeFilter === 'free') {
+                    matchesFilter = isWallpaperAllowedForTier(wallpaperName, currentTier);
+                } else if (currentThemeFilter === 'premium') {
+                    matchesFilter = !isWallpaperAllowedForTier(wallpaperName, currentTier);
+                }
+                
+                const visible = matchesSearch && matchesFilter;
+                card.style.display = visible ? 'flex' : 'none';
+                
+                if (visible) {
+                    if (category === 'free') visibleFree++;
+                    else visiblePremium++;
+                }
+            });
+
+            const freeHeader = document.getElementById('free-themes-header');
+            const premiumHeader = document.getElementById('premium-themes-header');
+            if (freeHeader) freeHeader.style.display = (visibleFree > 0) ? 'block' : 'none';
+            if (premiumHeader) premiumHeader.style.display = (visiblePremium > 0) ? 'block' : 'none';
+        };
+
+        // Preference Selectors: Accent, Density, Font Size, Sidebar, Chat Width, Message Style
+        window.setAccentColor = function(color) {
+            document.documentElement.setAttribute('data-accent', color);
+            localStorage.setItem('lexino_accent_color', color);
+            
+            document.querySelectorAll('.accent-color-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.accent === color);
+            });
+        };
+
+        window.setDensity = function(density) {
+            document.documentElement.setAttribute('data-density', density);
+            localStorage.setItem('lexino_density', density);
+            
+            document.querySelectorAll('[id^="density-"]').forEach(opt => {
+                opt.classList.toggle('active', opt.id === 'density-' + density);
+            });
+        };
+
+        window.setFontSize = function(size) {
+            document.documentElement.setAttribute('data-font-size', size);
+            localStorage.setItem('lexino_font_size', size);
+            
+            document.querySelectorAll('[id^="font-"]').forEach(opt => {
+                opt.classList.toggle('active', opt.id === 'font-' + size);
+            });
+        };
+
+        window.setSidebarBehavior = function(behavior) {
+            document.documentElement.setAttribute('data-sidebar-behavior', behavior);
+            localStorage.setItem('lexino_sidebar_behavior', behavior);
+            
+            document.querySelectorAll('[id^="sidebar-"]').forEach(opt => {
+                opt.classList.toggle('active', opt.id === 'sidebar-' + behavior);
+            });
+            
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                if (behavior === 'collapsed') {
+                    sidebar.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                }
+                updateSidebarUI();
+            }
+        };
+
+        window.setChatWidth = function(width) {
+            document.documentElement.setAttribute('data-chat-width', width);
+            localStorage.setItem('lexino_chat_width', width);
+            
+            document.querySelectorAll('[id^="width-"]').forEach(opt => {
+                opt.classList.toggle('active', opt.id === 'width-' + width);
+            });
+        };
+
+        window.setMessageStyle = function(style) {
+            document.documentElement.setAttribute('data-message-style', style);
+            localStorage.setItem('lexino_message_style', style);
+            
+            document.querySelectorAll('[id^="msg-style-"]').forEach(opt => {
+                opt.classList.toggle('active', opt.id === 'msg-style-' + style);
+            });
+        };
+
+        window.setAnimationIntensity = function(intensity) {
+            document.documentElement.setAttribute('data-animation-intensity', intensity);
+            localStorage.setItem('lexino_animation_intensity', intensity);
+            
+            document.querySelectorAll('[id^="anim-"]').forEach(opt => {
+                opt.classList.toggle('active', opt.id === 'anim-' + intensity);
+            });
+        };
+
+        window.toggleBackgroundEffect = function(effect) {
+            const checkbox = document.getElementById('toggle-' + effect);
+            if (!checkbox) return;
+            
+            const value = checkbox.checked ? 'enabled' : 'disabled';
+            document.documentElement.setAttribute('data-' + effect, value);
+            localStorage.setItem('lexino_effect_' + effect.replace('-', '_'), value);
+        };
+
+        window.toggleAccessibilitySetting = function(setting) {
+            const checkbox = document.getElementById('toggle-' + setting);
+            if (!checkbox) return;
+            
+            const value = checkbox.checked ? 'enabled' : 'disabled';
+            document.documentElement.setAttribute('data-' + setting, value);
+            localStorage.setItem('lexino_access_' + setting.replace('-', '_'), value);
+        };
+
+        // Load all Preferences from localStorage
+        window.loadHubPreferences = function() {
+            const savedAccent = localStorage.getItem('lexino_accent_color') || 'cyan';
+            window.setAccentColor(savedAccent);
+            
+            const savedDensity = localStorage.getItem('lexino_density') || 'default';
+            window.setDensity(savedDensity);
+            
+            const savedFontSize = localStorage.getItem('lexino_font_size') || 'medium';
+            window.setFontSize(savedFontSize);
+            
+            const savedSidebar = localStorage.getItem('lexino_sidebar_behavior') || 'fixed';
+            window.setSidebarBehavior(savedSidebar);
+            
+            const savedWidth = localStorage.getItem('lexino_chat_width') || 'default';
+            window.setChatWidth(savedWidth);
+            
+            const savedMsgStyle = localStorage.getItem('lexino_message_style') || 'bubble';
+            window.setMessageStyle(savedMsgStyle);
+            
+            const savedAnim = localStorage.getItem('lexino_animation_intensity') || 'normal';
+            window.setAnimationIntensity(savedAnim);
+            
+            const savedGlowOrbs = localStorage.getItem('lexino_effect_glow_orbs') || 'enabled';
+            const glowBox = document.getElementById('toggle-glow-orbs');
+            if (glowBox) {
+                glowBox.checked = (savedGlowOrbs === 'enabled');
+                document.documentElement.setAttribute('data-glow-orbs', savedGlowOrbs);
+            }
+            
+            const savedGrid = localStorage.getItem('lexino_effect_grid_overlay') || 'enabled';
+            const gridBox = document.getElementById('toggle-grid-overlay');
+            if (gridBox) {
+                gridBox.checked = (savedGrid === 'enabled');
+                document.documentElement.setAttribute('data-grid-overlay', savedGrid);
+            }
+            
+            const savedHC = localStorage.getItem('lexino_access_high_contrast') || 'disabled';
+            const hcBox = document.getElementById('toggle-high-contrast');
+            if (hcBox) {
+                hcBox.checked = (savedHC === 'enabled');
+                document.documentElement.setAttribute('data-high-contrast', savedHC);
+            }
+            
+            const savedDys = localStorage.getItem('lexino_access_dyslexic_font') || 'disabled';
+            const dysBox = document.getElementById('toggle-dyslexic-font');
+            if (dysBox) {
+                dysBox.checked = (savedDys === 'enabled');
+                document.documentElement.setAttribute('data-dyslexic-font', savedDys);
+            }
+            
+            const savedRM = localStorage.getItem('lexino_access_reduced_motion') || 'disabled';
+            const rmBox = document.getElementById('toggle-reduced-motion');
+            if (rmBox) {
+                rmBox.checked = (savedRM === 'enabled');
+                document.documentElement.setAttribute('data-reduced-motion', savedRM);
+            }
         };
 
         function updateSidebarBrandImage(src) {
@@ -1211,7 +1419,32 @@
             const subtitleEl = document.getElementById("lockModalSubtitle");
             const featuresEl = document.getElementById("lockModalFeatures");
 
-            if (mode === 'timetable-lai') {
+            if (mode.startsWith('theme-') || mode === 'premium-theme') {
+                const themeNameRaw = mode.replace('theme-', '');
+                const themeMap = {
+                    aurora: "Aurora Flow",
+                    neon: "Digital Grid",
+                    particlefield: "Dynamic Particles",
+                    nebulastars: "Cosmic Nebula",
+                    universe: "Quantum Space",
+                    galaxydrift: "Eclipse Glow",
+                    interstellar: "Stellar Transit"
+                };
+                const themeName = themeMap[themeNameRaw] || "Premium Theme";
+                if (iconEl) iconEl.textContent = "🎨";
+                if (titleEl) titleEl.textContent = themeName;
+                if (subtitleEl) subtitleEl.textContent = "Professional Workspace Atmosphere";
+                if (featuresEl) {
+                    featuresEl.innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #e2e8f0; font-weight: 500;">
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #00f0ff; font-weight: bold;">✔</span> Ambient Fluid Animations</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #00f0ff; font-weight: bold;">✔</span> Reduced Motion Adaptive Core</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #00f0ff; font-weight: bold;">✔</span> Accent Colors Palette Match</div>
+                            <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #00f0ff; font-weight: bold;">✔</span> Included with Lexino Pro</div>
+                        </div>
+                    `;
+                }
+            } else if (mode === 'timetable-lai') {
                 if (iconEl) iconEl.textContent = "📅";
                 if (titleEl) titleEl.textContent = "Timetable LAI";
                 if (subtitleEl) subtitleEl.textContent = "Your AI Academic Strategist";
@@ -3182,6 +3415,9 @@
 
         if (typeof window.initTheme === 'function') {
             window.initTheme();
+        }
+        if (typeof window.loadHubPreferences === 'function') {
+            window.loadHubPreferences();
         }
         updateSidebarUI();
         updateTempModeUI();
