@@ -118,6 +118,43 @@ body.light-mode nav {
     background-clip: text;
     letter-spacing: 2px;
 }
+.logo-x {
+    position: relative;
+    display: inline-block;
+    font-weight: 900;
+    transform: skewX(-5deg);
+    margin-right: 1px;
+    color: inherit;
+}
+.logo-x::after {
+    content: "";
+    position: absolute;
+    top: 15%;
+    left: 48%;
+    width: 1.5px;
+    height: 70%;
+    background: linear-gradient(180deg, #00E5C3 0%, #00B7FF 100%);
+    transform: rotate(28deg);
+    box-shadow: 0 0 6px rgba(0, 229, 195, 0.75);
+    pointer-events: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    -webkit-text-fill-color: initial;
+    mix-blend-mode: screen;
+}
+.logo-sup {
+    font-size: 0.45em;
+    font-weight: 700;
+    vertical-align: super;
+    position: relative;
+    top: -0.45em;
+    margin-left: 1.5px;
+    letter-spacing: 0.05em;
+    background: inherit;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
 .brand-logo {
     height: 2.1rem;
     width: auto;

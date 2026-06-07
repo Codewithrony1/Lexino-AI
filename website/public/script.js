@@ -1096,7 +1096,7 @@
 
             return `
                 <div class="empty-state" id="emptyState">
-                    <h2>LEXINO AI</h2>
+                    <h2>LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></h2>
                     <p>${subtitle}</p>
                     <div class="suggestion-chips">
                         <div class="chip" onclick="useSuggestion('Explain quantum computing')">
@@ -1546,7 +1546,7 @@
                 applyModelAccent("timetable-ai");
             } else {
                 if (headerLogo) {
-                    headerLogo.innerHTML = "LEXINO AI";
+                    headerLogo.innerHTML = 'LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup>';
                     headerLogo.style.background = "linear-gradient(110deg, #10a37f 0%, #34d399 28%, #d1fae5 43%, #ffffff 50%, #86efac 57%, #10a37f 78%, #0d8c6d 100%)";
                     headerLogo.style.backgroundSize = "260% 100%";
                     headerLogo.style.webkitBackgroundClip = "text";
