@@ -1626,7 +1626,7 @@
             position: relative;
             display: inline-block;
             font-weight: 900;
-            transform: skewX(-6deg); /* Subtle italic styling to make it look premium and active */
+            transform: skewX(-10deg); /* Modern, slanted futuristic skew */
             margin: 0 -0.16em; /* Tight margin to decrease spacing and make X fit perfectly */
             background: inherit;
             -webkit-background-clip: text !important;

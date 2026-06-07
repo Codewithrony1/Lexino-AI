@@ -122,7 +122,7 @@ body.light-mode nav {
     position: relative;
     display: inline-block;
     font-weight: 900;
-    transform: skewX(-6deg);
+    transform: skewX(-10deg);
     margin: 0 -0.16em;
     background: inherit;
     -webkit-background-clip: text !important;
