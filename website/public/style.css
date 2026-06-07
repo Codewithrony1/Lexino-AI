@@ -1627,7 +1627,7 @@
             display: inline-block;
             font-weight: 900;
             transform: skewX(-10deg); /* Modern, slanted futuristic skew */
-            margin: 0 -0.16em; /* Tight margin to decrease spacing and make X fit perfectly */
+            margin: 0 -0.08em; /* Balanced margin for professional spacing */
             background: inherit;
             -webkit-background-clip: text !important;
             background-clip: text !important;
