@@ -1626,9 +1626,13 @@
             position: relative;
             display: inline-block;
             font-weight: 900;
-            transform: skewX(-5deg); /* Subtle italic styling to make it look premium and active */
-            margin-right: 1px;
-            color: inherit;
+            transform: skewX(-6deg); /* Subtle italic styling to make it look premium and active */
+            margin: 0 -0.06em; /* Tight margin to decrease spacing and make X fit perfectly */
+            background: inherit;
+            -webkit-background-clip: text !important;
+            background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            color: transparent !important;
         }
 
         .logo-x::after {

@@ -122,9 +122,13 @@ body.light-mode nav {
     position: relative;
     display: inline-block;
     font-weight: 900;
-    transform: skewX(-5deg);
-    margin-right: 1px;
-    color: inherit;
+    transform: skewX(-6deg);
+    margin: 0 -0.06em;
+    background: inherit;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent !important;
 }
 .logo-x::after {
     content: "";
