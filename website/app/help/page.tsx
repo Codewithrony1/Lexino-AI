@@ -754,9 +754,9 @@ export default function HelpPage() {
                 <div className="support-info-panel">
                   <div className="support-info-title">Direct Escalation Paths</div>
                   <div className="support-info-links">
-                    <strong>Support Email:</strong> support@lexinotech.com<br />
-                    <strong>Billing Queries:</strong> payments@lexinotech.com<br />
-                    <strong>Enterprise:</strong> systems@lexinotech.com
+                    <strong>Support Email:</strong> lexinoofficial@gmail.com<br />
+                    <strong>Billing Queries:</strong> lexinoofficial@gmail.com<br />
+                    <strong>Enterprise:</strong> lexinoofficial@gmail.com
                   </div>
                 </div>
               </div>

@@ -2,7 +2,8 @@ import Link from 'next/link';
 
 export const metadata = {
   title: 'Privacy Policy — Lexino AI',
-  description: 'Learn about user data protection, Clerk authentication, security procedures, and privacy policies.',
+  description: 'Learn how Lexino AI handles account authentication, security streams, data cookies, and chat history retention policies.',
+  authors: [{ name: 'Lexino AI' }],
 };
 
 export default function PrivacyPage() {
@@ -172,8 +173,7 @@ export default function PrivacyPage() {
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#34d399', margin: '0 0 12px' }}>7. Contact Privacy Team</h2>
             <p style={{ margin: 0, color: '#e2e8f0', fontSize: '15px', lineHeight: '1.7' }}>
               For inquiries regarding data protection or to request information, contact our privacy officers at:<br />
-              <strong>Email:</strong> privacy@lexinotech.com<br />
-              <strong>Data Protection Officer:</strong> dpo@lexinotech.com
+              <strong>Email:</strong> lexinoofficial@gmail.com
             </p>
           </section>
         </div>

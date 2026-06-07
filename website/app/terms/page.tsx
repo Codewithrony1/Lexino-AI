@@ -3,6 +3,7 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Terms of Service — Lexino AI',
   description: 'Review our acceptable use policies, account terms, disclaimer matrices, and billing agreements.',
+  authors: [{ name: 'Lexino AI' }],
 };
 
 export default function TermsPage() {
@@ -93,7 +94,7 @@ export default function TermsPage() {
           }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7', margin: '0 0 12px' }}>1. Acceptance of Terms</h2>
             <p style={{ margin: 0, color: '#e2e8f0', fontSize: '15px', lineHeight: '1.7' }}>
-              By connecting to and using Lexino AI ("Service"), provided by Lexino Technologies, you accept and agree to be bound by these Terms of Service. If you do not agree, you are prohibited from accessing or using the Service.
+              By connecting to and using Lexino AI ("Service"), provided by Lexino AI, you accept and agree to be bound by these Terms of Service. If you do not agree, you are prohibited from accessing or using the Service.
             </p>
           </section>
 
@@ -153,7 +154,7 @@ export default function TermsPage() {
           }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7', margin: '0 0 12px' }}>5. Subscription, Payments & Refund Policy</h2>
             <p style={{ margin: 0, color: '#e2e8f0', fontSize: '15px', lineHeight: '1.7' }}>
-              Pricing for Student and Pro tiers is processed securely in Indian Rupees (INR). Subscriptions are billed in advance on a recurring monthly cycle. All payments are non-refundable. Refund exemptions are processed strictly at the discretion of Lexino Technologies for service interruptions or system errors.
+              Pricing for Student and Pro tiers is processed securely in Indian Rupees (INR). Subscriptions are billed in advance on a recurring monthly cycle. All payments are non-refundable. Refund exemptions are processed strictly at the discretion of Lexino AI for service interruptions or system errors.
             </p>
           </section>
 
@@ -179,7 +180,7 @@ export default function TermsPage() {
           }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7', margin: '0 0 12px' }}>7. Governing Law</h2>
             <p style={{ margin: 0, color: '#e2e8f0', fontSize: '15px', lineHeight: '1.7' }}>
-              These terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Lexino Technologies operates, without regard to its conflict of law provisions.
+              These terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Lexino AI operates, without regard to its conflict of law provisions.
             </p>
           </section>
 
@@ -193,8 +194,8 @@ export default function TermsPage() {
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#a855f7', margin: '0 0 12px' }}>8. Contact Legal</h2>
             <p style={{ margin: 0, color: '#e2e8f0', fontSize: '15px', lineHeight: '1.7' }}>
               For questions regarding these Terms, please contact us at:<br />
-              <strong>Email:</strong> legal@lexinotech.com<br />
-              <strong>Address:</strong> Lexino Technologies Legal Department
+              <strong>Email:</strong> lexinoofficial@gmail.com<br />
+              <strong>Address:</strong> Lexino AI Legal Department
             </p>
           </section>
         </div>
