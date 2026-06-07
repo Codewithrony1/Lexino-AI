@@ -1,0 +1,20 @@
+[package]
+name = "lexino-ai"
+version = "1.0.0"
+description = "Lexino AI Production Desktop Application"
+authors = ["Lexino AI"]
+edition = "2021"
+
+[lib]
+name = "lexino_ai_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0.0", features = [] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri-plugin-shell = "2.0.0"
+tauri-plugin-updater = "2.0.0"

@@ -1,0 +1,45 @@
+{
+  "productName": "Lexino AI",
+  "version": "1.0.0",
+  "identifier": "com.lexino.ai",
+  "bundle": {
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "targets": ["nsis"]
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Lexino AI",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "url": "index.html"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' https://lexino.ai https://*.clerk.accounts.dev https://clerk.lexino.ai; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev; connect-src 'self' https: wss:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:;"
+    }
+  },
+  "build": {
+    "beforeDevCommand": "npm --prefix website run dev",
+    "beforeBuildCommand": "npm --prefix website run build",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../desktop-assets"
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW51c2VkX3B1YmxpY19rZXlfcGxhY2Vob2xkZXJfcGxlYXNlX3JlcGxhY2Vfd2l0aF95b3VyX2tleQ==",
+      "endpoints": [
+        "https://github.com/Codewithrony1/Lexino-AI/releases/latest/download/updater.json"
+      ]
+    }
+  }
+}
