@@ -31,10 +31,7 @@
                         <span class="hub-icon">🎨</span>
                         Appearance
                     </button>
-                    <button class="hub-nav-btn" id="hub-tab-workspace" onclick="switchHubTab('workspace')">
-                        <span class="hub-icon">🖥️</span>
-                        Workspace
-                    </button>
+
                     <button class="hub-nav-btn" id="hub-tab-effects" onclick="switchHubTab('effects')">
                         <span class="hub-icon">✨</span>
                         Visual Effects
@@ -285,102 +282,7 @@
                         </div>
                     </div>
 
-                    <!-- Tab: Workspace -->
-                    <div class="hub-tab-panel" id="hub-panel-workspace">
-                        <div class="hub-section">
-                            <div class="hub-section-title">Interface Density</div>
-                            <div class="hub-control-row">
-                                <button class="hub-control-card" id="density-default" onclick="setDensity('default')">
-                                    <span class="hub-control-card-icon">📏</span>
-                                    Default
-                                </button>
-                                <button class="hub-control-card" id="density-cozy" onclick="setDensity('cozy')">
-                                    <span class="hub-control-card-icon">🔲</span>
-                                    Cozy
-                                </button>
-                                <button class="hub-control-card" id="density-compact" onclick="setDensity('compact')">
-                                    <span class="hub-control-card-icon">🔍</span>
-                                    Compact
-                                </button>
-                            </div>
-                        </div>
 
-                        <div class="hub-section">
-                            <div class="hub-section-title">Font Size</div>
-                            <div class="hub-control-row">
-                                <button class="hub-control-card" id="font-small" onclick="setFontSize('small')">
-                                    <span class="hub-control-card-icon">a</span>
-                                    Small
-                                </button>
-                                <button class="hub-control-card" id="font-medium" onclick="setFontSize('medium')">
-                                    <span class="hub-control-card-icon">A</span>
-                                    Medium
-                                </button>
-                                <button class="hub-control-card" id="font-large" onclick="setFontSize('large')">
-                                    <span class="hub-control-card-icon">A+</span>
-                                    Large
-                                </button>
-                                <button class="hub-control-card" id="font-xlarge" onclick="setFontSize('xlarge')">
-                                    <span class="hub-control-card-icon">A++</span>
-                                    XL
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="hub-section">
-                            <div class="hub-section-title">Sidebar Behavior</div>
-                            <div class="hub-control-row">
-                                <button class="hub-control-card" id="sidebar-fixed" onclick="setSidebarBehavior('fixed')">
-                                    <span class="hub-control-card-icon">📌</span>
-                                    Always Visible
-                                </button>
-                                <button class="hub-control-card" id="sidebar-collapsed" onclick="setSidebarBehavior('collapsed')">
-                                    <span class="hub-control-card-icon">🗄️</span>
-                                    Collapsed Rail
-                                </button>
-                                <button class="hub-control-card" id="sidebar-auto-hide" onclick="setSidebarBehavior('auto-hide')">
-                                    <span class="hub-control-card-icon">🙈</span>
-                                    Auto Hide
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="hub-section">
-                            <div class="hub-section-title">Chat Max Width</div>
-                            <div class="hub-control-row">
-                                <button class="hub-control-card" id="width-default" onclick="setChatWidth('default')">
-                                    <span class="hub-control-card-icon">📟</span>
-                                    Standard (900px)
-                                </button>
-                                <button class="hub-control-card" id="width-wide" onclick="setChatWidth('wide')">
-                                    <span class="hub-control-card-icon">🖥️</span>
-                                    Wide (1200px)
-                                </button>
-                                <button class="hub-control-card" id="width-full" onclick="setChatWidth('full')">
-                                    <span class="hub-control-card-icon">↔️</span>
-                                    Full Width
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="hub-section">
-                            <div class="hub-section-title">Message Style</div>
-                            <div class="hub-control-row">
-                                <button class="hub-control-card" id="msg-style-bubble" onclick="setMessageStyle('bubble')">
-                                    <span class="hub-control-card-icon">💬</span>
-                                    Bubble Bubbles
-                                </button>
-                                <button class="hub-control-card" id="msg-style-modern-clean" onclick="setMessageStyle('modern-clean')">
-                                    <span class="hub-control-card-icon">📄</span>
-                                    Modern Clean
-                                </button>
-                                <button class="hub-control-card" id="msg-style-compact-list" onclick="setMessageStyle('compact-list')">
-                                    <span class="hub-control-card-icon">📋</span>
-                                    Compact List
-                                </button>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Tab: Effects -->
                     <div class="hub-tab-panel" id="hub-panel-effects">
