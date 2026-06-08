@@ -36,7 +36,7 @@
   "plugins": {
     "updater": {
       "active": true,
-      "pubkey": "dW51c2VkX3B1YmxpY19rZXlfcGxhY2Vob2xkZXJfcGxlYXNlX3JlcGxhY2Vfd2l0aF95b3VyX2tleQ==",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwRTE0NEZDREI2RkMwQTAKUldTZ3dHL2IvRVRod0N6UlJ4a1hydTc1YzJJN1c0MG0rcVEybFROMGV4SXgxT2FCVHBYbVovckwK",
       "endpoints": [
         "https://github.com/Codewithrony1/Lexino-AI/releases/latest/download/updater.json"
       ]
