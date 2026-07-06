@@ -162,3 +162,55 @@ window.addEventListener('load', () => {
         observer.observe(card);
     });
 });
+
+/* --- Checkout Modal Payments Logic --- */
+function openCheckout(plan) {
+    const modal = document.getElementById('checkoutModal');
+    if (!modal) return;
+    
+    let planName = 'Pro Plan';
+    let planPrice = '₹399/month';
+    let upiAmount = '399';
+    let upiNote = 'Lexino%20Pro%20Upgrade';
+    
+    if (plan === 'student') {
+        planName = 'Student Plan';
+        planPrice = '₹149/month';
+        upiAmount = '149';
+        upiNote = 'Lexino%20Student%20Upgrade';
+    }
+    
+    document.getElementById('checkoutPlanName').textContent = planName;
+    document.getElementById('checkoutPlanPrice').textContent = planPrice;
+    
+    // Generate dynamic QR Code for UPI payment
+    const upiLink = `upi://pay?pa=sumit.choudhary@okaxis&pn=Lexino%20AI&am=${upiAmount}&cu=INR&tn=${upiNote}`;
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiLink)}`;
+    document.getElementById('upiQrCode').src = qrApiUrl;
+    
+    // Configure WhatsApp verification message
+    const waText = `Hi Sumit, I have paid ${planPrice} for the Lexino AI ${planName}. Please activate my account.`;
+    document.getElementById('whatsappVerificationLink').href = `https://wa.me/919322306355?text=${encodeURIComponent(waText)}`;
+    
+    modal.style.display = 'flex';
+}
+
+function closeCheckoutModal() {
+    const modal = document.getElementById('checkoutModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function copyUpiId() {
+    const copyText = document.getElementById('upiIdInput');
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    
+    const btn = document.querySelector('.copy-upi-btn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => {
+        btn.textContent = originalText;
+    }, 1500);
+}
+

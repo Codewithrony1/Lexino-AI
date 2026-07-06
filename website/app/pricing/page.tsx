@@ -9,9 +9,9 @@ export default async function PricingPage() {
   if (userId) {
     websiteMarkup = websiteMarkup
       .replaceAll('Experience Lexino AI Now 🚀', 'Go to Chat Dashboard 🚀')
-      .replaceAll('Get Started', 'Go to Chat')
-      .replaceAll('Get Student Plan', 'Go to Chat')
-      .replaceAll('Get Pro Access', 'Go to Chat')
+      .replaceAll('onclick="navigateToTry()">Get Started</button>', 'onclick="window.location.href=\'/chat\'">Go to Chat</button>')
+      .replaceAll('onclick="navigateToTry()">Get Student Plan</button>', 'onclick="openCheckout(\'student\')">Upgrade to Student</button>')
+      .replaceAll('onclick="navigateToTry()">Get Pro Access</button>', 'onclick="openCheckout(\'pro\')">Upgrade to Pro</button>')
       .replaceAll('navigateToTry()', "window.location.href='/chat'");
   }
 

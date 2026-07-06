@@ -169,6 +169,10 @@
                             <li>✓ Standard response speed</li>
                             <li>✓ 6 smooth celestial wallpapers</li>
                             <li>✓ Access to core features</li>
+                            <li class="unavailable">✗ ChatGPT (GPT-4o) access</li>
+                            <li class="unavailable">✗ Claude 3.5 Sonnet access</li>
+                            <li class="unavailable">✗ Code generation support</li>
+                            <li class="unavailable">✗ Priority developer support</li>
                         </ul>
                         <button class="pricing-button secondary" onclick="navigateToTry()">Get Started</button>
                     </div>
@@ -194,6 +198,9 @@
                             <li>✓ Code generation support</li>
                             <li>✓ Save conversations</li>
                             <li>✓ Valid student ID required</li>
+                            <li class="unavailable">✗ Claude 3.5 Sonnet access</li>
+                            <li class="unavailable">✗ Unlimited premium & 3D wallpapers</li>
+                            <li class="unavailable">✗ Priority developer support</li>
                         </ul>
                         <button class="pricing-button secondary" onclick="navigateToTry()">Get Student Plan</button>
                     </div>
@@ -221,6 +228,55 @@
                             <li>✓ Priority support</li>
                         </ul>
                         <button class="pricing-button primary" onclick="navigateToTry()">Get Pro Access</button>
+                    </div>
+                </div>
+
+                <!-- Checkout Modal -->
+                <div class="checkout-modal" id="checkoutModal" style="display: none;">
+                    <div class="checkout-modal-content">
+                        <div class="checkout-modal-header">
+                            <h2>Upgrade Workspace</h2>
+                            <button class="checkout-close-btn" onclick="closeCheckoutModal()">×</button>
+                        </div>
+                        <div class="checkout-modal-body">
+                            <div class="selected-plan-summary">
+                                <span class="plan-summary-label">Selected Plan:</span>
+                                <span class="plan-summary-val" id="checkoutPlanName">Pro Plan</span>
+                                <div class="plan-summary-price" id="checkoutPlanPrice">₹399/month</div>
+                            </div>
+                            
+                            <div class="checkout-instructions">
+                                <p>To upgrade your account instantly, scan the QR code to pay using any UPI app (GPay, PhonePe, Paytm, BHIM) and confirm details below.</p>
+                            </div>
+                            
+                            <div class="payment-options">
+                                <!-- Option 1: Scan QR Code -->
+                                <div class="payment-method-card" style="text-align: center;">
+                                    <div class="payment-method-title" style="text-align: left;">1. Scan QR Code to Pay</div>
+                                    <div class="qr-code-wrapper" style="text-align: center; margin: 12px 0;">
+                                        <img id="upiQrCode" src="" alt="Scan to pay" style="border: 4px solid white; border-radius: 8px; max-width: 170px; height: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.35);" />
+                                    </div>
+                                </div>
+                                
+                                <!-- Option 2: Copy UPI ID -->
+                                <div class="payment-method-card">
+                                    <div class="payment-method-title">2. Or Pay to UPI ID</div>
+                                    <div class="upi-id-box" style="display: flex; gap: 8px; margin-top: 6px;">
+                                        <input type="text" id="upiIdInput" value="sumit.choudhary@okaxis" readonly style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; outline: none; font-size: 13px;" />
+                                        <button class="copy-upi-btn" onclick="copyUpiId()" style="padding: 10px 14px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; color: #00f0ff; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="checkout-footer-action" style="margin-top: 22px;">
+                                <a id="whatsappVerificationLink" href="#" target="_blank" class="whatsapp-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #25d366; color: black; font-weight: 700; border-radius: 12px; padding: 12px; text-decoration: none; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.25); text-align: center; font-size: 14.5px;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+                                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.503-5.714-1.464L0 24zm6.269-2.736l.4.237c1.608.956 3.508 1.461 5.334 1.462 5.9.003 10.7-4.793 10.704-10.697.002-2.861-1.113-5.551-3.14-7.579-2.029-2.029-4.722-3.144-7.583-3.146-5.903 0-10.704 4.793-10.707 10.698-.001 1.884.496 3.722 1.442 5.3l.259.43L1.92 22.087l4.406-1.823zM16.9 14.073c-.263-.131-1.559-.769-1.8-1.854-.242-.088-.418-.131-.607-.131-.19 0-.756.242-1.002.506-.246.264-.482.506-.738.506-.256 0-.853-.27-1.611-.944-.589-.526-1.066-1.173-1.182-1.373-.117-.2-.012-.308.087-.407.09-.089.19-.22.286-.33.095-.11.128-.187.19-.31.062-.12.031-.22-.015-.31-.045-.09-.418-1.002-.572-1.373-.15-.363-.314-.313-.43-.319-.11-.005-.236-.005-.363-.005-.126 0-.33.047-.504.236-.173.189-.661.644-.661 1.572s.677 1.824.772 1.95c.095.127 1.332 2.031 3.228 2.851.45.195.8.311 1.074.398.452.143.863.123 1.187.075.362-.054 1.56-.638 1.782-1.254.223-.617.223-1.146.157-1.254-.067-.11-.243-.173-.505-.304z"/>
+                                    </svg>
+                                    Confirm Upgrade via WhatsApp
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
