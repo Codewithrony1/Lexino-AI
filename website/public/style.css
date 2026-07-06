@@ -6013,3 +6013,72 @@
     transform: translateY(-1px);
 }
 
+/* --- 5. Conversational Message Bubble & Action Upgrades --- */
+.message.ai .message-content {
+    background: rgba(255, 255, 255, 0.015) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    border-radius: 18px 18px 18px 6px !important;
+    padding: 14px 18px 12px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    max-width: min(78ch, calc(100% - var(--chat-avatar-size) - var(--chat-row-gap))) !important;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.message.ai .message-content:hover {
+    background: rgba(255, 255, 255, 0.025) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Tighten the gap of action buttons within the bubble container */
+.message-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 14px !important; /* Reduced from 52px/48px to 14px */
+    align-items: center;
+    position: relative;
+    overflow: visible;
+    z-index: 4;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding-top: 10px !important;
+    width: 100% !important;
+}
+
+.action-btn {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    cursor: pointer !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 13px !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-primary) !important;
+    transform: scale(1.08) !important;
+}
+
+/* Ensure mobile bubble layouts scale beautifully and handle overflow gracefully */
+@media (max-width: 768px) {
+    .message.ai .message-content {
+        padding: 12px 14px 10px !important;
+        border-radius: 16px 16px 16px 6px !important;
+        max-width: calc(100% - var(--chat-avatar-size) - var(--chat-row-gap)) !important;
+    }
+    
+    .message-actions {
+        margin-top: 10px !important;
+        padding-top: 8px !important;
+    }
+}
+
+
