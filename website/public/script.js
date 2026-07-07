@@ -3539,4 +3539,265 @@
                 wallpaperLayer.classList.remove("wallpaper-paused");
             }
         });
+
+        // --- Long Message Expand/Collapse Feature ---
+        function getSingleLineHeight(element) {
+            const temp = document.createElement('span');
+            temp.style.visibility = 'hidden';
+            temp.style.position = 'absolute';
+            temp.style.whiteSpace = 'nowrap';
+            temp.style.fontFamily = window.getComputedStyle(element).fontFamily;
+            temp.style.fontSize = window.getComputedStyle(element).fontSize;
+            temp.innerHTML = 'A';
+            element.appendChild(temp);
+            const height = temp.offsetHeight;
+            element.removeChild(temp);
+            return height || 24; // fallback to 24px
+        }
+
+        function getRgbParts(colorStr) {
+            const temp = document.createElement('div');
+            temp.style.color = colorStr;
+            document.body.appendChild(temp);
+            const resolved = window.getComputedStyle(temp).color;
+            document.body.removeChild(temp);
+            
+            const match = resolved.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+            if (match) {
+                return {
+                    r: match[1],
+                    g: match[2],
+                    b: match[3],
+                    a: match[4] || '1'
+                };
+            }
+            return { r: '11', g: '11', b: '13', a: '0.86' }; // default fallback matching composer theme background
+        }
+
+        function bindToggleEvents(contentEl, inner, fade, toggleBtn, maxCollapsedHeight) {
+            const computedStyle = window.getComputedStyle(contentEl);
+            toggleBtn.style.color = computedStyle.color;
+            toggleBtn.style.fontFamily = computedStyle.fontFamily;
+            
+            toggleBtn.onmouseenter = () => {
+                toggleBtn.style.opacity = '1';
+                toggleBtn.style.transform = 'scale(1.03)';
+            };
+            toggleBtn.onmouseleave = () => {
+                toggleBtn.style.opacity = '0.8';
+                toggleBtn.style.transform = 'scale(1)';
+            };
+            
+            toggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                if (isExpanded) {
+                    // Collapse
+                    inner.style.maxHeight = maxCollapsedHeight + 'px';
+                    if (fade) fade.style.opacity = '1';
+                    toggleBtn.innerHTML = 'Show more ▼';
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    // Expand
+                    inner.style.maxHeight = inner.scrollHeight + 'px';
+                    if (fade) fade.style.opacity = '0';
+                    toggleBtn.innerHTML = 'Show less ▲';
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                }
+            };
+            
+            toggleBtn.onkeydown = (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleBtn.click();
+                }
+            };
+
+            toggleBtn.onfocus = () => {
+                toggleBtn.style.opacity = '1';
+                toggleBtn.style.outline = `1px dashed ${computedStyle.color}`;
+                toggleBtn.style.outlineOffset = '2px';
+            };
+            toggleBtn.onblur = () => {
+                toggleBtn.style.opacity = '0.8';
+                toggleBtn.style.outline = 'none';
+            };
+        }
+
+        function initializeExpandableMessages() {
+            requestAnimationFrame(() => {
+                const userMessages = document.querySelectorAll('.message.user');
+                userMessages.forEach((userMsg) => {
+                    const contentEl = userMsg.querySelector('.message-content');
+                    if (!contentEl) return;
+                    
+                    const inner = contentEl.querySelector('.message-content-inner');
+                    const toggleBtn = contentEl.querySelector('.message-toggle-btn');
+                    
+                    const singleLineHeight = getSingleLineHeight(inner || contentEl);
+                    const maxCollapsedHeight = singleLineHeight * 6;
+                    
+                    if (inner && toggleBtn) {
+                        // Already wrapped, re-bind listeners and force collapse on reload
+                        const fade = inner.querySelector('.message-fade-overlay');
+                        inner.style.maxHeight = maxCollapsedHeight + 'px';
+                        if (fade) {
+                            fade.style.opacity = '1';
+                            const computedStyle = window.getComputedStyle(contentEl);
+                            const colorParts = getRgbParts(computedStyle.backgroundColor);
+                            fade.style.background = `linear-gradient(to bottom, rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, 0), rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, ${colorParts.a}))`;
+                        }
+                        toggleBtn.innerHTML = 'Show more ▼';
+                        toggleBtn.setAttribute('aria-expanded', 'false');
+                        bindToggleEvents(contentEl, inner, fade, toggleBtn, maxCollapsedHeight);
+                        return;
+                    }
+                    
+                    if (contentEl.getAttribute('data-expandable-initialized') === 'true') return;
+                    
+                    const scrollHeight = contentEl.scrollHeight;
+                    
+                    if (scrollHeight > maxCollapsedHeight + 4) {
+                        contentEl.setAttribute('data-expandable-initialized', 'true');
+                        
+                        // Create inner container
+                        const wrapperDiv = document.createElement('div');
+                        wrapperDiv.className = 'message-content-inner';
+                        wrapperDiv.style.position = 'relative';
+                        wrapperDiv.style.maxHeight = maxCollapsedHeight + 'px';
+                        wrapperDiv.style.overflow = 'hidden';
+                        wrapperDiv.style.overflowWrap = 'anywhere';
+                        wrapperDiv.style.wordWrap = 'break-word';
+                        wrapperDiv.style.wordBreak = 'break-word';
+                        wrapperDiv.style.whiteSpace = 'pre-wrap';
+                        wrapperDiv.style.transition = 'max-height 280ms cubic-bezier(0.4, 0, 0.2, 1)';
+                        wrapperDiv.style.willChange = 'max-height';
+                        
+                        // Move existing contents to inner wrapper defensively
+                        const nodesToWrap = [];
+                        for (let i = 0; i < contentEl.childNodes.length; i++) {
+                            const child = contentEl.childNodes[i];
+                            if (child.nodeType === Node.ELEMENT_NODE && 
+                                (child.classList.contains('message-actions') || 
+                                 child.classList.contains('message-more-wrap') || 
+                                 child.classList.contains('reaction-container') ||
+                                 child.classList.contains('message-toggle-btn'))) {
+                                continue;
+                            }
+                            nodesToWrap.push(child);
+                        }
+                        
+                        nodesToWrap.forEach(node => {
+                            wrapperDiv.appendChild(node);
+                        });
+                        
+                        if (contentEl.firstChild) {
+                            contentEl.insertBefore(wrapperDiv, contentEl.firstChild);
+                        } else {
+                            contentEl.appendChild(wrapperDiv);
+                        }
+                        
+                        // Fade overlay
+                        const computedStyle = window.getComputedStyle(contentEl);
+                        const colorParts = getRgbParts(computedStyle.backgroundColor);
+                        
+                        const fadeOverlay = document.createElement('div');
+                        fadeOverlay.className = 'message-fade-overlay';
+                        fadeOverlay.style.position = 'absolute';
+                        fadeOverlay.style.bottom = '0';
+                        fadeOverlay.style.left = '0';
+                        fadeOverlay.style.right = '0';
+                        fadeOverlay.style.height = '40px';
+                        fadeOverlay.style.pointerEvents = 'none';
+                        fadeOverlay.style.transition = 'opacity 200ms ease';
+                        fadeOverlay.style.background = `linear-gradient(to bottom, rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, 0), rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, ${colorParts.a}))`;
+                        wrapperDiv.appendChild(fadeOverlay);
+                        
+                        // Toggle Button
+                        const btn = document.createElement('button');
+                        btn.className = 'message-toggle-btn';
+                        btn.type = 'button';
+                        btn.innerHTML = 'Show more ▼';
+                        btn.setAttribute('aria-expanded', 'false');
+                        
+                        btn.style.display = 'flex';
+                        btn.style.alignItems = 'center';
+                        btn.style.justifyContent = 'center';
+                        btn.style.margin = '8px auto 0';
+                        btn.style.background = 'transparent';
+                        btn.style.border = 'none';
+                        btn.style.fontSize = '0.85em';
+                        btn.style.fontWeight = '600';
+                        btn.style.cursor = 'pointer';
+                        btn.style.opacity = '0.8';
+                        btn.style.transition = 'opacity 200ms ease, transform 200ms ease';
+                        
+                        contentEl.appendChild(btn);
+                        
+                        bindToggleEvents(contentEl, wrapperDiv, fadeOverlay, btn, maxCollapsedHeight);
+                    }
+                });
+            });
+        }
+
+        // Initialize and observe changes on #chatMessages
+        const messagesDiv = document.getElementById('chatMessages');
+        if (messagesDiv) {
+            initializeExpandableMessages();
+            
+            let isProcessing = false;
+            const observer = new MutationObserver((mutations) => {
+                if (isProcessing) return;
+                
+                let shouldRun = false;
+                for (const mutation of mutations) {
+                    if (mutation.type === 'childList') {
+                        for (const node of mutation.addedNodes) {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                if (node.classList.contains('message') || node.querySelector('.message')) {
+                                    shouldRun = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (shouldRun) {
+                    isProcessing = true;
+                    observer.disconnect();
+                    initializeExpandableMessages();
+                    observer.observe(messagesDiv, { childList: true, subtree: true });
+                    isProcessing = false;
+                }
+            });
+            
+            observer.observe(messagesDiv, { childList: true, subtree: true });
+        }
+
+        // Debounced Window Resize Handler
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                requestAnimationFrame(() => {
+                    const processedMessages = document.querySelectorAll('.message.user .message-content[data-expandable-initialized="true"]');
+                    processedMessages.forEach((contentEl) => {
+                        const inner = contentEl.querySelector('.message-content-inner');
+                        const toggleBtn = contentEl.querySelector('.message-toggle-btn');
+                        if (inner && toggleBtn) {
+                            const singleLineHeight = getSingleLineHeight(inner);
+                            const maxCollapsedHeight = singleLineHeight * 6;
+                            const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                            
+                            if (isExpanded) {
+                                inner.style.maxHeight = inner.scrollHeight + 'px';
+                            } else {
+                                inner.style.maxHeight = maxCollapsedHeight + 'px';
+                            }
+                        }
+                    });
+                });
+            }, 100);
+        });
     
