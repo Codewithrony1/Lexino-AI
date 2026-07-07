@@ -1448,7 +1448,7 @@
 
         window.navigateToPricingFromLock = function() {
             window.closePremiumLockModal();
-            openExternal("https://lexino.ai/pricing");
+            openExternal("https://lexinoai.vercel.app/pricing");
         }
 
         window.showPremiumLockModal = function(mode) {
@@ -2360,7 +2360,7 @@
         };
 
         function upgradePlan() {
-            openExternal("https://lexino.ai/pricing");
+            openExternal("https://lexinoai.vercel.app/pricing");
         }
 
         function startTempChat() {
