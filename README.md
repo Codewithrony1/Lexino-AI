@@ -32,24 +32,24 @@ Lexino AI is a design-forward, intelligent digital workspace built to empower st
 
 ```mermaid
 graph TD
-    A[Tauri Desktop Client (Rust/Wry)] -->|Socket Health Check| B(Internet Connect Check)
-    B -->|Offline| C[Retry Screen / Local State]
-    B -->|Online| D[Navigate to Lexino Web App /chat]
+    A["Tauri Desktop Client (Rust/Wry)"] -->|Socket Health Check| B["Internet Connect Check"]
+    B -->|Offline| C["Retry Screen / Local State"]
+    B -->|Online| D["Navigate to Lexino Web App /chat"]
     
     subgraph Next.js Cloud App (Vercel)
-        D --> E[Clerk Security Gate]
-        E --> F[Next.js App Router]
-        F --> G[Prisma ORM & DB Verification]
-        G --> H[API Router /api/chat]
+        D --> E["Clerk Security Gate"]
+        E --> F["Next.js App Router"]
+        F --> G["Prisma ORM & DB Verification"]
+        G --> H["API Router /api/chat"]
     end
 
     subgraph LLM Inference Pipelines
-        H -->|Groq API| I[Llama 3.3 / 3.1]
-        H -->|OpenAI API| J[GPT-4o]
-        H -->|Anthropic API| K[Claude 3.5 Sonnet]
+        H -->|Groq API| I["Llama 3.3 / 3.1"]
+        H -->|OpenAI API| J["GPT-4o"]
+        H -->|Anthropic API| K["Claude 3.5 Sonnet"]
     end
     
-    G -.->|Read/Write User Tiers & Limits| L[(PostgreSQL Database)]
+    G -.->|Read/Write User Tiers & Limits| L[("PostgreSQL Database")]
 ```
 
 ---
