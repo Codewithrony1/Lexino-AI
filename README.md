@@ -36,14 +36,14 @@ graph TD
     B -->|Offline| C["Retry Screen / Local State"]
     B -->|Online| D["Navigate to Lexino Web App /chat"]
     
-    subgraph Next.js Cloud App (Vercel)
+    subgraph webapp ["Next.js Cloud App (Vercel)"]
         D --> E["Clerk Security Gate"]
         E --> F["Next.js App Router"]
         F --> G["Prisma ORM & DB Verification"]
         G --> H["API Router /api/chat"]
     end
 
-    subgraph LLM Inference Pipelines
+    subgraph llm ["LLM Inference Pipelines"]
         H -->|Groq API| I["Llama 3.3 / 3.1"]
         H -->|OpenAI API| J["GPT-4o"]
         H -->|Anthropic API| K["Claude 3.5 Sonnet"]
