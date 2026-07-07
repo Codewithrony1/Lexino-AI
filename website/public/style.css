@@ -6123,16 +6123,11 @@
     margin-bottom: 0.4em !important;
 }
 
-/* --- Refined Empty State Logo (Letter Spacing & Spacing Gap) --- */
-.empty-state-logo {
-    font-family: 'Orbitron', 'Inter', sans-serif !important; /* Keep original typography style */
-    font-size: 32px !important; /* Keep original size */
+/* --- Refined Scoped Branding Uniformity (Exact Same Size & Spacing) --- */
+.lexino-brand-logo {
+    font-family: 'Orbitron', 'Inter', sans-serif !important;
     font-weight: 800 !important;
-    margin-bottom: 18px !important; /* Visual balance gap of 18px */
-    letter-spacing: 2px !important; /* Beautiful, professional gap between letters */
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    letter-spacing: 1.5px !important; /* standard premium spacing so they don't stick */
     color: transparent !important;
     background: linear-gradient(110deg, #10a37f 0%, #34d399 28%, #d1fae5 43%, #ffffff 50%, #86efac 57%, #10a37f 78%, #0d8c6d 100%) !important;
     background-size: 260% 100% !important;
@@ -6140,25 +6135,28 @@
     background-clip: text !important;
     animation: logoGreenShimmer 4.2s ease-in-out infinite !important;
     filter: drop-shadow(0 0 14px rgba(16, 163, 127, 0.16)) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 26px !important; /* EXACT SAME SIZE for both header and center */
 }
 
-.empty-state-logo .logo-x {
-    margin: 0 -0.06em !important; /* balanced kerning spacing */
+.lexino-brand-logo .logo-x {
+    margin: 0 -0.06em !important; /* optically balanced spacing */
     transform: skewX(-10deg) !important; /* Keep same X styling */
     display: inline-block !important;
     font-weight: 800 !important;
 }
 
-.empty-state-logo .logo-sup {
-    font-family: 'Orbitron', 'Inter', sans-serif !important; /* Keep original typography style */
-    font-size: 0.45em !important; /* Keep same size */
+.lexino-brand-logo .logo-sup {
+    font-family: 'Orbitron', 'Inter', sans-serif !important;
+    font-size: 0.45em !important; /* same size proportions */
     font-weight: 800 !important;
     vertical-align: super !important;
     position: relative !important;
     top: -0.4em !important;
-    margin-left: 6px !important; /* Moved slightly away from the "O" to give breathing room */
+    margin-left: 5px !important; /* standard gap so it doesn't stick to the O */
     letter-spacing: 0.05em !important;
-    background: inherit !important; /* Keep same shimmery text gradient coloring */
+    background: inherit !important;
     -webkit-background-clip: text !important;
     background-clip: text !important;
     border: none !important;
@@ -6166,8 +6164,18 @@
     border-radius: 0 !important;
 }
 
+/* Placement specific alignment rules (no size change!) */
+.header-logo.lexino-brand-logo {
+    /* fits exactly inside header container */
+}
+
+.empty-state-logo.lexino-brand-logo {
+    margin-bottom: 18px !important; /* Visual balance gap of 18px */
+    justify-content: center !important;
+}
+
 @media (max-width: 768px) {
-    .empty-state-logo {
-        font-size: clamp(26px, 8vw, 32px) !important;
+    .lexino-brand-logo {
+        font-size: clamp(20px, 5vw, 26px) !important; /* scales identically on mobile */
     }
 }
