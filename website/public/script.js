@@ -1110,8 +1110,8 @@
 
             return `
                 <div class="empty-state" id="emptyState">
-                    <h2 class="empty-state-logo" aria-hidden="true">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></h2>
-                    <p>${subtitle}</p>
+                    <div class="empty-state-logo" id="emptyStateLogo" aria-hidden="true"><img class="lexino-logo logo--empty" src="./logo/Lexino_AI_Logo-removebg-preview.png" alt="Lexino AI"></div>
+                    <p class="empty-state-subtitle">${subtitle}</p>
                     <div class="suggestion-chips">
                         <div class="chip" onclick="useSuggestion('Explain quantum computing')">
                             Explain quantum computing
