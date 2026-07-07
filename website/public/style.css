@@ -6127,7 +6127,7 @@
 .lexino-brand-logo {
     font-family: 'Orbitron', 'Inter', sans-serif !important;
     font-weight: 800 !important;
-    letter-spacing: 1px !important; /* same kerning */
+    letter-spacing: 2px !important; /* same kerning spacing */
     color: transparent !important;
     background: linear-gradient(110deg, #10a37f 0%, #34d399 28%, #d1fae5 43%, #ffffff 50%, #86efac 57%, #10a37f 78%, #0d8c6d 100%) !important;
     background-size: 260% 100% !important;
@@ -6165,12 +6165,12 @@
 
 /* Sizing overrides for different placements */
 .header-logo.lexino-brand-logo {
-    font-size: 20px !important; /* scaled appropriately for header */
+    font-size: 24px !important; /* scaled up from 20px */
 }
 
 @media (max-width: 768px) {
     .header-logo.lexino-brand-logo {
-        font-size: clamp(16px, 4vw, 20px) !important;
+        font-size: clamp(18px, 4.5vw, 22px) !important;
     }
 }
 
