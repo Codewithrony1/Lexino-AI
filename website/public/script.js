@@ -3680,19 +3680,20 @@
                         wrapperDiv.style.willChange = 'max-height';
                         
                         // Move existing contents to inner wrapper defensively
+                        const childNodes = Array.from(contentEl.childNodes);
                         const nodesToWrap = [];
-                        for (let i = 0; i < contentEl.childNodes.length; i++) {
-                            const child = contentEl.childNodes[i];
+                        childNodes.forEach(child => {
                             if (child.nodeType === Node.ELEMENT_NODE && 
                                 (child.classList.contains('message-actions') || 
                                  child.classList.contains('message-more-wrap') || 
                                  child.classList.contains('reaction-container') ||
                                  child.classList.contains('message-toggle-btn') ||
-                                 child.classList.contains('message-expand-footer'))) {
-                                continue;
+                                 child.classList.contains('message-expand-footer') ||
+                                 child.classList.contains('message-fade-overlay'))) {
+                                return;
                             }
                             nodesToWrap.push(child);
-                        }
+                        });
                         
                         nodesToWrap.forEach(node => {
                             wrapperDiv.appendChild(node);
@@ -3703,6 +3704,8 @@
                         } else {
                             contentEl.appendChild(wrapperDiv);
                         }
+                        
+                        contentEl.style.textAlign = 'left';
                         
                         // Fade overlay
                         const computedStyle = window.getComputedStyle(contentEl);

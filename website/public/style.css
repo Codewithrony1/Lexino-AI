@@ -2011,7 +2011,7 @@
         }
 
         .message.user .message-content {
-            text-align: right;
+            text-align: left;
             margin-left: auto;
         }
 
@@ -6098,4 +6098,27 @@
     font-family: 'Orbitron', 'Inter', sans-serif !important;
     font-weight: 800 !important;
     letter-spacing: 0.05em !important;
+}
+
+/* --- Expandable Message Inner Content Styling --- */
+.message-content-inner {
+    text-align: left !important;
+    line-height: 1.68 !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+.message-content-inner p {
+    margin-bottom: 0.85em !important;
+}
+.message-content-inner p:last-child {
+    margin-bottom: 0 !important;
+}
+.message-content-inner ul, 
+.message-content-inner ol {
+    margin-bottom: 0.85em !important;
+    padding-left: 1.5em !important;
+}
+.message-content-inner li {
+    margin-bottom: 0.4em !important;
 }
