@@ -12,6 +12,7 @@
     --color-secondary: #a855f7;
     --color-accent: #00f0ff;
     --color-gradient: linear-gradient(135deg, #4169ff 0%, #a855f7 100%);
+    --color-logo-gradient: linear-gradient(135deg, #00f0ff 0%, #0df5c4 100%);
     --color-card-dark: rgba(255, 255, 255, 0.05);
     --color-card-light: rgba(0, 0, 0, 0.05);
     --color-border-dark: rgba(255, 255, 255, 0.1);
@@ -108,41 +109,41 @@ body.light-mode nav {
 .logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.15rem;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.8rem;
+    font-size: 2.1rem;
     font-weight: 900;
-    background: var(--color-gradient);
+    background: var(--color-logo-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.logo-x {
-    position: relative;
-    display: inline-block;
-    font-weight: 900;
-    transform: skewX(-10deg);
-    margin: 0 -0.08em;
-    background: inherit;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    color: transparent !important;
+.logo:hover {
+    filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.55));
+    transform: scale(1.02);
+}
+.logo-i {
+    background: none !important;
+    -webkit-text-fill-color: #ffffff !important;
+    color: #ffffff !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 20px rgba(0, 240, 255, 0.45);
+    margin: 0 3px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 300;
 }
 .logo-sup {
-    font-size: 0.45em;
-    font-weight: 700;
-    vertical-align: super;
-    position: relative;
-    top: -0.45em;
-    margin-left: 1.5px;
-    letter-spacing: 0.05em;
-    background: inherit;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 900;
+    background: var(--color-logo-gradient);
     -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
+    vertical-align: super;
+    margin-left: 2px;
+    letter-spacing: 1px;
 }
 .brand-logo {
     height: 2.1rem;
