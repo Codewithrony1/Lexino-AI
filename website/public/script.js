@@ -3632,12 +3632,13 @@
                     if (!contentEl) return;
                     
                     const inner = contentEl.querySelector('.message-content-inner');
-                    const toggleBtn = contentEl.querySelector('.message-toggle-btn');
+                    const footer = contentEl.querySelector('.message-expand-footer');
+                    const toggleBtn = footer ? footer.querySelector('.message-toggle-btn') : null;
                     
                     const singleLineHeight = getSingleLineHeight(inner || contentEl);
                     const maxCollapsedHeight = singleLineHeight * 6;
                     
-                    if (inner && toggleBtn) {
+                    if (inner && footer && toggleBtn) {
                         // Already wrapped, re-bind listeners and force collapse on reload
                         const fade = inner.querySelector('.message-fade-overlay');
                         inner.style.maxHeight = maxCollapsedHeight + 'px';
@@ -3647,6 +3648,11 @@
                             const colorParts = getRgbParts(computedStyle.backgroundColor);
                             fade.style.background = `linear-gradient(to bottom, rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, 0), rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, ${colorParts.a}))`;
                         }
+                        
+                        // Update border color in case theme changed
+                        const computedStyle = window.getComputedStyle(contentEl);
+                        footer.style.borderTop = `1px solid ${computedStyle.borderColor || 'rgba(255, 255, 255, 0.1)'}`;
+                        
                         toggleBtn.innerHTML = 'Show more ▼';
                         toggleBtn.setAttribute('aria-expanded', 'false');
                         bindToggleEvents(contentEl, inner, fade, toggleBtn, maxCollapsedHeight);
@@ -3681,7 +3687,8 @@
                                 (child.classList.contains('message-actions') || 
                                  child.classList.contains('message-more-wrap') || 
                                  child.classList.contains('reaction-container') ||
-                                 child.classList.contains('message-toggle-btn'))) {
+                                 child.classList.contains('message-toggle-btn') ||
+                                 child.classList.contains('message-expand-footer'))) {
                                 continue;
                             }
                             nodesToWrap.push(child);
@@ -3713,17 +3720,27 @@
                         fadeOverlay.style.background = `linear-gradient(to bottom, rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, 0), rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, ${colorParts.a}))`;
                         wrapperDiv.appendChild(fadeOverlay);
                         
-                        // Toggle Button
+                        // Create Footer Container
+                        const footerDiv = document.createElement('div');
+                        footerDiv.className = 'message-expand-footer';
+                        footerDiv.style.marginTop = '12px';
+                        footerDiv.style.borderTop = `1px solid ${computedStyle.borderColor || 'rgba(255, 255, 255, 0.1)'}`;
+                        footerDiv.style.height = '36px';
+                        footerDiv.style.boxSizing = 'border-box';
+                        footerDiv.style.padding = '8px 0 0';
+                        footerDiv.style.display = 'flex';
+                        footerDiv.style.justifyContent = 'center';
+                        footerDiv.style.alignItems = 'center';
+                        
+                        // Toggle Button inside Footer
                         const btn = document.createElement('button');
                         btn.className = 'message-toggle-btn';
                         btn.type = 'button';
                         btn.innerHTML = 'Show more ▼';
                         btn.setAttribute('aria-expanded', 'false');
-                        
                         btn.style.display = 'flex';
                         btn.style.alignItems = 'center';
                         btn.style.justifyContent = 'center';
-                        btn.style.margin = '8px auto 0';
                         btn.style.background = 'transparent';
                         btn.style.border = 'none';
                         btn.style.fontSize = '0.85em';
@@ -3732,7 +3749,8 @@
                         btn.style.opacity = '0.8';
                         btn.style.transition = 'opacity 200ms ease, transform 200ms ease';
                         
-                        contentEl.appendChild(btn);
+                        footerDiv.appendChild(btn);
+                        contentEl.appendChild(footerDiv);
                         
                         bindToggleEvents(contentEl, wrapperDiv, fadeOverlay, btn, maxCollapsedHeight);
                     }
@@ -3784,11 +3802,16 @@
                     const processedMessages = document.querySelectorAll('.message.user .message-content[data-expandable-initialized="true"]');
                     processedMessages.forEach((contentEl) => {
                         const inner = contentEl.querySelector('.message-content-inner');
-                        const toggleBtn = contentEl.querySelector('.message-toggle-btn');
-                        if (inner && toggleBtn) {
+                        const footer = contentEl.querySelector('.message-expand-footer');
+                        const toggleBtn = footer ? footer.querySelector('.message-toggle-btn') : null;
+                        if (inner && footer && toggleBtn) {
                             const singleLineHeight = getSingleLineHeight(inner);
                             const maxCollapsedHeight = singleLineHeight * 6;
                             const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                            
+                            // Recalculate border top color
+                            const computedStyle = window.getComputedStyle(contentEl);
+                            footer.style.borderTop = `1px solid ${computedStyle.borderColor || 'rgba(255, 255, 255, 0.1)'}`;
                             
                             if (isExpanded) {
                                 inner.style.maxHeight = inner.scrollHeight + 'px';
