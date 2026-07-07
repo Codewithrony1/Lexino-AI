@@ -6090,66 +6090,12 @@
 }
 
 .logo-x {
-    margin: 0 -0.16em !important;
-    transform: skewX(-12deg) !important;
+    margin: 0 -0.16em !important; /* Pull the slanted X closer to prevent gaps */
+    transform: skewX(-12deg) !important; /* Sleek futuristic slant */
 }
 
 .logo-sup {
     font-family: 'Orbitron', 'Inter', sans-serif !important;
     font-weight: 800 !important;
     letter-spacing: 0.05em !important;
-}
-
-/* --- Custom Premium Glowing Cybernetic Logo --- */
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 0.15rem;
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 2.1rem;
-    font-weight: 900 !important;
-    background: linear-gradient(135deg, #00f0ff 0%, #0df5c4 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    letter-spacing: 3px !important;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.logo:hover {
-    filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.55));
-    transform: scale(1.02);
-}
-.logo-i {
-    background: none !important;
-    -webkit-text-fill-color: #ffffff !important;
-    color: #ffffff !important;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 20px rgba(0, 240, 255, 0.45);
-    margin: 0 3px !important;
-    font-family: 'Poppins', sans-serif !important;
-    font-weight: 300 !important;
-}
-.logo-sup {
-    font-family: 'Orbitron', sans-serif !important;
-    font-size: 0.85rem !important;
-    font-weight: 900 !important;
-    background: linear-gradient(135deg, #00f0ff 0%, #0df5c4 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    vertical-align: super !important;
-    margin-left: 2px !important;
-    letter-spacing: 1px !important;
-}
-
-/* Sidebar logo scaling utility */
-.sidebar-logo {
-    font-size: 1.4rem !important;
-    letter-spacing: 2px !important;
-}
-.sidebar-logo .logo-i {
-    font-size: 1.3rem !important;
-    margin: 0 2px !important;
-}
-.sidebar-logo .logo-sup {
-    font-size: 0.6rem !important;
 }
