@@ -109,19 +109,18 @@ body.light-mode nav {
 .logo {
     display: flex;
     align-items: center;
-    gap: 0.15rem;
     font-family: 'Orbitron', sans-serif;
-    font-size: 2.1rem;
+    font-size: 2.2rem;
     font-weight: 900;
     background: var(--color-logo-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: 3px;
+    letter-spacing: 6px;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .logo:hover {
-    filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.55));
+    filter: drop-shadow(0 0 18px rgba(0, 240, 255, 0.6));
     transform: scale(1.02);
 }
 .logo-i {
@@ -129,9 +128,12 @@ body.light-mode nav {
     -webkit-text-fill-color: #ffffff !important;
     color: #ffffff !important;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 20px rgba(0, 240, 255, 0.45);
-    margin: 0 3px;
+    margin-left: 2px;
+    margin-right: 8px;
     font-family: 'Poppins', sans-serif;
-    font-weight: 300;
+    font-weight: 700;
+    display: inline-block;
+    transform: skewX(-12deg);
 }
 .logo-sup {
     font-family: 'Orbitron', sans-serif;
