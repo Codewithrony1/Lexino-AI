@@ -6123,40 +6123,55 @@
     margin-bottom: 0.4em !important;
 }
 
-/* --- Premium Unified Branding (Image Logo) --- */
-.header-logo {
-    display: flex !important;
-    align-items: center !important;
-    background: none !important;
-    -webkit-text-fill-color: initial !important;
-    text-shadow: none !important;
-    filter: none !important;
-}
-
-.lexino-logo {
-    display: inline-block;
-    height: auto;
-    width: auto;
-    max-width: 100%;
-    object-fit: contain;
-    vertical-align: middle;
-}
-
-.logo--header {
-    height: clamp(20px, 2.5vw, 24px) !important; /* Premium unified height */
-}
-
-.logo--empty {
-    height: clamp(48px, 6vw, 60px) !important; /* Premium empty state size */
-}
-
+/* --- Refined Empty State Scoped Branding --- */
 .empty-state-logo {
-    display: flex !important;
-    justify-content: center !important;
+    font-family: 'Orbitron', 'Inter', sans-serif !important; /* Keep original typography style */
+    font-size: 32px !important; /* Keep original size */
+    font-weight: 800 !important;
+    margin-bottom: 18px !important; /* Visual balance spacing gap of 18px */
+    letter-spacing: 1px !important; /* Clean modern kerning */
+    display: inline-flex !important;
     align-items: center !important;
-    margin-bottom: 22px !important; /* 18px-24px gap below logo */
+    justify-content: center !important;
+    color: transparent !important;
+    background: linear-gradient(110deg, #10a37f 0%, #34d399 28%, #d1fae5 43%, #ffffff 50%, #86efac 57%, #10a37f 78%, #0d8c6d 100%) !important;
+    background-size: 260% 100% !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    animation: logoGreenShimmer 4.2s ease-in-out infinite !important;
+    filter: drop-shadow(0 0 14px rgba(16, 163, 127, 0.16)) !important;
 }
 
-.empty-state-subtitle {
-    margin-bottom: 36px !important; /* 32px-40px gap below subtitle */
+.empty-state-logo .logo-x {
+    margin: 0 -0.06em !important; /* balanced kerning spacing */
+    transform: skewX(-10deg) !important; /* Keep same X styling */
+    display: inline-block !important;
+    font-weight: 800 !important;
+}
+
+.empty-state-logo .logo-sup {
+    font-family: 'Orbitron', 'Inter', sans-serif !important; /* Keep original typography style */
+    font-size: 0.45em !important; /* Keep same size */
+    font-weight: 800 !important;
+    vertical-align: super !important;
+    position: relative !important;
+    top: -0.4em !important;
+    margin-left: 5px !important; /* Moved slightly away from the "O" */
+    letter-spacing: 0.05em !important;
+    background: inherit !important; /* Keep same shimmery text gradient coloring */
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+.empty-state p {
+    margin-bottom: 32px !important; /* Consistent spacing gap of 32px */
+}
+
+@media (max-width: 768px) {
+    .empty-state-logo {
+        font-size: clamp(26px, 8vw, 32px) !important;
+    }
 }
