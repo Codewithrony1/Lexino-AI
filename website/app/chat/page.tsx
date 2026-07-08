@@ -7,9 +7,15 @@ import { prisma } from '../../lib/prisma';
 import { getStorageInfo } from '../../lib/storage';
 
 function getLegacyChatBody() {
-  const html = fs
-    .readFileSync(path.join(process.cwd(), 'index.html'), 'utf8')
-    .replace(/\r\n/g, '\n');
+  let indexPath = path.join(process.cwd(), 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    indexPath = path.join(process.cwd(), 'website', 'index.html');
+  }
+  if (!fs.existsSync(indexPath)) {
+    indexPath = path.join(process.cwd(), '..', 'index.html');
+  }
+
+  const html = fs.readFileSync(indexPath, 'utf8').replace(/\r\n/g, '\n');
   const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
   return body
     .replace(/<script[\s\S]*?<\/script>/gi, '')
