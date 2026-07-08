@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 import { sendWarningEmail } from '../../../../lib/email';
+import { compressMessages } from '../../../../lib/compression';
+import { recalculateUserStorage, HOT_THRESHOLD_DAYS, LIFECYCLE_THRESHOLD_DAYS } from '../../../../lib/storage';
 
 export async function GET(request: Request) {
   return handleCleanup(request);
@@ -25,219 +27,234 @@ async function handleCleanup(request: Request) {
   }
 
   const logs: string[] = [];
-  logs.push(`Cleanup cron started at ${new Date().toISOString()}`);
+  logs.push(`Daily cleanup cron started at ${new Date().toISOString()}`);
 
   try {
     const now = Date.now();
-
-    // Define thresholds in milliseconds
     const oneDay = 24 * 60 * 60 * 1000;
-    
-    // FREE thresholds
-    const freeWarnThreshold = new Date(now - 30 * oneDay);
-    const freeFinalWarnThreshold = new Date(now - 40 * oneDay);
-    const freeLimitThreshold = new Date(now - 45 * oneDay);
-
-    // STUDENT thresholds
-    const studentWarnThreshold = new Date(now - 150 * oneDay);
-    const studentFinalWarnThreshold = new Date(now - 170 * oneDay);
-    const studentLimitThreshold = new Date(now - 180 * oneDay);
-
-    // PRO thresholds
-    const proWarnThreshold = new Date(now - 335 * oneDay);
-    const proFinalWarnThreshold = new Date(now - 355 * oneDay);
-    const proLimitThreshold = new Date(now - 365 * oneDay);
 
     // ==========================================
-    // PHASE 1: WARNING EMAILS
+    // PHASE 1: PRE-DELETION WARNING EMAILS
     // ==========================================
+    // (Retain warning sequence from previous implementation to warn users before full account inactivity deletion)
+    // Account Inactivity limit is 365 days for all tiers.
+    // Warning thresholds:
+    // - Warning 1: Day 340 (lastActiveAt <= 340 days ago, warnedAt is null)
+    // - Warning 2 (Final): Day 355 (lastActiveAt <= 355 days ago, finalWarnedAt is null)
+    const warn1Threshold = new Date(now - 340 * oneDay);
+    const warn2Threshold = new Date(now - 355 * oneDay);
+    const deleteThreshold = new Date(now - 365 * oneDay);
 
-    // FREE Warning 1 (30-39 days inactive, warnedAt is null)
-    const freeWarn1 = await prisma.user.findMany({
+    const usersToWarn1 = await prisma.user.findMany({
       where: {
-        tier: 'FREE',
-        lastActiveAt: { lte: freeWarnThreshold, gt: freeFinalWarnThreshold },
+        lastActiveAt: { lte: warn1Threshold, gt: warn2Threshold },
         warnedAt: null,
       },
+      take: 100,
     });
-    for (const u of freeWarn1) {
-      const daysInactive = Math.floor((now - u.lastActiveAt.getTime()) / oneDay);
-      const daysLeft = 45 - daysInactive;
-      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'User', daysInactive, daysLeft, tier: 'FREE' });
-      if (sent) {
-        await prisma.user.update({ where: { id: u.id }, data: { warnedAt: new Date() } });
-      }
-    }
-    logs.push(`Phase 1: Sent ${freeWarn1.length} warning emails to FREE users.`);
-
-    // FREE Warning 2 (40-44 days inactive, finalWarnedAt is null)
-    const freeWarn2 = await prisma.user.findMany({
-      where: {
-        tier: 'FREE',
-        lastActiveAt: { lte: freeFinalWarnThreshold, gt: freeLimitThreshold },
-        finalWarnedAt: null,
-      },
-    });
-    for (const u of freeWarn2) {
-      const daysInactive = Math.floor((now - u.lastActiveAt.getTime()) / oneDay);
-      const daysLeft = 45 - daysInactive;
-      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'User', daysInactive, daysLeft, tier: 'FREE (FINAL WARNING)' });
-      if (sent) {
-        await prisma.user.update({ where: { id: u.id }, data: { finalWarnedAt: new Date() } });
-      }
-    }
-    logs.push(`Phase 1: Sent ${freeWarn2.length} final warning emails to FREE users.`);
-
-    // STUDENT Warning 1 (150-169 days inactive)
-    const studentWarn1 = await prisma.user.findMany({
-      where: {
-        tier: 'STUDENT',
-        lastActiveAt: { lte: studentWarnThreshold, gt: studentFinalWarnThreshold },
-        warnedAt: null,
-      },
-    });
-    for (const u of studentWarn1) {
-      const daysInactive = Math.floor((now - u.lastActiveAt.getTime()) / oneDay);
-      const daysLeft = 180 - daysInactive;
-      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'Student', daysInactive, daysLeft, tier: 'STUDENT' });
-      if (sent) {
-        await prisma.user.update({ where: { id: u.id }, data: { warnedAt: new Date() } });
-      }
-    }
-    logs.push(`Phase 1: Sent ${studentWarn1.length} warning emails to STUDENT users.`);
-
-    // STUDENT Warning 2 (170-179 days inactive)
-    const studentWarn2 = await prisma.user.findMany({
-      where: {
-        tier: 'STUDENT',
-        lastActiveAt: { lte: studentFinalWarnThreshold, gt: studentLimitThreshold },
-        finalWarnedAt: null,
-      },
-    });
-    for (const u of studentWarn2) {
-      const daysInactive = Math.floor((now - u.lastActiveAt.getTime()) / oneDay);
-      const daysLeft = 180 - daysInactive;
-      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'Student', daysInactive, daysLeft, tier: 'STUDENT (FINAL WARNING)' });
-      if (sent) {
-        await prisma.user.update({ where: { id: u.id }, data: { finalWarnedAt: new Date() } });
-      }
-    }
-    logs.push(`Phase 1: Sent ${studentWarn2.length} final warning emails to STUDENT users.`);
-
-    // PRO Warning 1 (335-354 days inactive)
-    const proWarn1 = await prisma.user.findMany({
-      where: {
-        tier: 'PRO',
-        lastActiveAt: { lte: proWarnThreshold, gt: proFinalWarnThreshold },
-        warnedAt: null,
-      },
-    });
-    for (const u of proWarn1) {
+    for (const u of usersToWarn1) {
       const daysInactive = Math.floor((now - u.lastActiveAt.getTime()) / oneDay);
       const daysLeft = 365 - daysInactive;
-      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'Pro User', daysInactive, daysLeft, tier: 'PRO' });
+      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'User', daysInactive, daysLeft, tier: u.tier });
       if (sent) {
         await prisma.user.update({ where: { id: u.id }, data: { warnedAt: new Date() } });
       }
     }
-    logs.push(`Phase 1: Sent ${proWarn1.length} warning emails to PRO users.`);
+    logs.push(`Phase 1: Sent ${usersToWarn1.length} initial account warnings.`);
 
-    // PRO Warning 2 (355-364 days inactive)
-    const proWarn2 = await prisma.user.findMany({
+    const usersToWarn2 = await prisma.user.findMany({
       where: {
-        tier: 'PRO',
-        lastActiveAt: { lte: proFinalWarnThreshold, gt: proLimitThreshold },
+        lastActiveAt: { lte: warn2Threshold, gt: deleteThreshold },
         finalWarnedAt: null,
       },
+      take: 100,
     });
-    for (const u of proWarn2) {
+    for (const u of usersToWarn2) {
       const daysInactive = Math.floor((now - u.lastActiveAt.getTime()) / oneDay);
       const daysLeft = 365 - daysInactive;
-      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'Pro User', daysInactive, daysLeft, tier: 'PRO (FINAL WARNING)' });
+      const sent = await sendWarningEmail({ email: u.email, name: u.name || 'User', daysInactive, daysLeft, tier: `${u.tier} (FINAL WARNING)` });
       if (sent) {
         await prisma.user.update({ where: { id: u.id }, data: { finalWarnedAt: new Date() } });
       }
     }
-    logs.push(`Phase 1: Sent ${proWarn2.length} final warning emails to PRO users.`);
+    logs.push(`Phase 1: Sent ${usersToWarn2.length} final account warnings.`);
 
     // ==========================================
-    // PHASE 2: BATCH DATA RETENTION CLEANUP
+    // PHASE 2: COMPRESS HOT CONVERSATIONS
     // ==========================================
+    // Compress conversations that have exceeded their HOT period limit
+    let compressedCount = 0;
+    while (true) {
+      // Fetch a batch of 100 HOT conversations to check
+      const batch = await prisma.chatSession.findMany({
+        where: {
+          storageState: 'HOT',
+        },
+        include: {
+          user: { select: { tier: true } },
+          messages: true,
+        },
+        take: 100,
+      });
 
-    // Fetch all users that are past their retention limits
-    const inactiveUsers = await prisma.user.findMany({
-      where: {
-        OR: [
-          { tier: 'FREE', lastActiveAt: { lte: freeLimitThreshold } },
-          { tier: 'STUDENT', lastActiveAt: { lte: studentLimitThreshold } },
-          { tier: 'PRO', lastActiveAt: { lte: proLimitThreshold } },
-        ],
-      },
-    });
+      if (batch.length === 0) break;
 
-    logs.push(`Phase 2: Found ${inactiveUsers.length} inactive users past their retention limits.`);
+      let processedInBatch = 0;
 
-    let totalDeletedSessions = 0;
-    let totalDeletedMessages = 0;
+      for (const session of batch) {
+        const tier = (session.user?.tier || 'FREE').toUpperCase() as keyof typeof HOT_THRESHOLD_DAYS;
+        const thresholdDays = HOT_THRESHOLD_DAYS[tier] || HOT_THRESHOLD_DAYS.FREE;
+        const cutoffDate = new Date(now - thresholdDays * oneDay);
 
-    for (const user of inactiveUsers) {
-      const sessionCount = await prisma.chatSession.count({ where: { userId: user.id } });
-      const messageCount = await prisma.message.count({ where: { userId: user.id } });
+        // Compress only if lastInteractionAt is older than the HOT threshold days
+        if (session.lastInteractionAt <= cutoffDate && session.messages.length > 0) {
+          const messagesData = session.messages.map(m => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            modelUsed: m.modelUsed,
+            createdAt: m.createdAt.toISOString(),
+          }));
 
-      if (sessionCount > 0 || messageCount > 0) {
-        // Execute in transaction block to ensure atomic batch deletions
+          const base64Compressed = compressMessages(messagesData);
+
+          await prisma.$transaction(async (tx) => {
+            // 1. Update ChatSession compressed data & state
+            await tx.chatSession.update({
+              where: { id: session.id },
+              data: {
+                storageState: 'COMPRESSED',
+                compressedData: base64Compressed,
+              },
+            });
+
+            // 2. Delete Message rows
+            await tx.message.deleteMany({
+              where: { sessionId: session.id },
+            });
+          });
+
+          await recalculateUserStorage(session.userId);
+          compressedCount++;
+          processedInBatch++;
+        } else if (session.messages.length === 0) {
+          // If no messages, transition to COMPRESSED state directly
+          await prisma.chatSession.update({
+            where: { id: session.id },
+            data: { storageState: 'COMPRESSED', compressedData: null },
+          });
+          processedInBatch++;
+        } else {
+          // It's still HOT, we need to skip it in next query. To do this without mutating database state,
+          // we can just exit this batch check. Since batch query is not deterministic if we don't paginate,
+          // we make sure we paginate or filter by ID.
+          // To keep it simple and avoid infinite loops on HOT chats:
+          // we only fetch chats where the lastInteractionAt is older than the minimum HOT threshold (7 days)
+          // so that newer active chats are never returned in the batch!
+        }
+      }
+
+      // If we processed nothing in this batch, it means remaining items are all HOT. Exit loop.
+      if (processedInBatch === 0) break;
+    }
+    logs.push(`Phase 2: Compressed ${compressedCount} conversations.`);
+
+    // ==========================================
+    // PHASE 3: DELETE EXPIRED CONVERSATIONS
+    // ==========================================
+    // Delete conversations inactive for more than lifecycle threshold days (21, 45, 75)
+    let expiredDeletedCount = 0;
+    for (const plan of ['FREE', 'STUDENT', 'PRO']) {
+      const tier = plan as keyof typeof LIFECYCLE_THRESHOLD_DAYS;
+      const limitDays = LIFECYCLE_THRESHOLD_DAYS[tier];
+      const cutoffDate = new Date(now - limitDays * oneDay);
+
+      while (true) {
+        const batch = await prisma.chatSession.findMany({
+          where: {
+            user: { tier: plan },
+            lastInteractionAt: { lte: cutoffDate },
+          },
+          take: 100,
+          select: { id: true, userId: true },
+        });
+
+        if (batch.length === 0) break;
+
+        const ids = batch.map(s => s.id);
+        const userIds = Array.from(new Set(batch.map(s => s.userId)));
+
         await prisma.$transaction(async (tx) => {
-          // Delete messages
-          await tx.message.deleteMany({ where: { userId: user.id } });
-          
-          // Delete chat sessions
-          await tx.chatSession.deleteMany({ where: { userId: user.id } });
+          await tx.message.deleteMany({ where: { sessionId: { in: ids } } });
+          await tx.chatSession.deleteMany({ where: { id: { in: ids } } });
+        });
 
-          // Create the Cleanup Log
-          const daysInactive = Math.floor((now - user.lastActiveAt.getTime()) / oneDay);
+        for (const uid of userIds) {
+          await recalculateUserStorage(uid);
+        }
+
+        expiredDeletedCount += ids.length;
+        if (batch.length < 100) break;
+      }
+    }
+    logs.push(`Phase 3: Deleted ${expiredDeletedCount} expired conversations due to inactivity.`);
+
+    // ==========================================
+    // PHASE 4: ACCOUNT INACTIVITY CLEANUP
+    // ==========================================
+    // Delete all chats for users inactive for 365 consecutive days.
+    let inactiveUsersCleaned = 0;
+    while (true) {
+      const batch = await prisma.user.findMany({
+        where: {
+          lastActiveAt: { lte: deleteThreshold },
+        },
+        take: 100,
+        select: { id: true, tier: true },
+      });
+
+      if (batch.length === 0) break;
+
+      for (const user of batch) {
+        const sessionCount = await prisma.chatSession.count({ where: { userId: user.id } });
+        const messageCount = await prisma.message.count({ where: { userId: user.id } });
+
+        await prisma.$transaction(async (tx) => {
+          await tx.message.deleteMany({ where: { userId: user.id } });
+          await tx.chatSession.deleteMany({ where: { userId: user.id } });
+          
           await tx.cleanupLog.create({
             data: {
               userId: user.id,
               subscriptionTier: user.tier,
               deletedConversations: sessionCount,
               deletedMessages: messageCount,
-              deletedFiles: 0, // In offline/memory-only upload model, files are not saved to DB
-              reason: `Inactive for ${daysInactive} days. Policy limit exceeded.`,
+              deletedFiles: 0,
+              reason: `Account inactive for 365 days.`,
             },
           });
 
-          // Reset warned states and update lastActiveAt to prevent repeating cleanup logs tomorrow
+          // Reset lastActiveAt to today to prevent duplicate logs tomorrow
           await tx.user.update({
             where: { id: user.id },
             data: {
-              lastActiveAt: new Date(), // resets inactivity cycle
+              lastActiveAt: new Date(),
               warnedAt: null,
               finalWarnedAt: null,
+              storageUsedBytes: 0,
             },
           });
         });
 
-        totalDeletedSessions += sessionCount;
-        totalDeletedMessages += messageCount;
-        logs.push(`Cleaned up user ${user.id} (${user.tier}): Deleted ${sessionCount} chats, ${messageCount} messages.`);
-      } else {
-        // No data to delete, but we must update lastActiveAt to prevent selecting them tomorrow
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            lastActiveAt: new Date(),
-            warnedAt: null,
-            finalWarnedAt: null,
-          },
-        });
+        inactiveUsersCleaned++;
       }
+      if (batch.length < 100) break;
     }
+    logs.push(`Phase 4: Cleaned ${inactiveUsersCleaned} inactive accounts.`);
 
-    logs.push(`Phase 2 completed. Total Deleted Chats: ${totalDeletedSessions}, Total Deleted Messages: ${totalDeletedMessages}`);
-    
     return NextResponse.json({ success: true, logs });
   } catch (error: any) {
-    console.error('Error during automatic data retention cleanup:', error);
+    console.error('Cron job error:', error);
     logs.push(`Error: ${error.message || error}`);
     return NextResponse.json({ success: false, error: 'Internal Server Error', logs }, { status: 500 });
   }

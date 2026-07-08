@@ -26,19 +26,31 @@ model User {
   warnedAt          DateTime?
   finalWarnedAt     DateTime?
   cleanupLogs       CleanupLog[]
+  storageUsedBytes  BigInt        @default(0)
 
   @@index([lastActiveAt])
 }
 
+enum StorageState {
+  HOT
+  COMPRESSED
+}
+
 model ChatSession {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String    @default("New chat")
-  pinned    Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  id                String       @id @default(uuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String       @default("New chat")
+  pinned            Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  messages          Message[]
+  lastInteractionAt DateTime     @default(now())
+  storageState      StorageState @default(HOT)
+  compressedData    String?      @db.Text
+
+  @@index([userId, storageState])
+  @@index([lastInteractionAt])
 }
 
 model Message {

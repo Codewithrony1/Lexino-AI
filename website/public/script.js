@@ -640,7 +640,7 @@
                 panel.classList.toggle('active', panel.id === 'hub-panel-' + tabId);
             });
             if (tabId === 'retention') {
-                loadRetentionStats();
+                checkStorageAlerts(false);
             }
         };
 
@@ -1019,7 +1019,7 @@
                         }
                         
                         syncProfileUI();
-                        checkRetentionWarningOnBoot();
+                        checkStorageAlerts(false);
                         return;
                     }
                 } catch (e) {
@@ -1970,7 +1970,7 @@
             scheduleSearchResultsRender();
         }
 
-        function openChatSession(chatId) {
+        async function openChatSession(chatId) {
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
             pingUserActivity();
@@ -1984,7 +1984,30 @@
             if (messagesDiv) {
                 messagesDiv.innerHTML = target.html || getEmptyStateMarkup();
                 ensureMessageMoreMenus(messagesDiv);
+                scrollMessagesToLatest();
             }
+
+            try {
+                const res = await fetch(`/api/chat/session?id=${chatId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.messages) {
+                        target.thread = data.messages;
+                        const newHtml = rebuildChatHtmlFromThread(data.messages);
+                        target.html = newHtml;
+                        saveAllSessions();
+                        
+                        if (activeChatId === chatId && messagesDiv) {
+                            messagesDiv.innerHTML = newHtml;
+                            ensureMessageMoreMenus(messagesDiv);
+                            scrollMessagesToLatest();
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to sync decompressed chat history:", err);
+            }
+            
             currentConversation = Array.isArray(target.thread)
                 ? target.thread.map((m) => ({ role: m.role, content: m.content }))
                 : [];
@@ -3830,9 +3853,7 @@
                                 inner.style.maxHeight = maxCollapsedHeight + 'px';
                             }
                         }
-                    });
-                });
-            }, 100);
+             }, 100);
         });
 
         // ==========================================
@@ -3846,74 +3867,443 @@
             fetch('/api/user/active', { method: 'POST' }).catch(err => console.error("Error pinging activity:", err));
         }
 
-        async function loadRetentionStats() {
-            try {
-                const res = await fetch('/api/user/retention');
-                if (!res.ok) throw new Error("Failed to fetch stats");
-                const data = await res.json();
-                if (data.success) {
-                    const planEl = document.getElementById('retention-plan');
-                    const periodEl = document.getElementById('retention-period');
-                    const activeEl = document.getElementById('retention-last-active');
-                    const deletionEl = document.getElementById('retention-deletion-date');
-                    const convsEl = document.getElementById('retention-conversations');
-                    const storageEl = document.getElementById('retention-storage');
+        // --- Storage Alerts and Manager Logic ---
+        let storageChatsList = []; // Cache list of chats fetched from server
 
-                    if (planEl) planEl.textContent = data.currentPlan + " Plan";
-                    if (periodEl) periodEl.textContent = data.retentionPeriodDays + " Days";
-                    if (activeEl) activeEl.textContent = new Date(data.lastActiveDate).toLocaleString();
-                    if (deletionEl) deletionEl.textContent = new Date(data.autoDeletionDate).toLocaleDateString();
-                    if (convsEl) convsEl.textContent = data.conversationCount;
-                    if (storageEl) storageEl.textContent = data.storageUsed;
-                }
-            } catch (error) {
-                console.error("Error loading retention stats:", error);
-            }
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function checkRetentionWarningOnBoot() {
-            const clerkEl = document.getElementById("clerk-user-data");
-            if (!clerkEl) return;
+        async function checkStorageAlerts(showModalAlways = false) {
             try {
-                const data = JSON.parse(clerkEl.textContent);
-                if (data && data.lastActiveAt) {
-                    const lastActive = new Date(data.lastActiveAt).getTime();
-                    const tier = (data.tier || 'FREE').toUpperCase();
-                    const now = Date.now();
-                    const oneDay = 24 * 60 * 60 * 1000;
-                    const daysInactive = Math.floor((now - lastActive) / oneDay);
+                const res = await fetch('/api/user/storage');
+                if (!res.ok) throw new Error("Failed to fetch storage info");
+                const data = await res.json();
+                if (data.success) {
+                    // Cache global limit details
+                    window.lexinoStorageLimit = data.storageLimitBytes;
+                    window.lexinoStorageUsed = data.storageUsedBytes;
+                    window.lexinoStoragePercentage = data.usagePercentage;
+                    window.lexinoStorageBlocked = data.isBlocked;
+
+                    // 1. Update settings panel labels
+                    const planEl = document.getElementById('retention-plan');
+                    const usedEl = document.getElementById('retention-storage-used');
+                    const limitEl = document.getElementById('retention-storage-limit');
+                    const convsEl = document.getElementById('retention-conversations');
+                    const activeEl = document.getElementById('retention-last-active');
+                    const lifecycleEl = document.getElementById('retention-lifecycle');
+
+                    if (planEl) planEl.textContent = data.tier + " Plan";
+                    if (usedEl) usedEl.textContent = formatBytes(data.storageUsedBytes);
+                    if (limitEl) limitEl.textContent = formatBytes(data.storageLimitBytes);
+                    if (convsEl) convsEl.textContent = data.conversations.length;
                     
-                    let limit = 45;
-                    if (tier === 'STUDENT') limit = 180;
-                    else if (tier === 'PRO') limit = 365;
-
-                    const daysLeft = limit - daysInactive;
-
-                    const banner = document.getElementById('retentionWarningBanner');
-                    const bannerText = document.getElementById('retentionWarningText');
-
-                    if (banner && bannerText) {
-                        if (tier === 'FREE') {
-                            if (daysLeft <= 15) {
-                                banner.style.display = 'flex';
-                                bannerText.textContent = `Your chats will be deleted in ${daysLeft} days due to inactivity.`;
-                            } else {
-                                banner.style.display = 'none';
+                    const clerkEl = document.getElementById("clerk-user-data");
+                    if (clerkEl) {
+                        try {
+                            const uData = JSON.parse(clerkEl.textContent);
+                            if (activeEl && uData.lastActiveAt) {
+                                activeEl.textContent = new Date(uData.lastActiveAt).toLocaleString();
                             }
+                        } catch(e) {}
+                    }
+
+                    if (lifecycleEl) {
+                        if (data.tier === 'STUDENT') {
+                            lifecycleEl.textContent = "HOT (0-12 Days), COMPRESSED (12-45 Days), Deleted after 45 Days";
+                        } else if (data.tier === 'PRO') {
+                            lifecycleEl.textContent = "HOT (0-12 Days), COMPRESSED (12-75 Days), Deleted after 75 Days";
                         } else {
-                            banner.style.display = 'flex';
-                            banner.style.background = 'rgba(52, 211, 153, 0.08) !important';
-                            banner.style.borderBottom = '1px solid rgba(52, 211, 153, 0.15) !important';
-                            banner.style.color = '#34d399' + ' !important';
-                            const iconEl = banner.querySelector('.banner-icon');
-                            if (iconEl) iconEl.textContent = '🛡️';
-                            bannerText.textContent = `Your chats are protected for ${limit} days of inactivity.`;
+                            lifecycleEl.textContent = "HOT (0-7 Days), COMPRESSED (7-21 Days), Deleted after 21 Days";
+                        }
+                    }
+
+                    // 2. Control Composer input blocking at 100% capacity
+                    const messageInput = document.getElementById('messageInput');
+                    const sendBtn = document.getElementById('sendBtn');
+                    const attachBtn = document.querySelector('.composer-attach-btn');
+
+                    if (data.isBlocked) {
+                        if (messageInput) {
+                            messageInput.disabled = true;
+                            messageInput.placeholder = "Storage Full. Delete chats to resume conversations.";
+                        }
+                        if (sendBtn) sendBtn.disabled = true;
+                        if (attachBtn) attachBtn.style.opacity = '0.3';
+                    } else {
+                        if (messageInput && messageInput.disabled) {
+                            messageInput.disabled = false;
+                            messageInput.placeholder = "Ask anything";
+                            updateComposerState();
+                        }
+                        if (attachBtn) attachBtn.style.opacity = '1';
+                    }
+
+                    // 3. Render warnings modal popups
+                    const warningModal = document.getElementById('storageWarningModal');
+                    const warningTitle = document.getElementById('storageWarningTitle');
+                    const warningText = document.getElementById('storageWarningText');
+                    const warningButtons = document.getElementById('storageWarningButtons');
+                    const warningIcon = document.getElementById('storageWarningIcon');
+
+                    if (warningModal && warningTitle && warningText && warningButtons) {
+                        const hasWarned80 = sessionStorage.getItem('lexino_warned_80') === 'true';
+
+                        if (data.isBlocked) {
+                            // 100% capacity warning
+                            warningModal.style.display = 'flex';
+                            if (warningIcon) warningIcon.textContent = '❌';
+                            warningTitle.textContent = 'Storage Full';
+                            warningText.textContent = `Your storage has reached 100%. Please delete conversations before creating new chats.`;
+                            warningButtons.innerHTML = `
+                                <button class="profile-btn primary" onclick="closeStorageWarning(); openStorageManager();" style="justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important;">Open Storage Manager</button>
+                                <button class="profile-btn secondary" onclick="closeStorageWarning(); upgradePlan();" style="justify-content: center;">Upgrade</button>
+                            `;
+                        } else if (data.usagePercentage >= 95) {
+                            // 95% capacity warning
+                            warningModal.style.display = 'flex';
+                            if (warningIcon) warningIcon.textContent = '⚠️';
+                            warningTitle.textContent = 'Storage Critically Full';
+                            warningText.textContent = `Your storage utilization is at ${data.usagePercentage.toFixed(1)}%. Please clean storage or upgrade to continue chatting.`;
+                            warningButtons.innerHTML = `
+                                <button class="profile-btn primary" onclick="closeStorageWarning(); openStorageManager();" style="justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important;">Clean Storage</button>
+                                <button class="profile-btn secondary" onclick="closeStorageWarning(); upgradePlan();" style="justify-content: center;">Upgrade</button>
+                            `;
+                        } else if (data.usagePercentage >= 80 && (showModalAlways || !hasWarned80)) {
+                            // 80% capacity warning
+                            warningModal.style.display = 'flex';
+                            if (warningIcon) warningIcon.textContent = '⚠️';
+                            warningTitle.textContent = 'Storage Almost Full';
+                            warningText.textContent = `Your storage has reached ${data.usagePercentage.toFixed(1)}%. Delete old conversations or upgrade your plan.`;
+                            warningButtons.innerHTML = `
+                                <button class="profile-btn primary" onclick="closeStorageWarning(); openStorageManager();" style="justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important;">Clean Storage</button>
+                                <button class="profile-btn secondary" onclick="closeStorageWarning(); upgradePlan();" style="justify-content: center;">Upgrade</button>
+                                <button class="profile-btn secondary" onclick="dismissStorage80();" style="justify-content: center;">Later</button>
+                            `;
+                        } else {
+                            if (!showModalAlways) warningModal.style.display = 'none';
                         }
                     }
                 }
-            } catch (e) {
-                console.error("Failed to parse boot retention warnings:", e);
+            } catch (err) {
+                console.error("Error checking storage limits:", err);
             }
+        }
+
+        function closeStorageWarning() {
+            const warningModal = document.getElementById('storageWarningModal');
+            if (warningModal) warningModal.style.display = 'none';
+        }
+
+        function dismissStorage80() {
+            sessionStorage.setItem('lexino_warned_80', 'true');
+            closeStorageWarning();
+        }
+
+        function openStorageManager() {
+            const smModal = document.getElementById('storageManagerModal');
+            if (smModal) {
+                smModal.style.display = 'flex';
+                // Fetch fresh conversations data and populate list
+                loadStorageManagerChats();
+            }
+        }
+
+        function closeStorageManager() {
+            const smModal = document.getElementById('storageManagerModal');
+            if (smModal) smModal.style.display = 'none';
+        }
+
+        async function loadStorageManagerChats() {
+            try {
+                const res = await fetch('/api/user/storage');
+                if (!res.ok) throw new Error("Failed to load Storage Manager chats");
+                const data = await res.json();
+                if (data.success) {
+                    // Update header Overview
+                    const tierEl = document.getElementById('sm-plan-tier');
+                    const usageEl = document.getElementById('sm-usage-label');
+                    const fillEl = document.getElementById('sm-progress-fill');
+                    const countEl = document.getElementById('sm-convs-count');
+
+                    if (tierEl) tierEl.textContent = data.tier + " PLAN";
+                    if (usageEl) usageEl.textContent = `${formatBytes(data.storageUsedBytes)} / ${formatBytes(data.storageLimitBytes)}`;
+                    if (fillEl) fillEl.style.width = Math.min(data.usagePercentage, 100) + '%';
+                    if (countEl) countEl.textContent = `${data.conversations.length} Conversations`;
+
+                    // Cache chats list
+                    storageChatsList = data.conversations || [];
+                    
+                    // Reset inputs
+                    const searchInput = document.getElementById('sm-search');
+                    if (searchInput) searchInput.value = '';
+                    const selectAllCheck = document.getElementById('sm-select-all');
+                    if (selectAllCheck) selectAllCheck.checked = false;
+
+                    // Render list
+                    renderStorageManagerList();
+                }
+            } catch (err) {
+                console.error("Error loading chats in Storage Manager:", err);
+            }
+        }
+
+        function renderStorageManagerList() {
+            const listContainer = document.getElementById('storage-manager-list');
+            if (!listContainer) return;
+
+            if (storageChatsList.length === 0) {
+                listContainer.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 40px 0;">No active conversations found.</div>`;
+                return;
+            }
+
+            let html = '';
+            storageChatsList.forEach(chat => {
+                const lastOpened = new Date(chat.lastInteractionAt).toLocaleDateString();
+                const lastUpdated = new Date(chat.updatedAt).toLocaleDateString();
+                const sizeStr = formatBytes(chat.sizeBytes);
+
+                html += `
+                    <div class="storage-chat-item" data-id="${chat.id}" data-size="${chat.sizeBytes}">
+                        <div class="storage-chat-item-left">
+                            <input type="checkbox" class="storage-chat-checkbox" onchange="updateSelectedStorageChatsCount()" data-id="${chat.id}">
+                            <div class="storage-chat-info">
+                                <div class="storage-chat-title" title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</div>
+                                <div class="storage-chat-meta">
+                                    <span>Last Opened: ${lastOpened}</span>
+                                    <span>Last Updated: ${lastUpdated}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="storage-chat-right">
+                            <span class="storage-chat-size">${sizeStr}</span>
+                            <button class="storage-chat-delete-btn" onclick="deleteSingleStorageChat('${chat.id}')" title="Delete conversation">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+            updateSelectedStorageChatsCount();
+        }
+
+        function filterStorageManagerList() {
+            const query = (document.getElementById('sm-search')?.value || '').toLowerCase().trim();
+            const items = document.querySelectorAll('#storage-manager-list .storage-chat-item');
+            
+            items.forEach(item => {
+                const title = item.querySelector('.storage-chat-title').textContent.toLowerCase();
+                if (title.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function sortStorageManagerList() {
+            const sortVal = document.getElementById('sm-sort')?.value || 'last-opened';
+            
+            storageChatsList.sort((a, b) => {
+                if (sortVal === 'largest') {
+                    return b.sizeBytes - a.sizeBytes;
+                } else if (sortVal === 'oldest') {
+                    return new Date(a.lastInteractionAt).getTime() - new Date(b.lastInteractionAt).getTime();
+                } else if (sortVal === 'last-updated') {
+                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+                } else {
+                    // last-opened
+                    return new Date(b.lastInteractionAt).getTime() - new Date(a.lastInteractionAt).getTime();
+                }
+            });
+
+            renderStorageManagerList();
+        }
+
+        function toggleSelectAllStorageChats() {
+            const checked = document.getElementById('sm-select-all')?.checked || false;
+            const checkboxes = document.querySelectorAll('#storage-manager-list .storage-chat-checkbox');
+            
+            checkboxes.forEach(cb => {
+                // Check selection only if item is visible
+                const item = cb.closest('.storage-chat-item');
+                if (item && item.style.display !== 'none') {
+                    cb.checked = checked;
+                }
+            });
+
+            updateSelectedStorageChatsCount();
+        }
+
+        function updateSelectedStorageChatsCount() {
+            const checkboxes = document.querySelectorAll('#storage-manager-list .storage-chat-checkbox:checked');
+            const deleteBtn = document.getElementById('sm-delete-selected-btn');
+            const estimateLabel = document.getElementById('sm-free-space-estimate');
+
+            if (checkboxes.length > 0) {
+                if (deleteBtn) {
+                    deleteBtn.style.display = 'inline-flex';
+                    deleteBtn.textContent = `Delete Selected (${checkboxes.length})`;
+                }
+                
+                // Calculate space to free
+                let spaceBytes = 0;
+                checkboxes.forEach(cb => {
+                    const item = cb.closest('.storage-chat-item');
+                    if (item) {
+                        spaceBytes += parseInt(item.dataset.size || '0', 10);
+                    }
+                });
+
+                if (estimateLabel) {
+                    estimateLabel.style.display = 'inline-block';
+                    estimateLabel.textContent = `Estimated Space to Free: ${formatBytes(spaceBytes)}`;
+                }
+            } else {
+                if (deleteBtn) deleteBtn.style.display = 'none';
+                if (estimateLabel) estimateLabel.style.display = 'none';
+            }
+        }
+
+        async function executeStorageDeletions(payload) {
+            try {
+                const res = await fetch('/api/user/storage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("Bulk deletion request failed");
+                const data = await res.json();
+                if (data.success) {
+                    // Update client-side local cache if chats were deleted
+                    const idsToDelete = payload.sessionIds || [];
+                    if (payload.action === 'delete-selected') {
+                        chatSessions = chatSessions.filter(s => !idsToDelete.includes(s.id));
+                        saveAllSessions();
+                        renderChatHistory();
+                    } else {
+                        // For bulk, let's reload profile and sync cache
+                        await loadChatState();
+                    }
+                    
+                    // Reload Storage Manager view and update alert blocking counters
+                    await loadStorageManagerChats();
+                    checkStorageAlerts(false);
+                }
+            } catch (err) {
+                console.error("Bulk deletion failed:", err);
+            }
+        }
+
+        function deleteSelectedStorageChats() {
+            const checkboxes = document.querySelectorAll('#storage-manager-list .storage-chat-checkbox:checked');
+            const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+            
+            if (ids.length > 0 && confirm(`Are you sure you want to permanently delete the ${ids.length} selected conversations?`)) {
+                executeStorageDeletions({
+                    action: 'delete-selected',
+                    sessionIds: ids
+                });
+            }
+        }
+
+        function deleteSingleStorageChat(chatId) {
+            if (confirm("Are you sure you want to permanently delete this conversation?")) {
+                executeStorageDeletions({
+                    action: 'delete-selected',
+                    sessionIds: [chatId]
+                });
+            }
+        }
+
+        function deleteOldestBulk() {
+            if (confirm("Are you sure you want to delete the 5 oldest conversations?")) {
+                executeStorageDeletions({
+                    action: 'delete-oldest',
+                    count: 5
+                });
+            }
+        }
+
+        function deleteLargestBulk() {
+            if (confirm("Are you sure you want to delete the 5 largest conversations?")) {
+                executeStorageDeletions({
+                    action: 'delete-largest',
+                    count: 5
+                });
+            }
+        }
+
+        // Rebuilds chat messages HTML layout in the viewport from in-memory decompressed data
+        function rebuildChatHtmlFromThread(thread) {
+            if (!thread || thread.length === 0) {
+                return getEmptyStateMarkup();
+            }
+            let html = '<div class="messages-wrapper">';
+            thread.forEach(msg => {
+                if (msg.role === 'user') {
+                    html += `
+                        <div class="message user">
+                            <div class="message-avatar">${getUserAvatarMarkup()}</div>
+                            <div class="message-content">${escapeHtml(msg.content)}</div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="message ai">
+                            <div class="message-avatar">AI</div>
+                            <div class="message-content">
+                                <div>${renderMarkdown(msg.content)}</div>
+                                <div class="message-actions" style="display: flex;">
+                                    <button class="action-btn" onclick="copyMessage(this)" title="Copy">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="likeMessage(this)" title="Like">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="dislikeMessage(this)" title="Dislike">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="shareMessage(this)" title="Share">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                            <polyline points="16 6 12 2 8 6"></polyline>
+                                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="regenerateMessage(this)" title="Regenerate">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="23 4 23 10 17 10"></polyline>
+                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn read-aloud-toggle" onclick="toggleReadAloudDirect(this)" title="Read aloud" aria-label="Read aloud" aria-pressed="false">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+            return html;
         }
 
         // ==========================================

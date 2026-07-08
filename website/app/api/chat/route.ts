@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
 import { updateUserActivity } from '../../../lib/activity';
+import { getStorageInfo, adjustUserStorage, calculateMessageSize } from '../../../lib/storage';
 import fs from 'fs';
 import path from 'path';
 
@@ -95,6 +96,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   await updateUserActivity(userId);
+
+  // Storage block validation check
+  const storageInfo = await getStorageInfo(userId);
+  if (storageInfo.isBlocked) {
+    return NextResponse.json({ error: 'Storage Full: Your storage limit has been exceeded. Please delete old conversations or upgrade your plan.' }, { status: 403 });
+  }
 
   try {
     const parsedBody = await request.json().catch(() => ({})) as Record<string, any>;
@@ -229,8 +236,8 @@ export async function POST(request: Request) {
 
         await prisma.chatSession.upsert({
           where: { id: sessionId },
-          update: { updatedAt: new Date() },
-          create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
+          update: { updatedAt: new Date(), storageState: 'HOT', lastInteractionAt: new Date() },
+          create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat', storageState: 'HOT', lastInteractionAt: new Date() },
         });
 
         await prisma.message.create({
@@ -241,6 +248,8 @@ export async function POST(request: Request) {
             content,
           },
         });
+
+        await adjustUserStorage(userId, calculateMessageSize(content, 'user', null));
       } catch (dbErr) {
         console.error('Database write error (user message):', dbErr);
       }
@@ -466,6 +475,13 @@ export async function POST(request: Request) {
                     content: accumulatedReply,
                     modelUsed: selectedModel,
                   },
+                });
+
+                await adjustUserStorage(userId, calculateMessageSize(accumulatedReply, 'assistant', selectedModel));
+
+                await prisma.chatSession.update({
+                  where: { id: sessionId },
+                  data: { lastInteractionAt: new Date() },
                 });
 
                 await prisma.apiLog.create({
