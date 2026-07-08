@@ -22,6 +22,12 @@ model User {
   preferences       Json?         // Stores wallpaper settings, model preference, etc.
   messages          Message[]
   logs              ApiLog[]
+  lastActiveAt      DateTime      @default(now())
+  warnedAt          DateTime?
+  finalWarnedAt     DateTime?
+  cleanupLogs       CleanupLog[]
+
+  @@index([lastActiveAt])
 }
 
 model ChatSession {
@@ -56,4 +62,16 @@ model ApiLog {
   tokensUsed Int     @default(0)
   action    String   // "chat" | "image"
   createdAt DateTime @default(now())
+}
+
+model CleanupLog {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionTier     String
+  deletedConversations Int      @default(0)
+  deletedMessages      Int      @default(0)
+  deletedFiles         Int      @default(0)
+  deletedAt            DateTime @default(now())
+  reason               String
 }

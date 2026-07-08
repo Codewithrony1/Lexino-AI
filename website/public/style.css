@@ -6179,3 +6179,68 @@
         font-size: clamp(20px, 5vw, 26px) !important; /* scales identically on mobile */
     }
 }
+
+/* --- Data Retention Warning Banner --- */
+.retention-warning-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(239, 68, 68, 0.12) !important; /* Premium warning crimson background */
+    border-bottom: 1px solid rgba(239, 68, 68, 0.22) !important;
+    color: #f87171 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    z-index: 10;
+    width: 100%;
+    box-sizing: border-box;
+    animation: slideDownBanner 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDownBanner {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.retention-warning-banner .banner-icon {
+    font-size: 14px;
+}
+
+/* --- Data Retention Settings Tab UI --- */
+.retention-status-card {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.retention-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding-bottom: 8px;
+}
+
+.retention-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.retention-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.retention-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}

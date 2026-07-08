@@ -639,6 +639,9 @@
             document.querySelectorAll('.hub-tab-panel').forEach(panel => {
                 panel.classList.toggle('active', panel.id === 'hub-panel-' + tabId);
             });
+            if (tabId === 'retention') {
+                loadRetentionStats();
+            }
         };
 
         // Theme Search & Filter Logic
@@ -1016,6 +1019,7 @@
                         }
                         
                         syncProfileUI();
+                        checkRetentionWarningOnBoot();
                         return;
                     }
                 } catch (e) {
@@ -1783,6 +1787,7 @@
 
         function deleteChatById(chatId, options = {}) {
             if (!chatId) return;
+            pingUserActivity();
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
 
@@ -1968,6 +1973,7 @@
         function openChatSession(chatId) {
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
+            pingUserActivity();
             if (isTempMode) {
                 setTempMode(false);
             }
@@ -2177,6 +2183,7 @@
         }
 
         function startNewChat() {
+            pingUserActivity();
             const messagesDiv = document.getElementById('chatMessages');
             messagesDiv.innerHTML = getEmptyStateMarkup();
             uploadedFiles = [];
@@ -2445,6 +2452,7 @@
         }
 
         function handleFileUpload(event) {
+            pingUserActivity();
             const files = Array.from(event.target.files);
             
             if (files.length + uploadedFiles.length > 50) {
@@ -3826,4 +3834,203 @@
                 });
             }, 100);
         });
+
+        // ==========================================
+        // DATA RETENTION & ACTIVITY TRACKING HELPERS
+        // ==========================================
+        let lastPingTime = 0;
+        function pingUserActivity() {
+            const now = Date.now();
+            if (now - lastPingTime < 60000) return; // limit pings to once per minute
+            lastPingTime = now;
+            fetch('/api/user/active', { method: 'POST' }).catch(err => console.error("Error pinging activity:", err));
+        }
+
+        async function loadRetentionStats() {
+            try {
+                const res = await fetch('/api/user/retention');
+                if (!res.ok) throw new Error("Failed to fetch stats");
+                const data = await res.json();
+                if (data.success) {
+                    const planEl = document.getElementById('retention-plan');
+                    const periodEl = document.getElementById('retention-period');
+                    const activeEl = document.getElementById('retention-last-active');
+                    const deletionEl = document.getElementById('retention-deletion-date');
+                    const convsEl = document.getElementById('retention-conversations');
+                    const storageEl = document.getElementById('retention-storage');
+
+                    if (planEl) planEl.textContent = data.currentPlan + " Plan";
+                    if (periodEl) periodEl.textContent = data.retentionPeriodDays + " Days";
+                    if (activeEl) activeEl.textContent = new Date(data.lastActiveDate).toLocaleString();
+                    if (deletionEl) deletionEl.textContent = new Date(data.autoDeletionDate).toLocaleDateString();
+                    if (convsEl) convsEl.textContent = data.conversationCount;
+                    if (storageEl) storageEl.textContent = data.storageUsed;
+                }
+            } catch (error) {
+                console.error("Error loading retention stats:", error);
+            }
+        }
+
+        function checkRetentionWarningOnBoot() {
+            const clerkEl = document.getElementById("clerk-user-data");
+            if (!clerkEl) return;
+            try {
+                const data = JSON.parse(clerkEl.textContent);
+                if (data && data.lastActiveAt) {
+                    const lastActive = new Date(data.lastActiveAt).getTime();
+                    const tier = (data.tier || 'FREE').toUpperCase();
+                    const now = Date.now();
+                    const oneDay = 24 * 60 * 60 * 1000;
+                    const daysInactive = Math.floor((now - lastActive) / oneDay);
+                    
+                    let limit = 45;
+                    if (tier === 'STUDENT') limit = 180;
+                    else if (tier === 'PRO') limit = 365;
+
+                    const daysLeft = limit - daysInactive;
+
+                    const banner = document.getElementById('retentionWarningBanner');
+                    const bannerText = document.getElementById('retentionWarningText');
+
+                    if (banner && bannerText) {
+                        if (tier === 'FREE') {
+                            if (daysLeft <= 15) {
+                                banner.style.display = 'flex';
+                                bannerText.textContent = `Your chats will be deleted in ${daysLeft} days due to inactivity.`;
+                            } else {
+                                banner.style.display = 'none';
+                            }
+                        } else {
+                            banner.style.display = 'flex';
+                            banner.style.background = 'rgba(52, 211, 153, 0.08) !important';
+                            banner.style.borderBottom = '1px solid rgba(52, 211, 153, 0.15) !important';
+                            banner.style.color = '#34d399' + ' !important';
+                            const iconEl = banner.querySelector('.banner-icon');
+                            if (iconEl) iconEl.textContent = '🛡️';
+                            bannerText.textContent = `Your chats are protected for ${limit} days of inactivity.`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to parse boot retention warnings:", e);
+            }
+        }
+
+        // ==========================================
+        // EXPORT DATA FUNCTIONS (JSON, MD, PDF)
+        // ==========================================
+        function exportChatsJSON() {
+            const sessionsRaw = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) || "[]";
+            const blob = new Blob([sessionsRaw], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `lexino_chats_export_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            pingUserActivity();
+        }
+
+        function exportChatsMarkdown() {
+            try {
+                const sessions = JSON.parse(localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) || "[]");
+                let md = "# Lexino AI Chat Export\n\nGenerated on: " + new Date().toLocaleString() + "\n\n---\n\n";
+
+                if (sessions.length === 0) {
+                    md += "No chat conversations found.";
+                } else {
+                    sessions.forEach((session) => {
+                        md += `## Chat: ${session.title || 'New chat'}\n`;
+                        md += `*Last Updated: ${new Date(session.updatedAt || Date.now()).toLocaleString()}*\n\n`;
+                        
+                        if (session.thread && Array.isArray(session.thread)) {
+                            session.thread.forEach((msg) => {
+                                const roleName = msg.role === 'user' ? 'User' : 'Lexino AI';
+                                md += `### **${roleName}**\n\n${msg.content}\n\n`;
+                            });
+                        }
+                        md += "---\n\n";
+                    });
+                }
+
+                const blob = new Blob([md], { type: "text/markdown" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `lexino_chats_export_${Date.now()}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+                pingUserActivity();
+            } catch (e) {
+                console.error("Failed to export Markdown:", e);
+            }
+        }
+
+        function exportChatsPDF() {
+            try {
+                const sessions = JSON.parse(localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) || "[]");
+                let html = `
+                    <html>
+                    <head>
+                        <title>Lexino AI Chats Export</title>
+                        <style>
+                            body { font-family: 'Inter', system-ui, sans-serif; background: #ffffff; color: #1e293b; padding: 40px; }
+                            h1 { color: #0f172a; border-bottom: 2px solid #34d399; padding-bottom: 10px; margin-bottom: 30px; }
+                            .chat-session { margin-bottom: 50px; page-break-inside: avoid; }
+                            .chat-title { font-size: 20px; font-weight: 700; color: #1e1b4b; margin-bottom: 6px; }
+                            .chat-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }
+                            .message { margin-bottom: 18px; padding: 14px; border-radius: 8px; line-height: 1.5; }
+                            .user { background: #f1f5f9; border-left: 4px solid #64748b; }
+                            .assistant { background: #f0fdf4; border-left: 4px solid #34d399; }
+                            .sender-name { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; color: #0f172a; }
+                            .message-content { font-size: 14px; white-space: pre-wrap; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Lexino AI Chat Export</h1>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 30px;">Export Date: ${new Date().toLocaleString()}</div>
+                `;
+
+                if (sessions.length === 0) {
+                    html += "<p>No conversations found.</p>";
+                } else {
+                    sessions.forEach((session) => {
+                        html += `
+                            <div class="chat-session">
+                                <div class="chat-title">${escapeHtml(session.title || 'New chat')}</div>
+                                <div class="chat-meta">Last Updated: ${new Date(session.updatedAt || Date.now()).toLocaleString()}</div>
+                        `;
+                        if (session.thread && Array.isArray(session.thread)) {
+                            session.thread.forEach((msg) => {
+                                const roleName = msg.role === 'user' ? 'User' : 'Lexino AI';
+                                const roleClass = msg.role === 'user' ? 'user' : 'assistant';
+                                html += `
+                                    <div class="message ${roleClass}">
+                                        <div class="sender-name">${roleName}</div>
+                                        <div class="message-content">${escapeHtml(msg.content)}</div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        html += `</div><hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 40px 0; page-break-after: always;" />`;
+                    });
+                }
+
+                html += `</body></html>`;
+
+                const printWindow = window.open("", "_blank");
+                if (printWindow) {
+                    printWindow.document.write(html);
+                    printWindow.document.close();
+                    printWindow.focus();
+                    setTimeout(() => {
+                        printWindow.print();
+                        printWindow.close();
+                    }, 250);
+                }
+                pingUserActivity();
+            } catch (e) {
+                console.error("Failed to export PDF:", e);
+            }
+        }
     

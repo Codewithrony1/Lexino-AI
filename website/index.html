@@ -40,6 +40,10 @@
                         <span class="hub-icon">♿</span>
                         Accessibility
                     </button>
+                    <button class="hub-nav-btn" id="hub-tab-retention" onclick="switchHubTab('retention')">
+                        <span class="hub-icon">🛡️</span>
+                        Data & Retention
+                    </button>
                 </div>
                 
                 <!-- Right Content Pane -->
@@ -362,6 +366,57 @@
                                     <input type="checkbox" id="toggle-reduced-motion" onchange="toggleAccessibilitySetting('reduced-motion')">
                                     <span class="hub-slider"></span>
                                 </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Data & Retention -->
+                    <div class="hub-tab-panel" id="hub-panel-retention">
+                        <div class="hub-section">
+                            <div class="hub-section-title">Data Retention Status</div>
+                            <div class="retention-status-card">
+                                <div class="retention-row">
+                                    <span class="retention-label">Current Plan:</span>
+                                    <span class="retention-val" id="retention-plan">Loading...</span>
+                                </div>
+                                <div class="retention-row">
+                                    <span class="retention-label">Retention Period:</span>
+                                    <span class="retention-val" id="retention-period">Loading...</span>
+                                </div>
+                                <div class="retention-row">
+                                    <span class="retention-label">Last Active Date:</span>
+                                    <span class="retention-val" id="retention-last-active">Loading...</span>
+                                </div>
+                                <div class="retention-row">
+                                    <span class="retention-label">Auto Deletion Date:</span>
+                                    <span class="retention-val" id="retention-deletion-date" style="color: #ef4444; font-weight: 600;">Loading...</span>
+                                </div>
+                                <div class="retention-row">
+                                    <span class="retention-label">Conversation Count:</span>
+                                    <span class="retention-val" id="retention-conversations">Loading...</span>
+                                </div>
+                                <div class="retention-row">
+                                    <span class="retention-label">Estimated Storage:</span>
+                                    <span class="retention-val" id="retention-storage">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hub-section">
+                            <div class="hub-section-title">Export Your Data</div>
+                            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                                Download your complete chat history, messages, and configurations. Select your preferred format:
+                            </p>
+                            <div class="export-actions-grid" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="profile-btn secondary" onclick="exportChatsJSON()" style="flex: 1; min-width: 120px; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                                    <span>📦</span> Download JSON
+                                </button>
+                                <button class="profile-btn secondary" onclick="exportChatsMarkdown()" style="flex: 1; min-width: 120px; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                                    <span>📝</span> Download MD
+                                </button>
+                                <button class="profile-btn primary" onclick="exportChatsPDF()" style="flex: 1; min-width: 120px; justify-content: center; display: inline-flex; align-items: center; gap: 6px; background: var(--accent-primary) !important; color: #0b0b0d !important;">
+                                    <span>📄</span> Download PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -741,6 +796,11 @@
                     <div class="header-account clerk-account-slot" id="clerkHeaderSlot" aria-label="Account menu"></div>
                 </div>
             </header>
+
+            <div class="retention-warning-banner" id="retentionWarningBanner" style="display: none;">
+                <span class="banner-icon">⚠️</span>
+                <span class="banner-text" id="retentionWarningText"></span>
+            </div>
 
             <div class="chat-messages" id="chatMessages">
                 <div class="empty-state" id="emptyState">

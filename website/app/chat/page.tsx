@@ -21,7 +21,7 @@ export default async function ChatPage() {
   await auth.protect();
   
   const user = await currentUser();
-  let userData = { id: '', name: 'Ritik', email: '', imageUrl: '', tier: 'FREE', cooldownUntil: null as string | null, messageCountToday: 0 };
+  let userData = { id: '', name: 'Ritik', email: '', imageUrl: '', tier: 'FREE', cooldownUntil: null as string | null, messageCountToday: 0, lastActiveAt: new Date().toISOString() };
   
   if (user) {
     const email = user.emailAddresses[0]?.emailAddress || '';
@@ -33,8 +33,21 @@ export default async function ChatPage() {
       try {
         dbUser = await prisma.user.upsert({
           where: { id: user.id },
-          update: { email, name, avatarUrl },
-          create: { id: user.id, email, name, avatarUrl },
+          update: {
+            email,
+            name,
+            avatarUrl,
+            lastActiveAt: new Date(),
+            warnedAt: null,
+            finalWarnedAt: null,
+          },
+          create: {
+            id: user.id,
+            email,
+            name,
+            avatarUrl,
+            lastActiveAt: new Date(),
+          },
         });
       } catch (err) {
         console.error('Error auto-syncing user on page load:', err);
@@ -51,6 +64,7 @@ export default async function ChatPage() {
       tier: dbUser?.tier || 'FREE',
       cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
       messageCountToday: dbUser?.messageCountToday || 0,
+      lastActiveAt: dbUser?.lastActiveAt ? dbUser.lastActiveAt.toISOString() : new Date().toISOString(),
     };
   }
 

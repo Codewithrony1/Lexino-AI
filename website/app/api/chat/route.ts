@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { updateUserActivity } from '../../../lib/activity';
 import fs from 'fs';
 import path from 'path';
 
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  await updateUserActivity(userId);
 
   try {
     const parsedBody = await request.json().catch(() => ({})) as Record<string, any>;
