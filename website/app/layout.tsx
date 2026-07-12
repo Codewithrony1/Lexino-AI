@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   authors: [{ name: 'Lexino AI' }],
   creator: 'Lexino AI',
   publisher: 'Lexino AI',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/favicon.ico',
+  },
   openGraph: {
     title: 'Lexino AI - Your Smartest Digital Partner',
     description: 'Lexino AI is an advanced Artificial Intelligence assistant designed to simplify tasks, generate ideas, automate work, and boost productivity.',

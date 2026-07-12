@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <style>
+    .icon-shape {
+      fill: none;
+      stroke: #1a1a1a;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    @media (prefers-color-scheme: dark) {
+      .icon-shape {
+        stroke: #ffffff;
+      }
+    }
+  </style>
+  <polygon class="icon-shape" points="250,42 268,59 150,189 149,154 250,42" />
+  <polygon class="icon-shape" points="267,90 418,90 418,115 244,115 267,90" />
+  <polygon class="icon-shape" points="105,93 128,93 128,271 104,247 105,93" />
+  <polygon class="icon-shape" points="333,132 368,132 475,236 458,254 333,132" />
+  <polygon class="icon-shape" points="253,181 276,183 297,193 315,213 323,234 323,259 319,272 311,286 295,301 270,311 249,311 223,300 204,279 196,256 197,232 207,209 224,192 240,184 253,181" />
+  <polygon class="icon-shape" points="391,213 415,236 415,390 391,390 391,213" />
+  <polygon class="icon-shape" points="59,237 63,238 188,358 151,357 44,254 59,237" />
+  <polygon class="icon-shape" points="375,304 375,340 274,449 257,432 375,304" />
+  <polygon class="icon-shape" points="103,379 276,379 252,405 103,405 103,379" />
+</svg>
