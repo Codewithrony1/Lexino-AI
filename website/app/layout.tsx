@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   creator: 'Lexino AI',
   publisher: 'Lexino AI',
   icons: {
-    icon: '/icon.svg',
+    icon: '/favicon.png',
     shortcut: '/favicon.ico',
   },
   openGraph: {
