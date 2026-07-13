@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(layout)
 
         // Load Lexino AI Chat
-        webView.loadUrl("https://lexinoai.vercel.app/chat")
+        webView.loadUrl("https://lexinoai.in/chat")
     }
 
     override fun onBackPressed() {

@@ -28,7 +28,7 @@ Current Details:
 - Inactivity: ${daysInactive} days
 - Days remaining before deletion: ${daysLeft} days
 
-Log in to Lexino AI today: https://lexinoai.vercel.app/chat
+Log in to Lexino AI today: https://lexinoai.in/chat
 
 Best regards,
 The Lexino AI Team`;
