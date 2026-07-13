@@ -4,10 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>LEXINO AI - Professional Chat Interface</title>
+    <link rel="preload" href="style.css" as="style">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-        <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <style>
+        /* Immediate Dark Theme Background to prevent FOUC (white flash) */
+        html, body {
+            background-color: #030506 !important;
+        }
+    </style>
 </head>
 <body>
     <div class="animated-wallpaper wallpaper-none" id="animatedWallpaper" aria-hidden="true"></div>
