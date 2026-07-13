@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function HelpPage() {
-  const [activeTab, setActiveTab] = useState<'faq' | 'support' | 'releases'>('faq');
+  const [activeTab, setActiveTab] = useState<'faq' | 'support'>('faq');
   const [faqOpen, setFaqOpen] = useState<Record<number, boolean>>({});
   
   // Form State
@@ -21,9 +21,9 @@ export default function HelpPage() {
       const section = params.get('section');
       const queryTopic = params.get('topic');
       
-      const validTabs = ['faq', 'support', 'releases'];
+      const validTabs = ['faq', 'support'];
       if (section && validTabs.includes(section)) {
-        setActiveTab(section as 'faq' | 'support' | 'releases');
+        setActiveTab(section as 'faq' | 'support');
       } else if (section) {
         setActiveTab('faq');
       }
@@ -636,12 +636,6 @@ export default function HelpPage() {
             >
               <span className="nav-icon">🛠️</span> Customer Support
             </button>
-            <button 
-              className={`help-nav-btn ${activeTab === 'releases' ? 'active' : ''}`}
-              onClick={() => setActiveTab('releases')}
-            >
-              <span className="nav-icon">📋</span> Release Notes
-            </button>
           </nav>
 
           {/* Main Card Panel */}
@@ -686,7 +680,7 @@ export default function HelpPage() {
                   ))}
                 </div>
               </div>
-            ) : activeTab === 'support' ? (
+            ) : (
               <div>
                 <h2 className="panel-heading">✉️ Create a Support Ticket</h2>
                 <p className="panel-desc">Need help with billing, credentials, or accounts? Submit a ticket to our developers.</p>
@@ -757,47 +751,6 @@ export default function HelpPage() {
                     <strong>Support Email:</strong> lexinoofficial@gmail.com<br />
                     <strong>Billing Queries:</strong> lexinoofficial@gmail.com<br />
                     <strong>Enterprise:</strong> lexinoofficial@gmail.com
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <h2 className="panel-heading">📋 Release Notes</h2>
-                <p className="panel-desc">Stay updated with the latest features, enhancements, and infrastructure updates on Lexino AI.</p>
-                
-                <div className="release-timeline">
-                  <div className="release-card">
-                    <div className="release-badge-container">
-                      <span className="release-version">v2.1.0</span>
-                      <span className="release-date">May 31, 2026</span>
-                    </div>
-                    <h3 className="release-title">Next.js Core Restructure & Owner Panel</h3>
-                    
-                    <div className="release-section">
-                      <h4 className="release-section-title">Core Infrastructure</h4>
-                      <ul className="release-list">
-                        <li><strong>Next.js App Router Restructure:</strong> Restructured layout pages, API routes, and components to reside in the nested <code>website/</code> directory for clean monorepo builds.</li>
-                        <li><strong>Production Optimization:</strong> Set up target build actions in Vercel to compile files flawlessly using direct configurations.</li>
-                        <li><strong>Improved Routing Architecture:</strong> Standardized application redirects and routing path handlers.</li>
-                      </ul>
-                    </div>
-
-                    <div className="release-section">
-                      <h4 className="release-section-title">Admin Systems & Auth</h4>
-                      <ul className="release-list">
-                        <li><strong>Owner Admin Panel:</strong> Built the new <code>/lexino-owner-panel-x7a91</code> to let owners monitor system statistics, synchronize user data, and manage account levels directly.</li>
-                        <li><strong>Standardized Auth Routes:</strong> Renamed Clerk authentication landing routes to <code>/login</code> and <code>/signup</code> for enhanced routing simplicity.</li>
-                      </ul>
-                    </div>
-
-                    <div className="release-section">
-                      <h4 className="release-section-title">Premium Features & Mobile UI</h4>
-                      <ul className="release-list">
-                        <li><strong>Model Lock System:</strong> Integrated premium access locks on Pro & Claude models depending on account status (Free, Student, Pro).</li>
-                        <li><strong>Mobile Dropdown Fix:</strong> Fixed the CSS layout clipping bug where options other than Claude were hidden. The menu now opens cleanly without clipping on mobile screens.</li>
-                        <li><strong>Scroll & Touch Support:</strong> Enabled smooth touch-scrolling behavior and height limits on the model selection menu for smaller screens.</li>
-                      </ul>
-                    </div>
                   </div>
                 </div>
               </div>
