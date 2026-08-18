@@ -95,7 +95,13 @@ export function getWebsiteBody() {
 }
 
 export default async function LandingPage() {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    const authData = await auth();
+    userId = authData?.userId ?? null;
+  } catch {
+    userId = null;
+  }
 
   let websiteMarkup = getWebsiteBody();
 

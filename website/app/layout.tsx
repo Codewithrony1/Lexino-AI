@@ -78,11 +78,9 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    nocache: false,
     googleBot: {
       index: true,
       follow: true,
-      noimageindex: false,
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,
@@ -170,13 +168,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       signUpFallbackRedirectUrl="/chat"
     >
       <html lang="en" suppressHydrationWarning>
-        <head>
+        <body>
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
           />
-        </head>
-        <body>
           {children}
           <Analytics />
         </body>
