@@ -4,18 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>LEXINO AI - Professional Chat Interface</title>
-    <link rel="preload" href="style.css" as="style">
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
-    <style>
-        /* Immediate Dark Theme Background to prevent FOUC (white flash) */
-        html, body {
-            background-color: #030506 !important;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="animated-wallpaper wallpaper-none" id="animatedWallpaper" aria-hidden="true"></div>
@@ -48,10 +39,6 @@
                     <button class="hub-nav-btn" id="hub-tab-accessibility" onclick="switchHubTab('accessibility')">
                         <span class="hub-icon">♿</span>
                         Accessibility
-                    </button>
-                    <button class="hub-nav-btn" id="hub-tab-retention" onclick="switchHubTab('retention')">
-                        <span class="hub-icon">🛡️</span>
-                        Data & Storage
                     </button>
                 </div>
                 
@@ -378,66 +365,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Tab: Data & Storage -->
-                    <div class="hub-tab-panel" id="hub-panel-retention">
-                        <div class="hub-section">
-                            <div class="hub-section-title">Storage & Quotas</div>
-                            <div class="retention-status-card">
-                                <div class="retention-row">
-                                    <span class="retention-label">Current Plan:</span>
-                                    <span class="retention-val" id="retention-plan">Loading...</span>
-                                </div>
-                                <div class="retention-row">
-                                    <span class="retention-label">Storage Used:</span>
-                                    <span class="retention-val" id="retention-storage-used">Loading...</span>
-                                </div>
-                                <div class="retention-row">
-                                    <span class="retention-label">Storage Limit:</span>
-                                    <span class="retention-val" id="retention-storage-limit">Loading...</span>
-                                </div>
-                                <div class="retention-row">
-                                    <span class="retention-label">Conversation Count:</span>
-                                    <span class="retention-val" id="retention-conversations">Loading...</span>
-                                </div>
-                                <div class="retention-row">
-                                    <span class="retention-label">Last Active Date:</span>
-                                    <span class="retention-val" id="retention-last-active">Loading...</span>
-                                </div>
-                                <div class="retention-row">
-                                    <span class="retention-label">Conversation Lifecycle:</span>
-                                    <span class="retention-val" id="retention-lifecycle" style="text-align: right; max-width: 60%; font-size: 11px;">Loading...</span>
-                                </div>
-                                <div class="retention-row">
-                                    <span class="retention-label">Account Inactivity Policy:</span>
-                                    <span class="retention-val" style="color: #ef4444; text-align: right; max-width: 60%; font-size: 11px;">Deleted after 365 days of account inactivity</span>
-                                </div>
-                            </div>
-                            <div style="margin-top: 15px;">
-                                <button class="profile-btn primary" onclick="openStorageManager()" style="width: 100%; justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important; font-weight: 600;">
-                                    🗄️ Open Storage Manager
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="hub-section">
-                            <div class="hub-section-title">Export Your Data</div>
-                            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                                Download your complete chat history, messages, and configurations. Select your preferred format:
-                            </p>
-                            <div class="export-actions-grid" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button class="profile-btn secondary" onclick="exportChatsJSON()" style="flex: 1; min-width: 120px; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
-                                    <span>📦</span> Download JSON
-                                </button>
-                                <button class="profile-btn secondary" onclick="exportChatsMarkdown()" style="flex: 1; min-width: 120px; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
-                                    <span>📝</span> Download MD
-                                </button>
-                                <button class="profile-btn secondary" onclick="exportChatsPDF()" style="flex: 1; min-width: 120px; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
-                                    <span>📄</span> Download PDF
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -613,19 +540,19 @@
                 </button>
                 <div class="rail-spacer"></div>
                 <button class="rail-avatar-btn" id="railAvatarBtn" onclick="toggleRailQuickMenu(event)" title="Account menu">
-                    <span id="railProfileInitial">RR</span>
+                    <span id="railProfileInitial">U</span>
                 </button>
                 <div class="rail-quick-menu" id="railQuickMenu" onclick="event.stopPropagation()" role="menu" aria-label="Quick account menu">
                     <button class="rail-quick-item" onclick="closeRailQuickMenu(); openProfileModal();">
-                        <span class="rail-quick-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                        <span class="rail-quick-icon">&#9786;</span>
                         <span>Profile</span>
                     </button>
                     <button class="rail-quick-item" onclick="closeRailQuickMenu(); openSettings();">
-                        <span class="rail-quick-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg></span>
+                        <span class="rail-quick-icon">&#9788;</span>
                         <span>Personalization</span>
                     </button>
                     <button class="rail-quick-item" onclick="closeRailQuickMenu(); openHelp();">
-                        <span class="rail-quick-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                        <span class="rail-quick-icon">?</span>
                         <span>Help</span>
                     </button>
                 </div>
@@ -689,9 +616,9 @@
             <div class="chat-history" id="chatHistory"></div>
             <div class="sidebar-footer">
                 <div class="sidebar-account-card" id="sidebarAccountBtn" onclick="toggleSidebarAccountMenu(event)" onkeydown="if(event.key === 'Enter' || event.key === ' ') { toggleSidebarAccountMenu(event); }" title="Account menu" role="button" tabindex="0">
-                    <div class="sidebar-account-avatar" id="sidebarAccountInitial">R</div>
+                    <div class="sidebar-account-avatar" id="sidebarAccountInitial">U</div>
                     <div class="sidebar-account-text">
-                        <div class="sidebar-account-name" id="sidebarAccountName">Ritik</div>
+                        <div class="sidebar-account-name" id="sidebarAccountName">User</div>
                         <div class="sidebar-account-handle" id="sidebarAccountHandle">Free Plan</div>
                     </div>
                     <div class="sidebar-store-container" onclick="event.stopPropagation()">
@@ -717,37 +644,37 @@
                 </div>
                 <div class="sidebar-account-menu" id="sidebarAccountMenu" onclick="event.stopPropagation()" role="menu" aria-label="Account menu">
                     <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); upgradePlan();">
-                        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z"/></svg></span>
+                        <span class="icon">&#10024;</span>
                         <span>Upgrade plan</span>
                     </button>
                     <button class="sidebar-account-item" onclick="closeSidebarAccountMenu(); openSettings();">
-                        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg></span>
+                        <span class="icon">&#9788;</span>
                         <span>Personalization</span>
                     </button>
                     <!-- Help Item with Nested Submenu -->
                     <div class="sidebar-account-item-parent">
                         <button class="sidebar-account-item" id="helpMenuBtn" onclick="toggleHelpSubmenu(event)">
-                            <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                            <span class="icon">?</span>
                             <span>Help</span>
                             <span class="arrow-right">&#8250;</span>
                         </button>
                         <div class="sidebar-account-submenu" id="sidebarHelpSubmenu">
                             <button class="sidebar-account-submenu-item" onclick="closeSidebarAccountMenu(); window.location.href = '/help';">
-                                <span class="icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg></span> FAQ & Guides
+                                <span class="icon">💡</span> FAQ & Guides
                             </button>
                             <button class="sidebar-account-submenu-item" onclick="closeSidebarAccountMenu(); openFeedbackModal();">
-                                <span class="icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Feedback Form
+                                <span class="icon">📣</span> Feedback Form
                             </button>
                             <button class="sidebar-account-submenu-item" onclick="closeSidebarAccountMenu(); window.location.href = '/help?section=support';">
-                                <span class="icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span> Contact Support
+                                <span class="icon">🛠️</span> Contact Support
                             </button>
                             <button class="sidebar-account-submenu-item" onclick="closeSidebarAccountMenu(); window.location.href = '/help?section=support&topic=bug';">
-                                <span class="icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="m8 2 1.88 1.88M14.12 3.88 16 2M9 7.13v-1M15 7.13v-1M21 12H3M20 7a8 8 0 0 0-16 0v5l1.58 6.32a2 2 0 0 0 1.94 1.51h9.24a2 2 0 0 0 1.94-1.51L20 12V7z"/></svg></span> Report a Bug
+                                <span class="icon">🪲</span> Report a Bug
                             </button>
                         </div>
                     </div>
                     <button class="sidebar-account-item danger" onclick="closeSidebarAccountMenu(); logoutAccount();">
-                        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+                        <span class="icon">&#10162;</span>
                         <span>Log out</span>
                     </button>
                 </div>
@@ -770,7 +697,7 @@
                 </button>
                 <div class="header-center" style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 16px; flex: 1; min-width: 0; padding-left: 16px;">
                     <div class="header-brand-group" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 0;">
-                        <div class="header-logo lexino-brand-logo" id="headerLogo">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></div>
+                        <div class="header-logo" id="headerLogo">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></div>
                         <div class="header-subtitle" id="headerSubtitle" style="display: none; font-size: 11px; opacity: 0.8; font-weight: 500; letter-spacing: 0.5px; color: #fbbf24; margin-top: 1px; text-transform: none; text-shadow: 0 0 8px rgba(251, 191, 36, 0.25);">Your AI Academic Strategist</div>
                     </div>
                     <div class="temp-mode-badge" id="tempModeBadge">Temp Mode</div>
@@ -815,14 +742,9 @@
                 </div>
             </header>
 
-            <div class="retention-warning-banner" id="retentionWarningBanner" style="display: none;">
-                <span class="banner-icon">⚠️</span>
-                <span class="banner-text" id="retentionWarningText"></span>
-            </div>
-
             <div class="chat-messages" id="chatMessages">
                 <div class="empty-state" id="emptyState">
-                    <h2 class="empty-state-logo lexino-brand-logo" aria-hidden="true">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></h2>
+                    <h2>LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></h2>
                     <p>How can I help you today?</p>
                     <div class="suggestion-chips">
                         <div class="chip" onclick="useSuggestion('Explain quantum computing')">
@@ -928,65 +850,6 @@
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- Storage Warning Modal -->
-    <div class="settings-modal" id="storageWarningModal" style="display: none; z-index: 1200;">
-        <div class="settings-content" style="max-width: 400px; text-align: center; padding: 30px;">
-            <div id="storageWarningIcon" style="font-size: 44px; margin-bottom: 16px; text-shadow: 0 0 10px rgba(239,68,68,0.3);">⚠️</div>
-            <h2 id="storageWarningTitle" style="margin-bottom: 12px; font-weight: 700;">Storage Almost Full</h2>
-            <p id="storageWarningText" style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5;"></p>
-            <div class="warning-buttons-layout" id="storageWarningButtons" style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- Buttons dynamically loaded -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Storage Manager Modal -->
-    <div class="settings-modal" id="storageManagerModal" style="display: none; z-index: 1100;">
-        <div class="settings-content storage-manager-content" style="max-width: 680px; height: 85vh; display: flex; flex-direction: column;">
-            <div class="settings-header" style="flex-shrink: 0;">
-                <h2>Storage Manager</h2>
-                <button class="close-btn" onclick="closeStorageManager()">✕</button>
-            </div>
-            
-            <div class="storage-overview" style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; margin-bottom: 16px; flex-shrink: 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                    <span id="sm-plan-tier">FREE PLAN</span>
-                    <span id="sm-usage-label">0 bytes / 5 MB</span>
-                </div>
-                <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                    <div id="sm-progress-fill" style="width: 0%; height: 100%; background: var(--accent-primary); transition: width 0.3s ease;"></div>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary);">
-                    <span id="sm-convs-count">0 Conversations</span>
-                    <span id="sm-free-space-estimate" style="color: #34d399; font-weight: 600; display: none;">Estimated Space to Free: 0 KB</span>
-                </div>
-            </div>
-
-            <div class="storage-controls" style="display: flex; gap: 10px; margin-bottom: 12px; flex-shrink: 0; flex-wrap: wrap;">
-                <input type="text" id="sm-search" placeholder="Search conversations..." oninput="filterStorageManagerList()" style="flex: 1; min-width: 180px; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-size: 13px;">
-                <select id="sm-sort" onchange="sortStorageManagerList()" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-size: 13px;">
-                    <option value="last-opened">Last Opened</option>
-                    <option value="last-updated">Last Updated</option>
-                    <option value="largest">Largest</option>
-                    <option value="oldest">Oldest</option>
-                </select>
-                <button class="profile-btn secondary" onclick="deleteOldestBulk()" style="padding: 8px 12px; font-size: 12px;">Delete 5 Oldest</button>
-                <button class="profile-btn secondary" onclick="deleteLargestBulk()" style="padding: 8px 12px; font-size: 12px;">Delete 5 Largest</button>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
-                    <input type="checkbox" id="sm-select-all" onchange="toggleSelectAllStorageChats()" style="cursor: pointer;"> Select All
-                </label>
-                <button id="sm-delete-selected-btn" class="profile-btn danger" onclick="deleteSelectedStorageChats()" style="padding: 6px 12px; font-size: 12px; display: none;">Delete Selected</button>
-            </div>
-
-            <div id="storage-manager-list" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
-                <!-- Conversations loaded dynamically -->
-            </div>
-        </div>
     </div>
 
     <div class="chat-context-menu" id="chatContextMenu">

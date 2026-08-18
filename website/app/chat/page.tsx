@@ -73,6 +73,11 @@ export default async function ChatPage() {
     <>
       <link rel="stylesheet" href="/style.css" />
       <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: chatMarkup }} />
+      <script
+        id="clerk-user-data"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(userData) }}
+      />
       <div
         id="nextjs-user-data"
         style={{ display: 'none' }}

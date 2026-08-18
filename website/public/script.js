@@ -21,7 +21,7 @@
         const SIDEBAR_BRAND_IMAGE_KEY = "lexino_sidebar_brand_image_v1";
         const allowedWallpapers = ["none", "aurora", "neon", "mesh", "starfall", "particlefield", "sunset", "universe", "fallingstarfield", "nebulastars", "minimalspace", "galaxydrift", "interstellar"];
         const defaultProfile = {
-            name: "Ritik",
+            name: "User",
             email: "",
             bio: ""
         };
@@ -639,9 +639,6 @@
             document.querySelectorAll('.hub-tab-panel').forEach(panel => {
                 panel.classList.toggle('active', panel.id === 'hub-panel-' + tabId);
             });
-            if (tabId === 'retention') {
-                checkStorageAlerts(false);
-            }
         };
 
         // Theme Search & Filter Logic
@@ -921,7 +918,7 @@
 
             if (avatarEl) {
                 if (currentProfile.imageUrl) {
-                    avatarEl.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                    avatarEl.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" alt="${safeName}" />`;
                 } else {
                     avatarEl.textContent = initial;
                 }
@@ -929,13 +926,17 @@
             }
 
             if (railInitial) {
-                const letters = safeName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join("");
-                railInitial.textContent = letters || initial;
+                if (currentProfile.imageUrl) {
+                    railInitial.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" alt="${safeName}" />`;
+                } else {
+                    const letters = safeName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join("");
+                    railInitial.textContent = letters || initial;
+                }
             }
 
             if (sidebarAccountInitial) {
                 if (currentProfile.imageUrl) {
-                    sidebarAccountInitial.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                    sidebarAccountInitial.innerHTML = `<img src="${currentProfile.imageUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" alt="${safeName}" />`;
                 } else {
                     sidebarAccountInitial.textContent = initial;
                 }
@@ -998,19 +999,30 @@
         }
 
         function loadProfile() {
-            const clerkEl = document.getElementById("clerk-user-data");
+            let clerkEl = document.getElementById("clerk-user-data") || document.getElementById("nextjs-user-data");
             if (clerkEl) {
                 try {
-                    const data = JSON.parse(clerkEl.textContent);
-                    if (data && data.name) {
+                    let data = null;
+                    if (clerkEl.tagName === "SCRIPT") {
+                        data = JSON.parse(clerkEl.textContent || "{}");
+                    } else if (clerkEl.hasAttribute("data-user")) {
+                        data = JSON.parse(clerkEl.getAttribute("data-user") || "{}");
+                    }
+                    if (data && (data.name || data.email || data.id)) {
+                        const safeName = (data.name || "").trim() || "User";
                         currentProfile = {
-                            name: data.name,
+                            id: data.id || "",
+                            name: safeName,
                             email: data.email || "",
                             bio: "",
                             imageUrl: data.imageUrl || ""
                         };
                         window.lexinoUserTier = data.tier || "FREE";
                         window.lexinoCooldownUntil = data.cooldownUntil || null;
+                        
+                        try {
+                            localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(currentProfile));
+                        } catch (_) {}
                         
                         if (window.lexinoCooldownUntil && new Date(window.lexinoCooldownUntil) > new Date()) {
                             triggerCooldownTimer(new Date(window.lexinoCooldownUntil));
@@ -1019,11 +1031,10 @@
                         }
                         
                         syncProfileUI();
-                        checkStorageAlerts(false);
                         return;
                     }
                 } catch (e) {
-                    console.error("Failed to load Clerk profile details:", e);
+                    console.error("Failed to load user profile details:", e);
                 }
             }
             
@@ -1042,7 +1053,8 @@
                 currentProfile = {
                     name: (parsed.name || defaultProfile.name).toString().trim() || defaultProfile.name,
                     email: (parsed.email || "").toString().trim(),
-                    bio: (parsed.bio || "").toString().trim()
+                    bio: (parsed.bio || "").toString().trim(),
+                    imageUrl: (parsed.imageUrl || "").toString().trim()
                 };
             } catch (error) {
                 console.error("Failed to load profile:", error);
@@ -1114,7 +1126,7 @@
 
             return `
                 <div class="empty-state" id="emptyState">
-                    <h2 class="empty-state-logo lexino-brand-logo" aria-hidden="true">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></h2>
+                    <h2>LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></h2>
                     <p>${subtitle}</p>
                     <div class="suggestion-chips">
                         <div class="chip" onclick="useSuggestion('Explain quantum computing')">
@@ -1452,7 +1464,7 @@
 
         window.navigateToPricingFromLock = function() {
             window.closePremiumLockModal();
-            openExternal("https://lexinoai.in/pricing");
+            openExternal("https://lexino.ai/pricing");
         }
 
         window.showPremiumLockModal = function(mode) {
@@ -1787,7 +1799,6 @@
 
         function deleteChatById(chatId, options = {}) {
             if (!chatId) return;
-            pingUserActivity();
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
 
@@ -1970,10 +1981,9 @@
             scheduleSearchResultsRender();
         }
 
-        async function openChatSession(chatId) {
+        function openChatSession(chatId) {
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
-            pingUserActivity();
             if (isTempMode) {
                 setTempMode(false);
             }
@@ -1984,30 +1994,7 @@
             if (messagesDiv) {
                 messagesDiv.innerHTML = target.html || getEmptyStateMarkup();
                 ensureMessageMoreMenus(messagesDiv);
-                scrollMessagesToLatest();
             }
-
-            try {
-                const res = await fetch(`/api/chat/session?id=${chatId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.success && data.messages) {
-                        target.thread = data.messages;
-                        const newHtml = rebuildChatHtmlFromThread(data.messages);
-                        target.html = newHtml;
-                        saveAllSessions();
-                        
-                        if (activeChatId === chatId && messagesDiv) {
-                            messagesDiv.innerHTML = newHtml;
-                            ensureMessageMoreMenus(messagesDiv);
-                            scrollMessagesToLatest();
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to sync decompressed chat history:", err);
-            }
-            
             currentConversation = Array.isArray(target.thread)
                 ? target.thread.map((m) => ({ role: m.role, content: m.content }))
                 : [];
@@ -2206,7 +2193,6 @@
         }
 
         function startNewChat() {
-            pingUserActivity();
             const messagesDiv = document.getElementById('chatMessages');
             messagesDiv.innerHTML = getEmptyStateMarkup();
             uploadedFiles = [];
@@ -2390,7 +2376,7 @@
         };
 
         function upgradePlan() {
-            openExternal("https://lexinoai.in/pricing");
+            openExternal("https://lexino.ai/pricing");
         }
 
         function startTempChat() {
@@ -2475,7 +2461,6 @@
         }
 
         function handleFileUpload(event) {
-            pingUserActivity();
             const files = Array.from(event.target.files);
             
             if (files.length + uploadedFiles.length > 50) {
@@ -3570,859 +3555,4 @@
                 wallpaperLayer.classList.remove("wallpaper-paused");
             }
         });
-
-        // --- Long Message Expand/Collapse Feature ---
-        function getSingleLineHeight(element) {
-            const temp = document.createElement('span');
-            temp.style.visibility = 'hidden';
-            temp.style.position = 'absolute';
-            temp.style.whiteSpace = 'nowrap';
-            temp.style.fontFamily = window.getComputedStyle(element).fontFamily;
-            temp.style.fontSize = window.getComputedStyle(element).fontSize;
-            temp.innerHTML = 'A';
-            element.appendChild(temp);
-            const height = temp.offsetHeight;
-            element.removeChild(temp);
-            return height || 24; // fallback to 24px
-        }
-
-        function getRgbParts(colorStr) {
-            const temp = document.createElement('div');
-            temp.style.color = colorStr;
-            document.body.appendChild(temp);
-            const resolved = window.getComputedStyle(temp).color;
-            document.body.removeChild(temp);
-            
-            const match = resolved.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-            if (match) {
-                return {
-                    r: match[1],
-                    g: match[2],
-                    b: match[3],
-                    a: match[4] || '1'
-                };
-            }
-            return { r: '11', g: '11', b: '13', a: '0.86' }; // default fallback matching composer theme background
-        }
-
-        function bindToggleEvents(contentEl, inner, fade, toggleBtn, maxCollapsedHeight) {
-            const computedStyle = window.getComputedStyle(contentEl);
-            toggleBtn.style.color = computedStyle.color;
-            toggleBtn.style.fontFamily = computedStyle.fontFamily;
-            
-            toggleBtn.onmouseenter = () => {
-                toggleBtn.style.opacity = '1';
-                toggleBtn.style.transform = 'scale(1.03)';
-            };
-            toggleBtn.onmouseleave = () => {
-                toggleBtn.style.opacity = '0.8';
-                toggleBtn.style.transform = 'scale(1)';
-            };
-            
-            toggleBtn.onclick = (e) => {
-                e.stopPropagation();
-                const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-                if (isExpanded) {
-                    // Collapse
-                    inner.style.maxHeight = maxCollapsedHeight + 'px';
-                    if (fade) fade.style.opacity = '1';
-                    toggleBtn.innerHTML = 'Show more ▼';
-                    toggleBtn.setAttribute('aria-expanded', 'false');
-                } else {
-                    // Expand
-                    inner.style.maxHeight = inner.scrollHeight + 'px';
-                    if (fade) fade.style.opacity = '0';
-                    toggleBtn.innerHTML = 'Show less ▲';
-                    toggleBtn.setAttribute('aria-expanded', 'true');
-                }
-            };
-            
-            toggleBtn.onkeydown = (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleBtn.click();
-                }
-            };
-
-            toggleBtn.onfocus = () => {
-                toggleBtn.style.opacity = '1';
-                toggleBtn.style.outline = `1px dashed ${computedStyle.color}`;
-                toggleBtn.style.outlineOffset = '2px';
-            };
-            toggleBtn.onblur = () => {
-                toggleBtn.style.opacity = '0.8';
-                toggleBtn.style.outline = 'none';
-            };
-        }
-
-        function initializeExpandableMessages() {
-            requestAnimationFrame(() => {
-                const userMessages = document.querySelectorAll('.message.user');
-                userMessages.forEach((userMsg) => {
-                    const contentEl = userMsg.querySelector('.message-content');
-                    if (!contentEl) return;
-                    
-                    const inner = contentEl.querySelector('.message-content-inner');
-                    const footer = contentEl.querySelector('.message-expand-footer');
-                    const toggleBtn = footer ? footer.querySelector('.message-toggle-btn') : null;
-                    
-                    const singleLineHeight = getSingleLineHeight(inner || contentEl);
-                    const maxCollapsedHeight = singleLineHeight * 6;
-                    
-                    if (inner && footer && toggleBtn) {
-                        // Already wrapped, re-bind listeners and force collapse on reload
-                        const fade = inner.querySelector('.message-fade-overlay');
-                        inner.style.maxHeight = maxCollapsedHeight + 'px';
-                        if (fade) {
-                            fade.style.opacity = '1';
-                            const computedStyle = window.getComputedStyle(contentEl);
-                            const colorParts = getRgbParts(computedStyle.backgroundColor);
-                            fade.style.background = `linear-gradient(to bottom, rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, 0), rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, ${colorParts.a}))`;
-                        }
-                        
-                        // Update border color in case theme changed
-                        const computedStyle = window.getComputedStyle(contentEl);
-                        footer.style.borderTop = `1px solid ${computedStyle.borderColor || 'rgba(255, 255, 255, 0.1)'}`;
-                        
-                        toggleBtn.innerHTML = 'Show more ▼';
-                        toggleBtn.setAttribute('aria-expanded', 'false');
-                        bindToggleEvents(contentEl, inner, fade, toggleBtn, maxCollapsedHeight);
-                        return;
-                    }
-                    
-                    if (contentEl.getAttribute('data-expandable-initialized') === 'true') return;
-                    
-                    const scrollHeight = contentEl.scrollHeight;
-                    
-                    if (scrollHeight > maxCollapsedHeight + 4) {
-                        contentEl.setAttribute('data-expandable-initialized', 'true');
-                        
-                        // Create inner container
-                        const wrapperDiv = document.createElement('div');
-                        wrapperDiv.className = 'message-content-inner';
-                        wrapperDiv.style.position = 'relative';
-                        wrapperDiv.style.maxHeight = maxCollapsedHeight + 'px';
-                        wrapperDiv.style.overflow = 'hidden';
-                        wrapperDiv.style.overflowWrap = 'anywhere';
-                        wrapperDiv.style.wordWrap = 'break-word';
-                        wrapperDiv.style.wordBreak = 'break-word';
-                        wrapperDiv.style.whiteSpace = 'pre-wrap';
-                        wrapperDiv.style.transition = 'max-height 280ms cubic-bezier(0.4, 0, 0.2, 1)';
-                        wrapperDiv.style.willChange = 'max-height';
-                        
-                        // Move existing contents to inner wrapper defensively
-                        const childNodes = Array.from(contentEl.childNodes);
-                        const nodesToWrap = [];
-                        childNodes.forEach(child => {
-                            if (child.nodeType === Node.ELEMENT_NODE && 
-                                (child.classList.contains('message-actions') || 
-                                 child.classList.contains('message-more-wrap') || 
-                                 child.classList.contains('reaction-container') ||
-                                 child.classList.contains('message-toggle-btn') ||
-                                 child.classList.contains('message-expand-footer') ||
-                                 child.classList.contains('message-fade-overlay'))) {
-                                return;
-                            }
-                            nodesToWrap.push(child);
-                        });
-                        
-                        nodesToWrap.forEach(node => {
-                            wrapperDiv.appendChild(node);
-                        });
-                        
-                        if (contentEl.firstChild) {
-                            contentEl.insertBefore(wrapperDiv, contentEl.firstChild);
-                        } else {
-                            contentEl.appendChild(wrapperDiv);
-                        }
-                        
-                        contentEl.style.textAlign = 'left';
-                        
-                        // Fade overlay
-                        const computedStyle = window.getComputedStyle(contentEl);
-                        const colorParts = getRgbParts(computedStyle.backgroundColor);
-                        
-                        const fadeOverlay = document.createElement('div');
-                        fadeOverlay.className = 'message-fade-overlay';
-                        fadeOverlay.style.position = 'absolute';
-                        fadeOverlay.style.bottom = '0';
-                        fadeOverlay.style.left = '0';
-                        fadeOverlay.style.right = '0';
-                        fadeOverlay.style.height = '40px';
-                        fadeOverlay.style.pointerEvents = 'none';
-                        fadeOverlay.style.transition = 'opacity 200ms ease';
-                        fadeOverlay.style.background = `linear-gradient(to bottom, rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, 0), rgba(${colorParts.r}, ${colorParts.g}, ${colorParts.b}, ${colorParts.a}))`;
-                        wrapperDiv.appendChild(fadeOverlay);
-                        
-                        // Create Footer Container
-                        const footerDiv = document.createElement('div');
-                        footerDiv.className = 'message-expand-footer';
-                        footerDiv.style.marginTop = '12px';
-                        footerDiv.style.borderTop = `1px solid ${computedStyle.borderColor || 'rgba(255, 255, 255, 0.1)'}`;
-                        footerDiv.style.height = '36px';
-                        footerDiv.style.boxSizing = 'border-box';
-                        footerDiv.style.padding = '8px 0 0';
-                        footerDiv.style.display = 'flex';
-                        footerDiv.style.justifyContent = 'center';
-                        footerDiv.style.alignItems = 'center';
-                        
-                        // Toggle Button inside Footer
-                        const btn = document.createElement('button');
-                        btn.className = 'message-toggle-btn';
-                        btn.type = 'button';
-                        btn.innerHTML = 'Show more ▼';
-                        btn.setAttribute('aria-expanded', 'false');
-                        btn.style.display = 'flex';
-                        btn.style.alignItems = 'center';
-                        btn.style.justifyContent = 'center';
-                        btn.style.background = 'transparent';
-                        btn.style.border = 'none';
-                        btn.style.fontSize = '0.85em';
-                        btn.style.fontWeight = '600';
-                        btn.style.cursor = 'pointer';
-                        btn.style.opacity = '0.8';
-                        btn.style.transition = 'opacity 200ms ease, transform 200ms ease';
-                        
-                        footerDiv.appendChild(btn);
-                        contentEl.appendChild(footerDiv);
-                        
-                        bindToggleEvents(contentEl, wrapperDiv, fadeOverlay, btn, maxCollapsedHeight);
-                    }
-                });
-            });
-        }
-
-        // Initialize and observe changes on #chatMessages
-        const messagesDiv = document.getElementById('chatMessages');
-        if (messagesDiv) {
-            initializeExpandableMessages();
-            
-            let isProcessing = false;
-            const observer = new MutationObserver((mutations) => {
-                if (isProcessing) return;
-                
-                let shouldRun = false;
-                for (const mutation of mutations) {
-                    if (mutation.type === 'childList') {
-                        for (const node of mutation.addedNodes) {
-                            if (node.nodeType === Node.ELEMENT_NODE) {
-                                if (node.classList.contains('message') || node.querySelector('.message')) {
-                                    shouldRun = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (shouldRun) {
-                    isProcessing = true;
-                    observer.disconnect();
-                    initializeExpandableMessages();
-                    observer.observe(messagesDiv, { childList: true, subtree: true });
-                    isProcessing = false;
-                }
-            });
-            
-            observer.observe(messagesDiv, { childList: true, subtree: true });
-        }
-
-        // Debounced Window Resize Handler
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                requestAnimationFrame(() => {
-                    const processedMessages = document.querySelectorAll('.message.user .message-content[data-expandable-initialized="true"]');
-                    processedMessages.forEach((contentEl) => {
-                        const inner = contentEl.querySelector('.message-content-inner');
-                        const footer = contentEl.querySelector('.message-expand-footer');
-                        const toggleBtn = footer ? footer.querySelector('.message-toggle-btn') : null;
-                        if (inner && footer && toggleBtn) {
-                            const singleLineHeight = getSingleLineHeight(inner);
-                            const maxCollapsedHeight = singleLineHeight * 6;
-                            const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-                            
-                            // Recalculate border top color
-                            const computedStyle = window.getComputedStyle(contentEl);
-                            footer.style.borderTop = `1px solid ${computedStyle.borderColor || 'rgba(255, 255, 255, 0.1)'}`;
-                            
-                            if (isExpanded) {
-                                inner.style.maxHeight = inner.scrollHeight + 'px';
-                            } else {
-                                inner.style.maxHeight = maxCollapsedHeight + 'px';
-                            }
-                        }
-                    });
-                });
-            }, 100);
-        });
-
-        // ==========================================
-        // DATA RETENTION & ACTIVITY TRACKING HELPERS
-        // ==========================================
-        let lastPingTime = 0;
-        function pingUserActivity() {
-            const now = Date.now();
-            if (now - lastPingTime < 60000) return; // limit pings to once per minute
-            lastPingTime = now;
-            fetch('/api/user/active', { method: 'POST' }).catch(err => console.error("Error pinging activity:", err));
-        }
-
-        // --- Storage Alerts and Manager Logic ---
-        let storageChatsList = []; // Cache list of chats fetched from server
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        async function checkStorageAlerts(showModalAlways = false) {
-            try {
-                const res = await fetch('/api/user/storage');
-                if (!res.ok) throw new Error("Failed to fetch storage info");
-                const data = await res.json();
-                if (data.success) {
-                    // Cache global limit details
-                    window.lexinoStorageLimit = data.storageLimitBytes;
-                    window.lexinoStorageUsed = data.storageUsedBytes;
-                    window.lexinoStoragePercentage = data.usagePercentage;
-                    window.lexinoStorageBlocked = data.isBlocked;
-
-                    // 1. Update settings panel labels
-                    const planEl = document.getElementById('retention-plan');
-                    const usedEl = document.getElementById('retention-storage-used');
-                    const limitEl = document.getElementById('retention-storage-limit');
-                    const convsEl = document.getElementById('retention-conversations');
-                    const activeEl = document.getElementById('retention-last-active');
-                    const lifecycleEl = document.getElementById('retention-lifecycle');
-
-                    if (planEl) planEl.textContent = data.tier + " Plan";
-                    if (usedEl) usedEl.textContent = formatBytes(data.storageUsedBytes);
-                    if (limitEl) limitEl.textContent = formatBytes(data.storageLimitBytes);
-                    if (convsEl) convsEl.textContent = data.conversations.length;
-                    
-                    const clerkEl = document.getElementById("clerk-user-data");
-                    if (clerkEl) {
-                        try {
-                            const uData = JSON.parse(clerkEl.textContent);
-                            if (activeEl && uData.lastActiveAt) {
-                                activeEl.textContent = new Date(uData.lastActiveAt).toLocaleString();
-                            }
-                        } catch(e) {}
-                    }
-
-                    if (lifecycleEl) {
-                        if (data.tier === 'STUDENT') {
-                            lifecycleEl.textContent = "HOT (0-12 Days), COMPRESSED (12-45 Days), Deleted after 45 Days";
-                        } else if (data.tier === 'PRO') {
-                            lifecycleEl.textContent = "HOT (0-12 Days), COMPRESSED (12-75 Days), Deleted after 75 Days";
-                        } else {
-                            lifecycleEl.textContent = "HOT (0-7 Days), COMPRESSED (7-21 Days), Deleted after 21 Days";
-                        }
-                    }
-
-                    // 2. Control Composer input blocking at 100% capacity
-                    const messageInput = document.getElementById('messageInput');
-                    const sendBtn = document.getElementById('sendBtn');
-                    const attachBtn = document.querySelector('.composer-attach-btn');
-
-                    if (data.isBlocked) {
-                        if (messageInput) {
-                            messageInput.disabled = true;
-                            messageInput.placeholder = "Storage Full. Delete chats to resume conversations.";
-                        }
-                        if (sendBtn) sendBtn.disabled = true;
-                        if (attachBtn) attachBtn.style.opacity = '0.3';
-                    } else {
-                        if (messageInput && messageInput.disabled) {
-                            messageInput.disabled = false;
-                            messageInput.placeholder = "Ask anything";
-                            updateComposerState();
-                        }
-                        if (attachBtn) attachBtn.style.opacity = '1';
-                    }
-
-                    // 3. Render warnings modal popups
-                    const warningModal = document.getElementById('storageWarningModal');
-                    const warningTitle = document.getElementById('storageWarningTitle');
-                    const warningText = document.getElementById('storageWarningText');
-                    const warningButtons = document.getElementById('storageWarningButtons');
-                    const warningIcon = document.getElementById('storageWarningIcon');
-
-                    if (warningModal && warningTitle && warningText && warningButtons) {
-                        const hasWarned80 = sessionStorage.getItem('lexino_warned_80') === 'true';
-
-                        if (data.isBlocked) {
-                            // 100% capacity warning
-                            warningModal.style.display = 'flex';
-                            if (warningIcon) warningIcon.textContent = '❌';
-                            warningTitle.textContent = 'Storage Full';
-                            warningText.textContent = `Your storage has reached 100%. Please delete conversations before creating new chats.`;
-                            warningButtons.innerHTML = `
-                                <button class="profile-btn primary" onclick="closeStorageWarning(); openStorageManager();" style="justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important;">Open Storage Manager</button>
-                                <button class="profile-btn secondary" onclick="closeStorageWarning(); upgradePlan();" style="justify-content: center;">Upgrade</button>
-                            `;
-                        } else if (data.usagePercentage >= 95) {
-                            // 95% capacity warning
-                            warningModal.style.display = 'flex';
-                            if (warningIcon) warningIcon.textContent = '⚠️';
-                            warningTitle.textContent = 'Storage Critically Full';
-                            warningText.textContent = `Your storage utilization is at ${data.usagePercentage.toFixed(1)}%. Please clean storage or upgrade to continue chatting.`;
-                            warningButtons.innerHTML = `
-                                <button class="profile-btn primary" onclick="closeStorageWarning(); openStorageManager();" style="justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important;">Clean Storage</button>
-                                <button class="profile-btn secondary" onclick="closeStorageWarning(); upgradePlan();" style="justify-content: center;">Upgrade</button>
-                            `;
-                        } else if (data.usagePercentage >= 80 && (showModalAlways || !hasWarned80)) {
-                            // 80% capacity warning
-                            warningModal.style.display = 'flex';
-                            if (warningIcon) warningIcon.textContent = '⚠️';
-                            warningTitle.textContent = 'Storage Almost Full';
-                            warningText.textContent = `Your storage has reached ${data.usagePercentage.toFixed(1)}%. Delete old conversations or upgrade your plan.`;
-                            warningButtons.innerHTML = `
-                                <button class="profile-btn primary" onclick="closeStorageWarning(); openStorageManager();" style="justify-content: center; background: var(--accent-primary) !important; color: #0b0b0d !important;">Clean Storage</button>
-                                <button class="profile-btn secondary" onclick="closeStorageWarning(); upgradePlan();" style="justify-content: center;">Upgrade</button>
-                                <button class="profile-btn secondary" onclick="dismissStorage80();" style="justify-content: center;">Later</button>
-                            `;
-                        } else {
-                            if (!showModalAlways) warningModal.style.display = 'none';
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Error checking storage limits:", err);
-            }
-        }
-
-        function closeStorageWarning() {
-            const warningModal = document.getElementById('storageWarningModal');
-            if (warningModal) warningModal.style.display = 'none';
-        }
-
-        function dismissStorage80() {
-            sessionStorage.setItem('lexino_warned_80', 'true');
-            closeStorageWarning();
-        }
-
-        function openStorageManager() {
-            const smModal = document.getElementById('storageManagerModal');
-            if (smModal) {
-                smModal.style.display = 'flex';
-                // Fetch fresh conversations data and populate list
-                loadStorageManagerChats();
-            }
-        }
-
-        function closeStorageManager() {
-            const smModal = document.getElementById('storageManagerModal');
-            if (smModal) smModal.style.display = 'none';
-        }
-
-        async function loadStorageManagerChats() {
-            try {
-                const res = await fetch('/api/user/storage');
-                if (!res.ok) throw new Error("Failed to load Storage Manager chats");
-                const data = await res.json();
-                if (data.success) {
-                    // Update header Overview
-                    const tierEl = document.getElementById('sm-plan-tier');
-                    const usageEl = document.getElementById('sm-usage-label');
-                    const fillEl = document.getElementById('sm-progress-fill');
-                    const countEl = document.getElementById('sm-convs-count');
-
-                    if (tierEl) tierEl.textContent = data.tier + " PLAN";
-                    if (usageEl) usageEl.textContent = `${formatBytes(data.storageUsedBytes)} / ${formatBytes(data.storageLimitBytes)}`;
-                    if (fillEl) fillEl.style.width = Math.min(data.usagePercentage, 100) + '%';
-                    if (countEl) countEl.textContent = `${data.conversations.length} Conversations`;
-
-                    // Cache chats list
-                    storageChatsList = data.conversations || [];
-                    
-                    // Reset inputs
-                    const searchInput = document.getElementById('sm-search');
-                    if (searchInput) searchInput.value = '';
-                    const selectAllCheck = document.getElementById('sm-select-all');
-                    if (selectAllCheck) selectAllCheck.checked = false;
-
-                    // Render list
-                    renderStorageManagerList();
-                }
-            } catch (err) {
-                console.error("Error loading chats in Storage Manager:", err);
-            }
-        }
-
-        function renderStorageManagerList() {
-            const listContainer = document.getElementById('storage-manager-list');
-            if (!listContainer) return;
-
-            if (storageChatsList.length === 0) {
-                listContainer.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 40px 0;">No active conversations found.</div>`;
-                return;
-            }
-
-            let html = '';
-            storageChatsList.forEach(chat => {
-                const lastOpened = new Date(chat.lastInteractionAt).toLocaleDateString();
-                const lastUpdated = new Date(chat.updatedAt).toLocaleDateString();
-                const sizeStr = formatBytes(chat.sizeBytes);
-
-                html += `
-                    <div class="storage-chat-item" data-id="${chat.id}" data-size="${chat.sizeBytes}">
-                        <div class="storage-chat-item-left">
-                            <input type="checkbox" class="storage-chat-checkbox" onchange="updateSelectedStorageChatsCount()" data-id="${chat.id}">
-                            <div class="storage-chat-info">
-                                <div class="storage-chat-title" title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</div>
-                                <div class="storage-chat-meta">
-                                    <span>Last Opened: ${lastOpened}</span>
-                                    <span>Last Updated: ${lastUpdated}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="storage-chat-right">
-                            <span class="storage-chat-size">${sizeStr}</span>
-                            <button class="storage-chat-delete-btn" onclick="deleteSingleStorageChat('${chat.id}')" title="Delete conversation">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            listContainer.innerHTML = html;
-            updateSelectedStorageChatsCount();
-        }
-
-        function filterStorageManagerList() {
-            const query = (document.getElementById('sm-search')?.value || '').toLowerCase().trim();
-            const items = document.querySelectorAll('#storage-manager-list .storage-chat-item');
-            
-            items.forEach(item => {
-                const title = item.querySelector('.storage-chat-title').textContent.toLowerCase();
-                if (title.includes(query)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-
-        function sortStorageManagerList() {
-            const sortVal = document.getElementById('sm-sort')?.value || 'last-opened';
-            
-            storageChatsList.sort((a, b) => {
-                if (sortVal === 'largest') {
-                    return b.sizeBytes - a.sizeBytes;
-                } else if (sortVal === 'oldest') {
-                    return new Date(a.lastInteractionAt).getTime() - new Date(b.lastInteractionAt).getTime();
-                } else if (sortVal === 'last-updated') {
-                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-                } else {
-                    // last-opened
-                    return new Date(b.lastInteractionAt).getTime() - new Date(a.lastInteractionAt).getTime();
-                }
-            });
-
-            renderStorageManagerList();
-        }
-
-        function toggleSelectAllStorageChats() {
-            const checked = document.getElementById('sm-select-all')?.checked || false;
-            const checkboxes = document.querySelectorAll('#storage-manager-list .storage-chat-checkbox');
-            
-            checkboxes.forEach(cb => {
-                // Check selection only if item is visible
-                const item = cb.closest('.storage-chat-item');
-                if (item && item.style.display !== 'none') {
-                    cb.checked = checked;
-                }
-            });
-
-            updateSelectedStorageChatsCount();
-        }
-
-        function updateSelectedStorageChatsCount() {
-            const checkboxes = document.querySelectorAll('#storage-manager-list .storage-chat-checkbox:checked');
-            const deleteBtn = document.getElementById('sm-delete-selected-btn');
-            const estimateLabel = document.getElementById('sm-free-space-estimate');
-
-            if (checkboxes.length > 0) {
-                if (deleteBtn) {
-                    deleteBtn.style.display = 'inline-flex';
-                    deleteBtn.textContent = `Delete Selected (${checkboxes.length})`;
-                }
-                
-                // Calculate space to free
-                let spaceBytes = 0;
-                checkboxes.forEach(cb => {
-                    const item = cb.closest('.storage-chat-item');
-                    if (item) {
-                        spaceBytes += parseInt(item.dataset.size || '0', 10);
-                    }
-                });
-
-                if (estimateLabel) {
-                    estimateLabel.style.display = 'inline-block';
-                    estimateLabel.textContent = `Estimated Space to Free: ${formatBytes(spaceBytes)}`;
-                }
-            } else {
-                if (deleteBtn) deleteBtn.style.display = 'none';
-                if (estimateLabel) estimateLabel.style.display = 'none';
-            }
-        }
-
-        async function executeStorageDeletions(payload) {
-            try {
-                const res = await fetch('/api/user/storage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) throw new Error("Bulk deletion request failed");
-                const data = await res.json();
-                if (data.success) {
-                    // Update client-side local cache if chats were deleted
-                    const idsToDelete = payload.sessionIds || [];
-                    if (payload.action === 'delete-selected') {
-                        chatSessions = chatSessions.filter(s => !idsToDelete.includes(s.id));
-                        saveAllSessions();
-                        renderChatHistory();
-                    } else {
-                        // For bulk, let's reload profile and sync cache
-                        await loadChatState();
-                    }
-                    
-                    // Reload Storage Manager view and update alert blocking counters
-                    await loadStorageManagerChats();
-                    checkStorageAlerts(false);
-                }
-            } catch (err) {
-                console.error("Bulk deletion failed:", err);
-            }
-        }
-
-        function deleteSelectedStorageChats() {
-            const checkboxes = document.querySelectorAll('#storage-manager-list .storage-chat-checkbox:checked');
-            const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
-            
-            if (ids.length > 0 && confirm(`Are you sure you want to permanently delete the ${ids.length} selected conversations?`)) {
-                executeStorageDeletions({
-                    action: 'delete-selected',
-                    sessionIds: ids
-                });
-            }
-        }
-
-        function deleteSingleStorageChat(chatId) {
-            if (confirm("Are you sure you want to permanently delete this conversation?")) {
-                executeStorageDeletions({
-                    action: 'delete-selected',
-                    sessionIds: [chatId]
-                });
-            }
-        }
-
-        function deleteOldestBulk() {
-            if (confirm("Are you sure you want to delete the 5 oldest conversations?")) {
-                executeStorageDeletions({
-                    action: 'delete-oldest',
-                    count: 5
-                });
-            }
-        }
-
-        function deleteLargestBulk() {
-            if (confirm("Are you sure you want to delete the 5 largest conversations?")) {
-                executeStorageDeletions({
-                    action: 'delete-largest',
-                    count: 5
-                });
-            }
-        }
-
-        // Rebuilds chat messages HTML layout in the viewport from in-memory decompressed data
-        function rebuildChatHtmlFromThread(thread) {
-            if (!thread || thread.length === 0) {
-                return getEmptyStateMarkup();
-            }
-            let html = '<div class="messages-wrapper">';
-            thread.forEach(msg => {
-                if (msg.role === 'user') {
-                    html += `
-                        <div class="message user">
-                            <div class="message-avatar">${getUserAvatarMarkup()}</div>
-                            <div class="message-content">${escapeHtml(msg.content)}</div>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div class="message ai">
-                            <div class="message-avatar">AI</div>
-                            <div class="message-content">
-                                <div>${renderMarkdown(msg.content)}</div>
-                                <div class="message-actions" style="display: flex;">
-                                    <button class="action-btn" onclick="copyMessage(this)" title="Copy">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn" onclick="likeMessage(this)" title="Like">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn" onclick="dislikeMessage(this)" title="Dislike">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn" onclick="shareMessage(this)" title="Share">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                                            <polyline points="16 6 12 2 8 6"></polyline>
-                                            <line x1="12" y1="2" x2="12" y2="15"></line>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn" onclick="regenerateMessage(this)" title="Regenerate">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="23 4 23 10 17 10"></polyline>
-                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn read-aloud-toggle" onclick="toggleReadAloudDirect(this)" title="Read aloud" aria-label="Read aloud" aria-pressed="false">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            html += '</div>';
-            return html;
-        }
-
-        // ==========================================
-        // EXPORT DATA FUNCTIONS (JSON, MD, PDF)
-        // ==========================================
-        function exportChatsJSON() {
-            const sessionsRaw = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) || "[]";
-            const blob = new Blob([sessionsRaw], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `lexino_chats_export_${Date.now()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            pingUserActivity();
-        }
-
-        function exportChatsMarkdown() {
-            try {
-                const sessions = JSON.parse(localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) || "[]");
-                let md = "# Lexino AI Chat Export\n\nGenerated on: " + new Date().toLocaleString() + "\n\n---\n\n";
-
-                if (sessions.length === 0) {
-                    md += "No chat conversations found.";
-                } else {
-                    sessions.forEach((session) => {
-                        md += `## Chat: ${session.title || 'New chat'}\n`;
-                        md += `*Last Updated: ${new Date(session.updatedAt || Date.now()).toLocaleString()}*\n\n`;
-                        
-                        if (session.thread && Array.isArray(session.thread)) {
-                            session.thread.forEach((msg) => {
-                                const roleName = msg.role === 'user' ? 'User' : 'Lexino AI';
-                                md += `### **${roleName}**\n\n${msg.content}\n\n`;
-                            });
-                        }
-                        md += "---\n\n";
-                    });
-                }
-
-                const blob = new Blob([md], { type: "text/markdown" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `lexino_chats_export_${Date.now()}.md`;
-                a.click();
-                URL.revokeObjectURL(url);
-                pingUserActivity();
-            } catch (e) {
-                console.error("Failed to export Markdown:", e);
-            }
-        }
-
-        function exportChatsPDF() {
-            try {
-                const sessions = JSON.parse(localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY) || "[]");
-                let html = `
-                    <html>
-                    <head>
-                        <title>Lexino AI Chats Export</title>
-                        <style>
-                            body { font-family: 'Inter', system-ui, sans-serif; background: #ffffff; color: #1e293b; padding: 40px; }
-                            h1 { color: #0f172a; border-bottom: 2px solid #34d399; padding-bottom: 10px; margin-bottom: 30px; }
-                            .chat-session { margin-bottom: 50px; page-break-inside: avoid; }
-                            .chat-title { font-size: 20px; font-weight: 700; color: #1e1b4b; margin-bottom: 6px; }
-                            .chat-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }
-                            .message { margin-bottom: 18px; padding: 14px; border-radius: 8px; line-height: 1.5; }
-                            .user { background: #f1f5f9; border-left: 4px solid #64748b; }
-                            .assistant { background: #f0fdf4; border-left: 4px solid #34d399; }
-                            .sender-name { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; color: #0f172a; }
-                            .message-content { font-size: 14px; white-space: pre-wrap; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Lexino AI Chat Export</h1>
-                        <div style="font-size: 12px; color: #64748b; margin-bottom: 30px;">Export Date: ${new Date().toLocaleString()}</div>
-                `;
-
-                if (sessions.length === 0) {
-                    html += "<p>No conversations found.</p>";
-                } else {
-                    sessions.forEach((session) => {
-                        html += `
-                            <div class="chat-session">
-                                <div class="chat-title">${escapeHtml(session.title || 'New chat')}</div>
-                                <div class="chat-meta">Last Updated: ${new Date(session.updatedAt || Date.now()).toLocaleString()}</div>
-                        `;
-                        if (session.thread && Array.isArray(session.thread)) {
-                            session.thread.forEach((msg) => {
-                                const roleName = msg.role === 'user' ? 'User' : 'Lexino AI';
-                                const roleClass = msg.role === 'user' ? 'user' : 'assistant';
-                                html += `
-                                    <div class="message ${roleClass}">
-                                        <div class="sender-name">${roleName}</div>
-                                        <div class="message-content">${escapeHtml(msg.content)}</div>
-                                    </div>
-                                `;
-                            });
-                        }
-                        html += `</div><hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 40px 0; page-break-after: always;" />`;
-                    });
-                }
-
-                html += `</body></html>`;
-
-                const printWindow = window.open("", "_blank");
-                if (printWindow) {
-                    printWindow.document.write(html);
-                    printWindow.document.close();
-                    printWindow.focus();
-                    setTimeout(() => {
-                        printWindow.print();
-                        printWindow.close();
-                    }, 250);
-                }
-                pingUserActivity();
-            } catch (e) {
-                console.error("Failed to export PDF:", e);
-            }
-        }
     
