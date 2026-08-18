@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import { ChatUserButtonMount } from '../../components/ChatUserButtonMount';
 import { ClientScriptLoader } from '../../components/ClientScriptLoader';
 import { prisma } from '../../lib/prisma';
@@ -19,7 +20,16 @@ function getLegacyChatBody() {
 }
 
 export default async function ChatPage() {
-  await auth.protect();
+  let authResult: any = null;
+  try {
+    authResult = await auth();
+  } catch {
+    authResult = null;
+  }
+  
+  if (!authResult?.userId) {
+    redirect('/login?redirect_url=/chat');
+  }
   
   let userData = { id: '', name: 'User', email: '', imageUrl: '', tier: 'FREE', cooldownUntil: null as string | null, messageCountToday: 0 };
   

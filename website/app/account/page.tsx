@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { UserProfile } from '@clerk/nextjs';
 import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { lexinoClerkAppearance } from '../../lib/clerkAppearance';
 
@@ -14,7 +15,16 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
-  await auth.protect();
+  let authResult: any = null;
+  try {
+    authResult = await auth();
+  } catch {
+    authResult = null;
+  }
+  
+  if (!authResult?.userId) {
+    redirect('/login?redirect_url=/account');
+  }
 
   return (
     <main style={{
@@ -50,7 +60,16 @@ export default async function AccountPage() {
             ← Return to Chat
           </Link>
         </header>
-        <UserProfile routing="hash" appearance={lexinoClerkAppearance} />
+
+        <section style={{
+          background: 'rgba(9, 16, 24, 0.65)',
+          border: '1px solid rgba(52, 211, 153, 0.15)',
+          borderRadius: '16px',
+          padding: '24px',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <UserProfile appearance={lexinoClerkAppearance} routing="hash" />
+        </section>
       </div>
     </main>
   );
