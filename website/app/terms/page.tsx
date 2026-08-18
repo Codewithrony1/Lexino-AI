@@ -1,9 +1,21 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata = {
-  title: 'Terms of Service — Lexino AI',
-  description: 'Review our acceptable use policies, account terms, disclaimer matrices, and billing agreements.',
-  authors: [{ name: 'Lexino AI' }],
+const siteUrl = 'https://lexinoai.in';
+
+export const metadata: Metadata = {
+  title: 'Terms of Service & Usage Policy — Lexino AI',
+  description:
+    'Review the official Terms of Service, student discount eligibility, acceptable use policies, and billing agreements for Lexino AI.',
+  alternates: {
+    canonical: `${siteUrl}/terms`,
+  },
+  openGraph: {
+    title: 'Terms of Service — Lexino AI',
+    description:
+      'Review the official Terms of Service and usage policies for Lexino AI.',
+    url: `${siteUrl}/terms`,
+  },
 };
 
 export default function TermsPage() {

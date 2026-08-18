@@ -1,9 +1,21 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const metadata = {
-  title: 'Privacy Policy — Lexino AI',
-  description: 'Learn how Lexino AI handles account authentication, security streams, data cookies, and chat history retention policies.',
-  authors: [{ name: 'Lexino AI' }],
+const siteUrl = 'https://lexinoai.in';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy & Data Security Guarantee — Lexino AI',
+  description:
+    'Learn how Lexino AI protects your personal data with end-to-end encryption, strict zero unauthorized data retention, and enterprise-grade privacy standards.',
+  alternates: {
+    canonical: `${siteUrl}/privacy`,
+  },
+  openGraph: {
+    title: 'Privacy Policy — Lexino AI',
+    description:
+      'Learn how Lexino AI protects your personal information and encrypts your AI chat history.',
+    url: `${siteUrl}/privacy`,
+  },
 };
 
 export default function PrivacyPage() {

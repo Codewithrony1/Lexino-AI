@@ -1,7 +1,17 @@
+import type { Metadata } from 'next';
 import { UserProfile } from '@clerk/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { lexinoClerkAppearance } from '../../lib/clerkAppearance';
+
+export const metadata: Metadata = {
+  title: 'Account Settings & Profile',
+  description: 'Manage your Lexino AI subscription tier, security preferences, and profile details.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AccountPage() {
   await auth.protect();

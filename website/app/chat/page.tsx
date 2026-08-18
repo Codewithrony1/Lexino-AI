@@ -1,21 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Metadata } from 'next';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ChatUserButtonMount } from '../../components/ChatUserButtonMount';
 import { ClientScriptLoader } from '../../components/ClientScriptLoader';
 import { prisma } from '../../lib/prisma';
-import { getStorageInfo } from '../../lib/storage';
+
+export const metadata: Metadata = {
+  title: 'Workspace & AI Chatbot Dashboard',
+  description: 'Your intelligent thinking space on Lexino AI. Prepare for exams, code, and automate tasks.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 function getLegacyChatBody() {
-  let indexPath = path.join(process.cwd(), 'index.html');
-  if (!fs.existsSync(indexPath)) {
-    indexPath = path.join(process.cwd(), 'website', 'index.html');
-  }
-  if (!fs.existsSync(indexPath)) {
-    indexPath = path.join(process.cwd(), '..', 'index.html');
-  }
-
-  const html = fs.readFileSync(indexPath, 'utf8').replace(/\r\n/g, '\n');
+  const html = fs
+    .readFileSync(path.join(process.cwd(), 'index.html'), 'utf8')
+    .replace(/\r\n/g, '\n');
   const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
   return body
     .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -28,20 +31,7 @@ export default async function ChatPage() {
   await auth.protect();
   
   const user = await currentUser();
-  let userData = {
-    id: '',
-    name: 'Ritik',
-    email: '',
-    imageUrl: '',
-    tier: 'FREE',
-    cooldownUntil: null as string | null,
-    messageCountToday: 0,
-    lastActiveAt: new Date().toISOString(),
-    storageUsedBytes: 0,
-    storageLimitBytes: 5 * 1024 * 1024,
-    usagePercentage: 0,
-    isBlocked: false,
-  };
+  let userData = { id: '', name: 'Ritik', email: '', imageUrl: '', tier: 'FREE', cooldownUntil: null as string | null, messageCountToday: 0 };
   
   if (user) {
     const email = user.emailAddresses[0]?.emailAddress || '';
@@ -53,21 +43,8 @@ export default async function ChatPage() {
       try {
         dbUser = await prisma.user.upsert({
           where: { id: user.id },
-          update: {
-            email,
-            name,
-            avatarUrl,
-            lastActiveAt: new Date(),
-            warnedAt: null,
-            finalWarnedAt: null,
-          },
-          create: {
-            id: user.id,
-            email,
-            name,
-            avatarUrl,
-            lastActiveAt: new Date(),
-          },
+          update: { email, name, avatarUrl },
+          create: { id: user.id, email, name, avatarUrl },
         });
       } catch (err) {
         console.error('Error auto-syncing user on page load:', err);
@@ -76,8 +53,6 @@ export default async function ChatPage() {
       console.warn('DATABASE_URL is not set. Running in database-offline mode.');
     }
     
-    const storageInfo = await getStorageInfo(user.id);
-
     userData = {
       id: user.id,
       name,
@@ -86,11 +61,6 @@ export default async function ChatPage() {
       tier: dbUser?.tier || 'FREE',
       cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
       messageCountToday: dbUser?.messageCountToday || 0,
-      lastActiveAt: dbUser?.lastActiveAt ? dbUser.lastActiveAt.toISOString() : new Date().toISOString(),
-      storageUsedBytes: storageInfo.storageUsedBytes,
-      storageLimitBytes: storageInfo.storageLimitBytes,
-      usagePercentage: storageInfo.usagePercentage,
-      isBlocked: storageInfo.isBlocked,
     };
   }
 
