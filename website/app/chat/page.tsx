@@ -16,9 +16,24 @@ export const metadata: Metadata = {
 };
 
 function getLegacyChatBody() {
-  const html = fs
-    .readFileSync(path.join(process.cwd(), 'index.html'), 'utf8')
-    .replace(/\r\n/g, '\n');
+  const possiblePaths = [
+    path.join(process.cwd(), 'index.html'),
+    path.join(process.cwd(), 'website', 'index.html'),
+    path.join(process.cwd(), 'public', 'index.html'),
+  ];
+
+  let html = '';
+  for (const p of possiblePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        html = fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
+        break;
+      }
+    } catch {
+      // continue search
+    }
+  }
+
   const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
   return body
     .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -49,8 +64,6 @@ export default async function ChatPage() {
       } catch (err) {
         console.error('Error auto-syncing user on page load:', err);
       }
-    } else {
-      console.warn('DATABASE_URL is not set. Running in database-offline mode.');
     }
     
     userData = {
@@ -68,24 +81,21 @@ export default async function ChatPage() {
 
   return (
     <>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
       <link rel="stylesheet" href="/style.css" />
       <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: chatMarkup }} />
-      
-      {/* Inject clerk user data payload */}
-      <script
-        id="clerk-user-data"
-        type="application/json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(userData) }}
+      <div
+        id="nextjs-user-data"
+        style={{ display: 'none' }}
+        data-user={JSON.stringify(userData)}
       />
-      
       <ChatUserButtonMount />
-      <ClientScriptLoader scripts={[
-        'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
-        '/api.js',
-        '/script.js'
-      ]} />
+      <ClientScriptLoader
+        scripts={[
+          'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
+          '/api.js',
+          '/script.js',
+        ]}
+      />
     </>
   );
 }

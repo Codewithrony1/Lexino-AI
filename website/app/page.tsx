@@ -61,9 +61,26 @@ const homeFaqSchema = {
 };
 
 export function getWebsiteBody() {
-  const html = fs
-    .readFileSync(path.join(process.cwd(), 'Lexino Website', 'index.html'), 'utf8')
-    .replace(/\r\n/g, '\n');
+  const possiblePaths = [
+    path.join(process.cwd(), 'Lexino Website', 'index.html'),
+    path.join(process.cwd(), 'website', 'Lexino Website', 'index.html'),
+    path.join(process.cwd(), 'public', 'index.html'),
+    path.join(process.cwd(), 'website', 'public', 'index.html'),
+    path.join(__dirname, '..', '..', 'Lexino Website', 'index.html'),
+  ];
+
+  let html = '';
+  for (const p of possiblePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        html = fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
+        break;
+      }
+    } catch {
+      // continue search
+    }
+  }
+
   const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
 
   return body
