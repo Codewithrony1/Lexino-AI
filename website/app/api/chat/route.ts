@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
-import { updateUserActivity } from '../../../lib/activity';
-import { getStorageInfo, adjustUserStorage, calculateMessageSize } from '../../../lib/storage';
 import fs from 'fs';
 import path from 'path';
 
@@ -94,13 +92,6 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  await updateUserActivity(userId);
-
-  // Storage block validation check
-  const storageInfo = await getStorageInfo(userId);
-  if (storageInfo.isBlocked) {
-    return NextResponse.json({ error: 'Storage Full: Your storage limit has been exceeded. Please delete old conversations or upgrade your plan.' }, { status: 403 });
   }
 
   try {
@@ -236,8 +227,8 @@ export async function POST(request: Request) {
 
         await prisma.chatSession.upsert({
           where: { id: sessionId },
-          update: { updatedAt: new Date(), storageState: 'HOT', lastInteractionAt: new Date() },
-          create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat', storageState: 'HOT', lastInteractionAt: new Date() },
+          update: { updatedAt: new Date() },
+          create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
         });
 
         await prisma.message.create({
@@ -248,8 +239,6 @@ export async function POST(request: Request) {
             content,
           },
         });
-
-        await adjustUserStorage(userId, calculateMessageSize(content, 'user', null));
       } catch (dbErr) {
         console.error('Database write error (user message):', dbErr);
       }
@@ -280,7 +269,7 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${groqKey}`,
         'Content-Type': 'application/json',
       };
-      actualModel = 'llama-3.3-70b-versatile';
+      actualModel = 'openai/gpt-oss-120b';
       systemPrompt = TIMETABLE_AI_SYSTEM_PROMPT;
       apiBody = {
         model: actualModel,
@@ -306,13 +295,13 @@ export async function POST(request: Request) {
           stream: true,
         };
       } else {
-        // Fallback to Groq Llama 3.3
+        // Fallback to Groq GPT-OSS 120B
         apiEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
         apiHeaders = {
           Authorization: `Bearer ${groqKey}`,
           'Content-Type': 'application/json',
         };
-        actualModel = 'llama-3.3-70b-versatile';
+        actualModel = 'openai/gpt-oss-120b';
         systemPrompt = `${BASE_SYSTEM_PROMPT}\n\n${CHATGPT_SYSTEM_PROMPT}`;
         apiBody = {
           model: actualModel,
@@ -341,13 +330,13 @@ export async function POST(request: Request) {
           stream: true,
         };
       } else {
-        // Fallback to Groq Llama 3.3
+        // Fallback to Groq GPT-OSS 120B
         apiEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
         apiHeaders = {
           Authorization: `Bearer ${groqKey}`,
           'Content-Type': 'application/json',
         };
-        actualModel = 'llama-3.3-70b-versatile';
+        actualModel = 'openai/gpt-oss-120b';
         systemPrompt = `${BASE_SYSTEM_PROMPT}\n\n${CLAUDE_SYSTEM_PROMPT}`;
         apiBody = {
           model: actualModel,
@@ -356,13 +345,13 @@ export async function POST(request: Request) {
         };
       }
     } else {
-      // Default to Groq Llama
+      // Default to Groq GPT-OSS 120B / Qwen
       apiEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
       apiHeaders = {
         Authorization: `Bearer ${groqKey}`,
         'Content-Type': 'application/json',
       };
-      actualModel = selectedModel === 'llama-3.3-70b-versatile' ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+      actualModel = selectedModel === 'qwen/qwen3.6-27b' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
       apiBody = {
         model: actualModel,
         max_tokens: safeMaxTokens,
@@ -475,13 +464,6 @@ export async function POST(request: Request) {
                     content: accumulatedReply,
                     modelUsed: selectedModel,
                   },
-                });
-
-                await adjustUserStorage(userId, calculateMessageSize(accumulatedReply, 'assistant', selectedModel));
-
-                await prisma.chatSession.update({
-                  where: { id: sessionId },
-                  data: { lastInteractionAt: new Date() },
                 });
 
                 await prisma.apiLog.create({
