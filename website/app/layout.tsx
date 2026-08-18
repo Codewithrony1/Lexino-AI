@@ -159,7 +159,10 @@ const jsonLdData = [
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      publishableKey={
+        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+        'pk_test_Y2xlYW4td2hpcHBldC04OS5jbGVyay5hY2NvdW50cy5kZXYk'
+      }
       signInUrl="/login"
       signUpUrl="/signup"
       signInForceRedirectUrl="/chat"

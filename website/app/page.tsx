@@ -1,8 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
 import { ClientScriptLoader } from '../components/ClientScriptLoader';
+import { STATIC_LANDING_HTML } from '../lib/staticLandingHtml';
 
 const siteUrl = 'https://lexinoai.in';
 
@@ -61,37 +60,7 @@ const homeFaqSchema = {
 };
 
 export function getWebsiteBody() {
-  const possiblePaths = [
-    path.join(process.cwd(), 'Lexino Website', 'index.html'),
-    path.join(process.cwd(), 'website', 'Lexino Website', 'index.html'),
-    path.join(process.cwd(), 'public', 'index.html'),
-    path.join(process.cwd(), 'website', 'public', 'index.html'),
-  ];
-
-  let html = '';
-  for (const p of possiblePaths) {
-    try {
-      if (fs.existsSync(p)) {
-        html = fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
-        break;
-      }
-    } catch {
-      // continue search
-    }
-  }
-
-  const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? '';
-
-  return body
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '')
-    .replaceAll('src="Lexino_AI_Logo-removebg-preview.png"', 'src="/lexino-logo.png"')
-    .replaceAll('src="./Lexino_AI_Logo-removebg-preview.png"', 'src="/lexino-logo.png"')
-    .replaceAll('src="mp_.mp4"', 'src="/lexino-website/mp_.mp4"')
-    .replaceAll(
-      'src="/Lexino Website/Manifest Anything You Desire  10 Minute Meditation Music.mp3"',
-      'src="/lexino-website/Manifest Anything You Desire  10 Minute Meditation Music.mp3"',
-    );
+  return STATIC_LANDING_HTML;
 }
 
 export default async function LandingPage() {
