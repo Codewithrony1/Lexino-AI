@@ -66,7 +66,6 @@ export function getWebsiteBody() {
     path.join(process.cwd(), 'website', 'Lexino Website', 'index.html'),
     path.join(process.cwd(), 'public', 'index.html'),
     path.join(process.cwd(), 'website', 'public', 'index.html'),
-    path.join(__dirname, '..', '..', 'Lexino Website', 'index.html'),
   ];
 
   let html = '';
