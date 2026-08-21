@@ -7,6 +7,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum StorageState {
+  HOT
+  COMPRESSED
+}
+
 model User {
   id                String        @id // Maps to Clerk User ID (e.g. user_...)
   email             String        @unique
@@ -23,17 +28,30 @@ model User {
   messages          Message[]
   logs              ApiLog[]
   payments          Payment[]
+  lastActiveAt      DateTime      @default(now())
+  warnedAt          DateTime?
+  finalWarnedAt     DateTime?
+  cleanupLogs       CleanupLog[]
+  storageUsedBytes  BigInt        @default(0)
+
+  @@index([lastActiveAt])
 }
 
 model ChatSession {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String    @default("New chat")
-  pinned    Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  id                String       @id @default(uuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String       @default("New chat")
+  pinned            Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  messages          Message[]
+  lastInteractionAt DateTime     @default(now())
+  storageState      StorageState @default(HOT)
+  compressedData    String?      @db.Text
+
+  @@index([userId, storageState])
+  @@index([lastInteractionAt])
 }
 
 model Message {
@@ -57,6 +75,18 @@ model ApiLog {
   tokensUsed Int     @default(0)
   action    String   // "chat" | "image"
   createdAt DateTime @default(now())
+}
+
+model CleanupLog {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionTier     String
+  deletedConversations Int      @default(0)
+  deletedMessages      Int      @default(0)
+  deletedFiles         Int      @default(0)
+  deletedAt            DateTime @default(now())
+  reason               String
 }
 
 model Payment {
