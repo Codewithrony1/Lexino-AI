@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { lexinoClerkAppearance } from '../../lib/clerkAppearance';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Account Settings & Profile',
   description: 'Manage your Lexino AI subscription tier, security preferences, and profile details.',

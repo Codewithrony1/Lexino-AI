@@ -5,6 +5,8 @@ import { STATIC_LANDING_HTML } from '../lib/staticLandingHtml';
 
 const siteUrl = 'https://lexinoai.in';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Lexino AI — Best AI Chatbot for Study, Exam Preparation & Coding',
   description:

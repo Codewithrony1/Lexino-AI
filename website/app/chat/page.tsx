@@ -6,6 +6,8 @@ import { ClientScriptLoader } from '../../components/ClientScriptLoader';
 import { prisma } from '../../lib/prisma';
 import { STATIC_CHAT_HTML } from '../../lib/staticChatHtml';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Workspace & AI Chatbot Dashboard',
   description: 'Your intelligent thinking space on Lexino AI. Prepare for exams, code, and automate tasks.',

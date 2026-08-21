@@ -4,6 +4,8 @@ import { prisma } from '../../../lib/prisma';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 type ChatHistoryItem = {
   role: 'user' | 'assistant';
   content: string;
