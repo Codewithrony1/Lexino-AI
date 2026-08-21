@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
-import { getWebsiteBody } from '../page';
+import { STATIC_LANDING_HTML } from '../../lib/staticLandingHtml';
 import { ClientScriptLoader } from '../../components/ClientScriptLoader';
 
 const siteUrl = 'https://lexinoai.in';
@@ -62,7 +62,7 @@ export default async function PricingPage() {
     userId = null;
   }
 
-  let websiteMarkup = getWebsiteBody();
+  let websiteMarkup = STATIC_LANDING_HTML;
 
   if (userId) {
     websiteMarkup = websiteMarkup

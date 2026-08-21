@@ -59,10 +59,6 @@ const homeFaqSchema = {
   ],
 };
 
-export function getWebsiteBody() {
-  return STATIC_LANDING_HTML;
-}
-
 export default async function LandingPage() {
   let userId: string | null = null;
   try {
@@ -72,7 +68,7 @@ export default async function LandingPage() {
     userId = null;
   }
 
-  let websiteMarkup = getWebsiteBody();
+  let websiteMarkup = STATIC_LANDING_HTML;
 
   if (userId) {
     websiteMarkup = websiteMarkup
