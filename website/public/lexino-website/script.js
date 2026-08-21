@@ -5,25 +5,36 @@ function toggleTheme() {
     localStorage.setItem('theme', isLight ? 'light' : 'dark');
 }
 
-// --- Music and Preference Logic ---
+// --- Music and Preference Logic (Optimized for Sub-Second Performance) ---
 const bgMusic = document.getElementById('bgMusic');
 const musicToggle = document.getElementById('musicToggle');
-let isMuted = false;
+let isMuted = true; // Default muted for performance and browser autoplay policies
 
 function toggleMusic() {
-    if (!bgMusic || !musicToggle) return;
+    if (!bgMusic) return;
+    
     if (isMuted) {
+        // UNMUTE and play on explicit user interaction
         bgMusic.muted = false;
-        musicToggle.textContent = '🔊';
+        bgMusic.volume = 0.15;
+        if (musicToggle) musicToggle.textContent = '🔊';
         isMuted = false;
-        if (bgMusic.paused) {
-            bgMusic.play().catch(e => console.log('Error playing music on unmute:', e));
+        
+        const playPromise = bgMusic.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.log('Audio playback waiting for interaction:', e);
+                if (musicToggle) musicToggle.textContent = '🔇';
+                isMuted = true;
+            });
         }
     } else {
+        // MUTE
         bgMusic.muted = true;
-        musicToggle.textContent = '🔇';
+        if (musicToggle) musicToggle.textContent = '🔇';
         isMuted = true;
     }
+    
     localStorage.setItem('musicMuted', isMuted.toString());
 }
 
@@ -33,26 +44,17 @@ window.addEventListener('DOMContentLoaded', () => {
     if (savedTheme === 'light') {
         document.body.classList.add('light-mode');
     }
-    // 2. Set Volume & Mute Preferences
-    if (bgMusic && musicToggle) {
-        bgMusic.volume = 0.1;
-        const savedMuted = localStorage.getItem('musicMuted');
-        if (savedMuted === 'true') {
-            isMuted = true;
-            bgMusic.muted = true;
-            musicToggle.textContent = '🔇';
-        } else {
-            isMuted = false;
-            bgMusic.muted = false;
-            musicToggle.textContent = '🔊';
-            bgMusic.play().catch(error => {
-                console.log('Autoplay was prevented by browser.');
-                musicToggle.textContent = '🔇';
-            });
-        }
+    
+    // 2. Initialize Audio in Muted/Ready state without fetching large buffers
+    const savedMuted = localStorage.getItem('musicMuted');
+    if (savedMuted === 'false') {
+        // User had previously unmuted, but we leave it silent until first gesture to prevent autoplay blocks
+        isMuted = true;
+        if (musicToggle) musicToggle.textContent = '🔇';
+    } else {
+        isMuted = true;
+        if (musicToggle) musicToggle.textContent = '🔇';
     }
-    // 3. Initialize Particles
-    createParticles();
 });
 
 // Page Navigation
@@ -62,155 +64,262 @@ function navigateToTry() {
 
 function navigateToHome() {
     hideAllPages();
-    const homePage = document.getElementById('home-page');
-    if (homePage) homePage.style.display = 'block';
+    const home = document.getElementById('home-page');
+    if (home) home.style.display = 'block';
     window.scrollTo(0, 0);
 }
 
-function hideAllPages() {
-    const homePage = document.getElementById('home-page');
-    if (homePage) homePage.style.display = 'none';
-    const tryPage = document.getElementById('try-page');
-    if (tryPage) tryPage.style.display = 'none';
+function navigateToTerms() {
+    window.location.href = '/terms';
 }
 
-// Handle browser back/forward buttons
-window.addEventListener('popstate', (event) => {
-    navigateToHome();
-});
+function navigateToPrivacy() {
+    window.location.href = '/privacy';
+}
+
+function hideAllPages() {
+    const home = document.getElementById('home-page');
+    if (home) home.style.display = 'none';
+}
+
+// ===================================================
+// RAZORPAY CHECKOUT & PAYMENT INTEGRATION
+// ===================================================
+
+let lastAttemptedPlan = 'pro';
+let lastStudentIdNote = '';
+let isRazorpayLoading = false;
+
+// Dynamically load Razorpay Checkout script on demand
+function loadRazorpaySdk() {
+    return new Promise((resolve, reject) => {
+        if (window.Razorpay) {
+            resolve(true);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => reject(new Error('Failed to load Razorpay SDK'));
+        document.body.appendChild(script);
+    });
+}
+
+function openPlanCheckout(planId) {
+    if (planId === 'student') {
+        const modal = document.getElementById('studentVerificationModal');
+        if (modal) modal.style.display = 'flex';
+    } else {
+        initiateRazorpayPayment('pro', '');
+    }
+}
+
+function closeStudentModal() {
+    const modal = document.getElementById('studentVerificationModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function handleStudentVerificationSubmit(event) {
+    event.preventDefault();
+    const institute = (document.getElementById('studentInstitute')?.value || '').trim();
+    const course = (document.getElementById('studentCourse')?.value || '').trim();
+    const rollId = (document.getElementById('studentRollId')?.value || '').trim();
+
+    if (!institute || !course || !rollId) {
+        alert('Please fill in all student verification fields.');
+        return;
+    }
+
+    const note = `Institute: ${institute} | Course: ${course} | Roll: ${rollId}`;
+    closeStudentModal();
+    initiateRazorpayPayment('student', note);
+}
+
+async function initiateRazorpayPayment(planId, studentIdNote) {
+    lastAttemptedPlan = planId;
+    lastStudentIdNote = studentIdNote;
+
+    const targetBtn = planId === 'student'
+        ? document.getElementById('studentCheckoutBtn')
+        : document.getElementById('proCheckoutBtn');
+    
+    const originalBtnText = targetBtn ? targetBtn.textContent : '';
+    if (targetBtn) {
+        targetBtn.disabled = true;
+        targetBtn.textContent = 'Preparing Gateway... ⚡';
+    }
+
+    try {
+        await loadRazorpaySdk();
+
+        // 1. Create order on server
+        const createOrderRes = await fetch('/api/razorpay/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ planId, studentIdNote }),
+        });
+
+        if (createOrderRes.status === 401) {
+            // User needs to authenticate first
+            window.location.href = `/login?redirect_url=/pricing`;
+            return;
+        }
+
+        const orderData = await createOrderRes.json();
+        if (!createOrderRes.ok || !orderData.success) {
+            throw new Error(orderData.message || 'Could not initiate payment order.');
+        }
+
+        // 2. Open Razorpay Checkout modal
+        const options = {
+            key: orderData.keyId,
+            amount: orderData.amount,
+            currency: orderData.currency || 'INR',
+            name: 'Lexino AI',
+            description: `${orderData.planName} Plan Access`,
+            image: '/lexino-website/Lexino_AI_Logo-removebg-preview.png',
+            order_id: orderData.orderId,
+            prefill: {
+                name: orderData.userName || '',
+                email: orderData.userEmail || '',
+            },
+            theme: {
+                color: '#00f0ff',
+            },
+            modal: {
+                ondismiss: function () {
+                    showPaymentFailure('Payment was cancelled before completion. You can retry whenever you are ready.');
+                },
+            },
+            handler: async function (response) {
+                // 3. Verify signature on server
+                try {
+                    const verifyRes = await fetch('/api/razorpay/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            planId: planId,
+                        }),
+                    });
+
+                    const verifyData = await verifyRes.json();
+                    if (verifyRes.ok && verifyData.success) {
+                        showPaymentSuccess(orderData.planName);
+                    } else {
+                        showPaymentFailure(verifyData.message || 'Payment signature verification failed.');
+                    }
+                } catch (verifyErr) {
+                    showPaymentFailure('Network error verifying transaction. Please contact support if amount was deducted.');
+                }
+            },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            showPaymentFailure(response.error?.description || 'Transaction was declined by bank/gateway.');
+        });
+        rzp.open();
+
+    } catch (err) {
+        console.error('Payment initiation error:', err);
+        showPaymentFailure(err.message || 'Failed to initialize payment gateway.');
+    } finally {
+        if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.textContent = originalBtnText;
+        }
+    }
+}
+
+function showPaymentSuccess(planName) {
+    const modal = document.getElementById('paymentSuccessModal');
+    const text = document.getElementById('successPlanText');
+    if (text) text.textContent = `Your Lexino AI ${planName} Plan is now active.`;
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('paymentSuccessModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function showPaymentFailure(reason) {
+    const modal = document.getElementById('paymentFailureModal');
+    const text = document.getElementById('failureReasonText');
+    if (text) text.textContent = reason;
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeFailureModal() {
+    const modal = document.getElementById('paymentFailureModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function retryLastPayment() {
+    closeFailureModal();
+    initiateRazorpayPayment(lastAttemptedPlan, lastStudentIdNote);
+}
 
 // Newsletter subscription
 function subscribeNewsletter(event) {
     event.preventDefault();
     const emailInput = document.getElementById('newsletter-email');
     const message = document.getElementById('newsletter-message');
-    if (!emailInput || !message) return;
-    
-    const email = emailInput.value.trim();
+    const email = emailInput?.value.trim();
     if (!email || !email.includes('@')) {
-        message.textContent = '⚠️ Please enter a valid email address';
-        message.className = 'newsletter-message error show';
+        if (message) {
+            message.textContent = '⚠️ Please enter a valid email address';
+            message.className = 'newsletter-message error show';
+        }
         return;
     }
-    
-    message.textContent = '✓ Successfully subscribed! Welcome to Lexino AI community.';
-    message.className = 'newsletter-message success show';
-    emailInput.value = '';
-    setTimeout(() => {
-        message.classList.remove('show');
-    }, 5000);
-}
-
-// Create animated particles
-function createParticles() {
-    const container = document.querySelector('.bg-animation');
-    if (!container) return;
-    const particleCount = 40;
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.top = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 15 + 's';
-        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        container.appendChild(particle);
+    if (message) {
+        message.textContent = '✓ Successfully subscribed! Welcome to the Lexino AI community.';
+        message.className = 'newsletter-message success show';
     }
+    if (emailInput) emailInput.value = '';
+    setTimeout(() => {
+        if (message) message.classList.remove('show');
+    }, 5000);
 }
 
 // Smooth scroll for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         const href = this.getAttribute('href');
-        if (href === '#' || this.onclick) {
-            return;
-        }
+        if (href === '#' || this.onclick) return;
         
         e.preventDefault();
-        const homePage = document.getElementById('home-page');
-        if (homePage && homePage.style.display === 'none') {
-            navigateToHome();
-            setTimeout(() => {
-                const target = document.querySelector(href);
-                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
-        } else {
-            const target = document.querySelector(href);
-            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const target = document.querySelector(href);
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
         }
     });
 });
 
-// Intersection Observer for scrolling card animations
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -100px 0px'
-};
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, observerOptions);
-
+// Observe cards for scroll animations
 window.addEventListener('load', () => {
-    document.querySelectorAll('.card').forEach(card => {
+    const cards = document.querySelectorAll('.card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    cards.forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(30px)';
         card.style.transition = 'all 0.6s ease';
         observer.observe(card);
     });
 });
-
-/* --- Checkout Modal Payments Logic --- */
-function openCheckout(plan) {
-    const modal = document.getElementById('checkoutModal');
-    if (!modal) return;
-    
-    let planName = 'Pro Plan';
-    let planPrice = '₹399/month';
-    let upiAmount = '399';
-    let upiNote = 'Lexino%20Pro%20Upgrade';
-    
-    if (plan === 'student') {
-        planName = 'Student Plan';
-        planPrice = '₹149/month';
-        upiAmount = '149';
-        upiNote = 'Lexino%20Student%20Upgrade';
-    }
-    
-    document.getElementById('checkoutPlanName').textContent = planName;
-    document.getElementById('checkoutPlanPrice').textContent = planPrice;
-    
-    // Generate dynamic QR Code for UPI payment
-    const upiLink = `upi://pay?pa=sumit.choudhary@okaxis&pn=Lexino%20AI&am=${upiAmount}&cu=INR&tn=${upiNote}`;
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiLink)}`;
-    document.getElementById('upiQrCode').src = qrApiUrl;
-    
-    // Configure WhatsApp verification message
-    const waText = `Hi Sumit, I have paid ${planPrice} for the Lexino AI ${planName}. Please activate my account.`;
-    document.getElementById('whatsappVerificationLink').href = `https://wa.me/919322306355?text=${encodeURIComponent(waText)}`;
-    
-    modal.style.display = 'flex';
-}
-
-function closeCheckoutModal() {
-    const modal = document.getElementById('checkoutModal');
-    if (modal) modal.style.display = 'none';
-}
-
-function copyUpiId() {
-    const copyText = document.getElementById('upiIdInput');
-    copyText.select();
-    copyText.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(copyText.value);
-    
-    const btn = document.querySelector('.copy-upi-btn');
-    const originalText = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => {
-        btn.textContent = originalText;
-    }, 1500);
-}
-
