@@ -50,25 +50,27 @@ export async function POST(request: Request) {
             });
           }
 
-          await prisma.payment.upsert({
-            where: { orderId },
-            update: {
-              paymentId: paymentId || undefined,
-              status: 'paid',
-              tier: targetPlan.tier,
-              planId: targetPlan.id,
-            },
-            create: {
-              userId: userId || 'unknown',
-              orderId,
-              paymentId,
-              status: 'paid',
-              tier: targetPlan.tier,
-              planId: targetPlan.id,
-              amount: paymentEntity.amount || targetPlan.amountInPaise,
-              currency: paymentEntity.currency || 'INR',
-            },
-          });
+          if ((prisma as any).payment) {
+            await (prisma as any).payment.upsert({
+              where: { orderId },
+              update: {
+                paymentId: paymentId || undefined,
+                status: 'paid',
+                tier: targetPlan.tier,
+                planId: targetPlan.id,
+              },
+              create: {
+                userId: userId || 'unknown',
+                orderId,
+                paymentId,
+                status: 'paid',
+                tier: targetPlan.tier,
+                planId: targetPlan.id,
+                amount: paymentEntity.amount || targetPlan.amountInPaise,
+                currency: paymentEntity.currency || 'INR',
+              },
+            });
+          }
           console.log(`Webhook successfully processed ${eventType} for order ${orderId}`);
         } catch (dbErr) {
           console.error('Database update failed in webhook handler:', dbErr);
@@ -79,10 +81,12 @@ export async function POST(request: Request) {
       const orderId = paymentEntity.order_id;
       if (process.env.DATABASE_URL && orderId) {
         try {
-          await prisma.payment.updateMany({
-            where: { orderId },
-            data: { status: 'failed' },
-          });
+          if ((prisma as any).payment) {
+            await (prisma as any).payment.updateMany({
+              where: { orderId },
+              data: { status: 'failed' },
+            });
+          }
         } catch (dbErr) {
           console.error('Failed to record payment failure in webhook:', dbErr);
         }

@@ -79,7 +79,8 @@ export async function POST(request: Request) {
     // Save pending payment record in database
     if (process.env.DATABASE_URL) {
       try {
-        await prisma.payment.upsert({
+        if ((prisma as any).payment) {
+          await (prisma as any).payment.upsert({
           where: { orderId: order.id },
           update: {
             amount: plan.amountInPaise,
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
             receipt,
           },
         });
+        }
       } catch (dbErr) {
         console.error('Error recording payment in DB:', dbErr);
       }

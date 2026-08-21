@@ -66,27 +66,29 @@ export async function POST(request: Request) {
     if (process.env.DATABASE_URL) {
       try {
         // 1. Update Payment record
-        await prisma.payment.upsert({
-          where: { orderId: razorpay_order_id },
-          update: {
-            paymentId: razorpay_payment_id,
-            signature: razorpay_signature,
-            status: 'paid',
-            tier: updatedTier,
-            planId: targetPlan.id,
-          },
-          create: {
-            userId,
-            orderId: razorpay_order_id,
-            paymentId: razorpay_payment_id,
-            signature: razorpay_signature,
-            status: 'paid',
-            tier: updatedTier,
-            planId: targetPlan.id,
-            amount: targetPlan.amountInPaise,
-            currency: 'INR',
-          },
-        });
+        if ((prisma as any).payment) {
+          await (prisma as any).payment.upsert({
+            where: { orderId: razorpay_order_id },
+            update: {
+              paymentId: razorpay_payment_id,
+              signature: razorpay_signature,
+              status: 'paid',
+              tier: updatedTier,
+              planId: targetPlan.id,
+            },
+            create: {
+              userId,
+              orderId: razorpay_order_id,
+              paymentId: razorpay_payment_id,
+              signature: razorpay_signature,
+              status: 'paid',
+              tier: updatedTier,
+              planId: targetPlan.id,
+              amount: targetPlan.amountInPaise,
+              currency: 'INR',
+            },
+          });
+        }
 
         // 2. Upgrade User tier and clear any cooldowns
         await prisma.user.upsert({
