@@ -8,21 +8,14 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    let authData: any = null;
-    try {
-      authData = await auth();
-    } catch {
-      authData = null;
-    }
-
-    if (!authData?.userId) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json(
         { error: 'unauthorized', message: 'User session expired. Please log in.' },
         { status: 401 }
       );
     }
 
-    const userId = authData.userId;
     const body = (await request.json().catch(() => ({}))) as Record<string, any>;
 
     const {
@@ -49,10 +42,12 @@ export async function POST(request: Request) {
       console.error(`Invalid payment signature attempt for order: ${razorpay_order_id}`);
       if (process.env.DATABASE_URL) {
         try {
-          await prisma.payment.updateMany({
-            where: { orderId: razorpay_order_id },
-            data: { status: 'failed' },
-          });
+          if ((prisma as any)?.payment) {
+            await (prisma as any).payment.updateMany({
+              where: { orderId: razorpay_order_id },
+              data: { status: 'failed' },
+            });
+          }
         } catch (e) {}
       }
       return NextResponse.json(
@@ -67,8 +62,7 @@ export async function POST(request: Request) {
 
     if (process.env.DATABASE_URL) {
       try {
-        // 1. Update Payment record
-        if ((prisma as any).payment) {
+        if ((prisma as any)?.payment) {
           await (prisma as any).payment.upsert({
             where: { orderId: razorpay_order_id },
             update: {
@@ -92,7 +86,6 @@ export async function POST(request: Request) {
           });
         }
 
-        // 2. Upgrade User tier and clear any cooldowns
         await prisma.user.upsert({
           where: { id: userId },
           update: {
