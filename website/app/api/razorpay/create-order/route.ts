@@ -4,6 +4,8 @@ import { prisma } from '../../../../lib/prisma';
 import { PLANS } from '../../../../lib/plans';
 import { createRazorpayOrder, getRazorpayKeyId } from '../../../../lib/razorpay';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     let authData: any = null;

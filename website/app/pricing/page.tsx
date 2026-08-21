@@ -5,6 +5,8 @@ import { ClientScriptLoader } from '../../components/ClientScriptLoader';
 
 const siteUrl = 'https://lexinoai.in';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Pricing Plans — Free, Student & Pro Access for Exam & Career Prep',
   description:

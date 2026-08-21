@@ -3,6 +3,8 @@ import { prisma } from '../../../../lib/prisma';
 import { PLANS } from '../../../../lib/plans';
 import { verifyWebhookSignature } from '../../../../lib/razorpay';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
