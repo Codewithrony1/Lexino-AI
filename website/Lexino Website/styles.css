@@ -322,7 +322,7 @@ body.light-mode .hero p {
     animation: fadeInUp 1s ease 0.6s backwards;
     overflow: hidden;
     position: relative;
-}
+}.why-image-card img
 body.light-mode .demo-preview {
     background: var(--color-card-light);
     border-color: var(--color-border-light);
@@ -413,14 +413,14 @@ body.light-mode .why-section {
     gap: 1.25rem;
 }
 .why-image-card {
-    height: min(58vw, 560px);
+    height: min(58vw, 725px);
     min-height: 460px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 12px;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 28px;
+    border-radius: 30px;
     background:
         radial-gradient(circle at 30% 20%, rgba(0, 240, 255, 0.22), transparent 35%),
         radial-gradient(circle at 75% 80%, rgba(168, 85, 247, 0.28), transparent 38%),
@@ -433,7 +433,7 @@ body.light-mode .why-section {
     height: 100%;
     object-fit: contain;
     object-position: top center;
-    border-radius: 20px;
+    border-radius: 30px;
     filter: drop-shadow(0 0 26px rgba(0, 240, 255, 0.18));
 }
 .why-stats {
