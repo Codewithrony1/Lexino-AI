@@ -352,6 +352,11 @@ function initLexinoWave(canvasId, hueStart, hueEnd, direction) {
 
   function draw(t) {
     if (!canvas.isConnected) return;
+    if (!w || !h) resize();
+    if (!w || !h) {
+      requestAnimationFrame(draw);
+      return;
+    }
     ctx.clearRect(0, 0, w, h);
     const dpr = window.devicePixelRatio || 1;
     for (const p of pts) {
