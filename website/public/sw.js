@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexino-assets-v2';
+const CACHE_NAME = 'lexino-assets-v3';
 const ASSETS_TO_CACHE = [
   '/style.css',
   '/api.js',
@@ -6,7 +6,8 @@ const ASSETS_TO_CACHE = [
   '/lexino-logo.png',
   '/lexino-website/styles.css',
   '/lexino-website/script.js',
-  '/lexino-website/Image22.png'
+  '/lexino-website/Image22.png',
+  '/lexino-website/lexino-era-3d.png'
 ];
 
 self.addEventListener('install', (event) => {
