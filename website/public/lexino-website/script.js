@@ -323,3 +323,68 @@ window.addEventListener('load', () => {
         observer.observe(card);
     });
 });
+
+// ===================================================
+// WAVE PARTICLE MESH CANVAS ANIMATION (Join the Era)
+// ===================================================
+function initLexinoWave(canvasId, hueStart, hueEnd, direction) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  let w = 0, h = 0;
+
+  function resize() {
+    if (!canvas.offsetWidth) return;
+    w = canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
+    h = canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  const cols = 26, rows = 14;
+  const pts = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      pts.push({ c, r, offset: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  function draw(t) {
+    if (!canvas.isConnected) return;
+    ctx.clearRect(0, 0, w, h);
+    const dpr = window.devicePixelRatio || 1;
+    for (const p of pts) {
+      const nx = direction === 'left' ? p.c / (cols - 1) : 1 - p.c / (cols - 1);
+      const ny = p.r / (rows - 1);
+
+      const persp = 0.35 + nx * 0.65;
+      const px = (direction === 'left' ? nx : 1 - nx) * w;
+      const wobble = Math.sin(t * 0.0006 + p.offset + nx * 4) * 10 * dpr * ny;
+      const py = h - (ny * h * 0.9) + wobble;
+
+      const alpha = (1 - nx) * 0.6 * (0.4 + ny * 0.6);
+      if (alpha <= 0.02) continue;
+      const hue = hueStart + (hueEnd - hueStart) * ny;
+
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${hue}, 85%, 66%, ${alpha})`;
+      ctx.arc(px, py, (0.6 + persp * 0.9) * dpr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+function startLexinoEraWaves() {
+  initLexinoWave('wave-left', 280, 250, 'left');
+  initLexinoWave('wave-right', 200, 230, 'right');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startLexinoEraWaves);
+} else {
+  setTimeout(startLexinoEraWaves, 50);
+}
+
