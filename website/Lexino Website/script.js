@@ -342,7 +342,7 @@ function initLexinoWave(canvasId, hueStart, hueEnd, direction) {
   resize();
   window.addEventListener('resize', resize, { passive: true });
 
-  const cols = 26, rows = 14;
+  const cols = 30, rows = 16;
   const pts = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -368,13 +368,13 @@ function initLexinoWave(canvasId, hueStart, hueEnd, direction) {
       const wobble = Math.sin(t * 0.0006 + p.offset + nx * 4) * 10 * dpr * ny;
       const py = h - (ny * h * 0.9) + wobble;
 
-      const alpha = (1 - nx) * 0.6 * (0.4 + ny * 0.6);
+      const alpha = (1 - nx) * 0.7 * (0.35 + ny * 0.65);
       if (alpha <= 0.02) continue;
       const hue = hueStart + (hueEnd - hueStart) * ny;
 
       ctx.beginPath();
-      ctx.fillStyle = `hsla(${hue}, 85%, 66%, ${alpha})`;
-      ctx.arc(px, py, (0.6 + persp * 0.9) * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${hue}, 90%, 65%, ${alpha})`;
+      ctx.arc(px, py, (0.75 + persp * 1.0) * dpr, 0, Math.PI * 2);
       ctx.fill();
     }
     requestAnimationFrame(draw);
@@ -383,8 +383,8 @@ function initLexinoWave(canvasId, hueStart, hueEnd, direction) {
 }
 
 function startLexinoEraWaves() {
-  initLexinoWave('wave-left', 280, 250, 'left');
-  initLexinoWave('wave-right', 200, 230, 'right');
+  initLexinoWave('wave-left', 290, 260, 'left');
+  initLexinoWave('wave-right', 195, 225, 'right');
 }
 
 if (document.readyState === 'loading') {
