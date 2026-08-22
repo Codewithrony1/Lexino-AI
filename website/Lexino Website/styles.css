@@ -286,7 +286,7 @@ body.light-mode .hero p {
     background: linear-gradient(135deg, #5579ff 0%, #b966ff 100%);
 }
 .demo-preview {
-    max-width: 1198px;
+    max-width: 1168px;
     width: 100%;
     height: 400px;
     background: var(--color-card-dark);
