@@ -286,8 +286,7 @@ body.light-mode .hero p {
     background: linear-gradient(135deg, #5579ff 0%, #b966ff 100%);
 }
 .demo-preview {
-    margin-top: 4rem;
-    max-width: 900px;
+    max-width: 1198px;
     width: 100%;
     height: 400px;
     background: var(--color-card-dark);
@@ -395,68 +394,6 @@ body.light-mode .why-section {
 .why-list li:hover {
     background: rgba(65, 105, 255, 0.2);
     transform: translateX(10px);
-}
-/* Technology Section */
-.technology-showcase {
-    display: grid;
-    grid-template-columns: minmax(300px, 0.95fr) minmax(320px, 1.05fr);
-    align-items: center;
-    gap: clamp(2rem, 5vw, 4.5rem);
-    padding: clamp(2rem, 5vw, 4rem);
-    border: 1px solid rgba(0, 240, 255, 0.14);
-    border-radius: 30px;
-    background:
-        linear-gradient(135deg, rgba(0, 240, 255, 0.1), transparent 38%),
-        linear-gradient(315deg, rgba(65, 105, 255, 0.16), transparent 42%),
-        var(--color-card-dark);
-    overflow: hidden;
-}
-body.light-mode .technology-showcase {
-    border-color: rgba(65, 105, 255, 0.16);
-    background:
-        linear-gradient(135deg, rgba(0, 240, 255, 0.1), transparent 38%),
-        linear-gradient(315deg, rgba(65, 105, 255, 0.1), transparent 42%),
-        var(--color-card-light);
-}
-.technology-content {
-    text-align: left;
-}
-.technology-content h2 {
-    text-align: left;
-    margin-bottom: 1.2rem;
-}
-.technology-content p {
-    max-width: 620px;
-    margin-bottom: 1rem;
-    color: var(--color-text-secondary-dark);
-    font-size: 1.16rem;
-    line-height: 1.8;
-}
-body.light-mode .technology-content p {
-    color: var(--color-text-secondary-light);
-}
-.technology-visual {
-    position: relative;
-}
-.technology-visual::before {
-    content: '';
-    position: absolute;
-    inset: 10% 6%;
-    border-radius: 50%;
-    background: rgba(0, 240, 255, 0.16);
-    filter: blur(42px);
-}
-.technology-visual img {
-    position: relative;
-    display: block;
-    width: 100%;
-    max-width: 520px;
-    margin-left: auto;
-    border-radius: 26px;
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
-}
-body.light-mode .technology-visual img {
-    box-shadow: 0 24px 70px rgba(65, 105, 255, 0.18);
 }
 /* Lexino Era Section */
 .lexino-era-section {
@@ -1038,26 +975,6 @@ body.light-mode .newsletter-input-group input {
     .why-section {
         padding: 2rem;
     }
-    .technology-showcase {
-        grid-template-columns: 1fr;
-        gap: 1.75rem;
-        padding: 2rem;
-    }
-    .technology-content,
-    .technology-content h2,
-    .technology-content p {
-        text-align: center;
-    }
-    .technology-content p {
-        font-size: 1rem;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .technology-visual img {
-        max-width: 360px;
-        margin-right: auto;
-        border-radius: 22px;
-    }
     .lexino-era-section {
         grid-template-columns: 1fr;
         gap: 1.75rem;
@@ -1595,3 +1512,4 @@ body.light-mode .lexino-input {
         padding: 1.25rem !important;
     }
 }
+ 
