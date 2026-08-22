@@ -26,16 +26,12 @@ export async function POST() {
           email,
           name,
           avatarUrl,
-          lastActiveAt: new Date(),
-          warnedAt: null,
-          finalWarnedAt: null,
         },
         create: {
           id: userId,
           email,
           name,
           avatarUrl,
-          lastActiveAt: new Date(),
         },
       });
     } else {

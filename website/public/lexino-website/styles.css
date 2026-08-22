@@ -396,69 +396,6 @@ body.light-mode .why-section {
     background: rgba(65, 105, 255, 0.2);
     transform: translateX(10px);
 }
-/* Technology Section */
-.technology-showcase {
-    display: grid;
-    grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 1.05fr);
-    align-items: center;
-    gap: clamp(2rem, 5vw, 4.5rem);
-    padding: clamp(2rem, 5vw, 4rem);
-    border: 1px solid rgba(0, 240, 255, 0.14);
-    border-radius: 30px;
-    background:
-        linear-gradient(135deg, rgba(0, 240, 255, 0.1), transparent 35%),
-        linear-gradient(315deg, rgba(65, 105, 255, 0.16), transparent 42%),
-        var(--color-card-dark);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
-    overflow: hidden;
-}
-body.light-mode .technology-showcase {
-    background:
-        linear-gradient(135deg, rgba(0, 240, 255, 0.08), transparent 35%),
-        linear-gradient(315deg, rgba(65, 105, 255, 0.1), transparent 42%),
-        var(--color-card-light);
-    border-color: rgba(65, 105, 255, 0.14);
-    box-shadow: 0 24px 60px rgba(65, 105, 255, 0.12);
-}
-.technology-content {
-    text-align: left;
-}
-.technology-content h2 {
-    text-align: left;
-    margin-bottom: 1.35rem;
-}
-.technology-content p {
-    max-width: 620px;
-    color: var(--color-text-secondary-dark);
-    font-size: 1.12rem;
-    line-height: 1.85;
-    margin-bottom: 1rem;
-}
-body.light-mode .technology-content p {
-    color: var(--color-text-secondary-light);
-}
-.technology-visual {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.technology-visual::before {
-    content: '';
-    position: absolute;
-    inset: 10% 4%;
-    border-radius: 32px;
-    background: radial-gradient(circle, rgba(0, 240, 255, 0.2), transparent 62%);
-    filter: blur(24px);
-}
-.technology-visual img {
-    position: relative;
-    width: min(100%, 560px);
-    height: auto;
-    display: block;
-    border-radius: 30px;
-    filter: drop-shadow(0 28px 44px rgba(0, 0, 0, 0.34));
-}
 /* Footer */
 .futuristic-footer {
     background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.95) 100%);
@@ -902,25 +839,6 @@ body.light-mode .newsletter-input-group input {
     }
     .why-section {
         padding: 2rem;
-    }
-    .technology-showcase {
-        grid-template-columns: 1fr;
-        padding: 2rem;
-        border-radius: 24px;
-    }
-    .technology-content,
-    .technology-content h2,
-    .technology-content p {
-        text-align: center;
-    }
-    .technology-content p {
-        font-size: 1rem;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .technology-visual img {
-        width: min(100%, 380px);
-        border-radius: 22px;
     }
     .demo-preview {
         height: 300px;

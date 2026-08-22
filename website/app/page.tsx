@@ -75,9 +75,6 @@ export default async function LandingPage() {
   if (userId) {
     websiteMarkup = websiteMarkup
       .replaceAll('Experience Lexino AI Now 🚀', 'Go to Chat Dashboard 🚀')
-      .replaceAll('Get Started', 'Go to Chat')
-      .replaceAll('Get Student Plan', 'Go to Chat')
-      .replaceAll('Get Pro Access', 'Go to Chat')
       .replaceAll('navigateToTry()', "window.location.href='/chat'");
   }
 

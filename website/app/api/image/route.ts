@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
-import { updateUserActivity } from '../../../lib/activity';
-import { getStorageInfo } from '../../../lib/storage';
 
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  await updateUserActivity(userId);
-
-  const storageInfo = await getStorageInfo(userId);
-  if (storageInfo.isBlocked) {
-    return NextResponse.json({ error: 'Storage Full: Your storage limit has been exceeded. Please delete old conversations or upgrade your plan.' }, { status: 403 });
   }
 
   try {
