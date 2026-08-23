@@ -320,9 +320,7 @@ body.light-mode .hero p {
     align-items: center;
     justify-content: center;
     animation: fadeInUp 1s ease 0.6s backwards;
-    overflow: hidden;
-    position: relative;
-}.why-image-card img
+}
 body.light-mode .demo-preview {
     background: var(--color-card-light);
     border-color: var(--color-border-light);
@@ -401,7 +399,13 @@ body.light-mode .card p {
     align-items: center;
     overflow: hidden;
 }
-body.light-mode .why-section {
+.why-section.single-panel,
+.panel-card {
+    display: block;
+    grid-template-columns: 1fr;
+}
+body.light-mode .why-section,
+body.light-mode .panel-card {
     background: var(--color-card-light);
     border-color: var(--color-border-light);
 }
@@ -457,11 +461,6 @@ body.light-mode .why-stats span {
 }
 .why-content {
     min-width: 0;
-}
-.why-content > h2,
-.why-content > p,
-.why-content > ul {
-    display: none;
 }
 .why-section h2 {
     margin-bottom: 1.25rem;
