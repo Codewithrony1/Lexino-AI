@@ -28,12 +28,16 @@ if (fs.existsSync(srcScript)) {
   console.log('✅ Synchronized public/lexino-website/script.js');
 }
 
-// 3. Sync Image22.png if present
-const srcImg = path.join(lexinoWebsiteDir, 'Image22.png');
-if (fs.existsSync(srcImg)) {
-  fs.copyFileSync(srcImg, path.join(publicDir, 'Image22.png'));
-  fs.copyFileSync(srcImg, path.join(publicLexinoDir, 'Image22.png'));
-  console.log('✅ Synchronized Image22.png');
+// 3. Sync all media assets (images, videos, audio)
+const allFiles = fs.readdirSync(lexinoWebsiteDir);
+for (const file of allFiles) {
+  const ext = path.extname(file).toLowerCase();
+  if (['.png', '.jpg', '.jpeg', '.svg', '.mp4', '.mp3', '.webp', '.ico'].includes(ext)) {
+    const src = path.join(lexinoWebsiteDir, file);
+    fs.copyFileSync(src, path.join(publicDir, file));
+    fs.copyFileSync(src, path.join(publicLexinoDir, file));
+    console.log(`✅ Synchronized asset: ${file}`);
+  }
 }
 
 // 4. Extract and generate staticLandingHtml.ts from Lexino Website/index.html

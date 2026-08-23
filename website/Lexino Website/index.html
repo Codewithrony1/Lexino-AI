@@ -23,6 +23,7 @@
       <div class="glow-orb orb-2"></div>
     </div>
     <!-- Background Music (Zero initial preload for sub-second LCP) -->
+<<<<<<< HEAD
     <audio id="bgMusic" loop preload="none" style="display: none">
       <source
         src="/Lexino Website/Manifest Anything You Desire  10 Minute Meditation Music.mp3"
@@ -45,6 +46,34 @@
 
         <div class="logo" style="margin: 0">
           LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup>
+=======
+    <audio id="bgMusic" loop preload="none" style="display: none;">
+        <source src="/lexino-website/Manifest Anything You Desire  10 Minute Meditation Music.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <!-- Navigation -->
+    <nav>
+       <div class="logo-container" style="display: flex; align-items: center; gap: 12px;">
+    <img src="/lexino-website/Lexino_AI_Logo-removebg-preview.png" alt="Lexino AI logo" class="brand-logo" style="height:45px;width:auto;object-fit:contain;">
+    
+    <div class="logo" style="margin: 0;">LE<span class="logo-x">X</span>INO<sup class="logo-sup">AI</sup></div>
+</div>
+        <div class="nav-right">
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#why">Why Lexino</a></li>
+                <li><a href="#community">Community</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#careers">Careers</a></li>
+                <li><a href="/terms" onclick="window.location.href='/terms'; return false;">Terms</a></li>
+                <li><a href="/privacy" onclick="window.location.href='/privacy'; return false;">Privacy</a></li>
+            </ul>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+            <button class="music-toggle" id="musicToggle" onclick="toggleMusic()">🔊</button>
+>>>>>>> 036b00cbf8016cf10baa1264dbbd00311fb3ae01
         </div>
       </div>
       <div class="nav-right">
@@ -84,6 +113,7 @@
       </div>
     </nav>
     <div class="page-content">
+<<<<<<< HEAD
       <!-- Home Page -->
       <div class="home-page" id="home-page">
         <!-- Hero Section -->
@@ -227,6 +257,82 @@
                 </div>
               </div>
               <!-- <div class="why-stats">
+=======
+        <!-- Home Page -->
+        <div class="home-page" id="home-page">
+            <!-- Hero Section -->
+            <section class="hero" id="home">
+                <h1>Empowering Imagination with Lexino AI — Your Creative Digital Mind.</h1>
+                <p>Lexino AI isn't just another assistant — it's your thinking partner, your creative spark, and your digital mirror that learns, evolves, and grows with you.</p>
+                <button class="cta-button" onclick="navigateToTry()">Experience Lexino AI Now 🚀</button>
+                <div class="video-container">
+                    <video class="demo-preview" src="/lexino-website/mp_.mp4" preload="metadata" autoplay loop muted playsinline></video>
+                </div>
+            </section>
+            <!-- About Section -->
+            <section class="section" id="about">
+                <h2>Designed for Minds That Never Stop Thinking.</h2>
+                <p style="text-align: center; max-width: 800px; margin: 0 auto 3rem; font-size: 1.2rem; line-height: 1.8; opacity: 0.9;">
+                    Lexino AI is a next-gen intelligent assistant that adapts to your style, learns from your inputs, and helps you create, plan, and innovate faster than ever. Whether you're writing a new idea, building a startup, or exploring possibilities, Lexino brings clarity, creativity, and control to your digital life.
+                </p>
+
+
+            </section>
+            <!-- Features Section -->
+            <section class="section" id="features">
+                <h2>What Makes Lexino AI Different</h2>
+                <div class="cards-container" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <div class="card">
+                        <div class="card-icon">🧠</div>
+                        <h3>Adaptive Intelligence</h3>
+                        <p>Learns your workflow, remembers your style, and adapts to how you think — making every interaction more intuitive and personal.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Seamless Automation</h3>
+                        <p>Get results instantly. Automate repetitive tasks, generate content, and complete projects in seconds with intelligent processing.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🔒</div>
+                        <h3>Data-Safe Design</h3>
+                        <p>100% privacy-focused architecture with end-to-end encryption. Your data stays yours — secure, private, and protected.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🎨</div>
+                        <h3>3D Wallpapers</h3>
+                        <p>Transform your interface into a digital landscape with custom animated 3D wallpapers like Deep Aurora, Neon Matrix, and Smoky Universe.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🌌</div>
+                        <h3>Personalized Spaces</h3>
+                        <p>Create organized workspaces with pinned conversations, custom theme accents, and history synced seamlessly across all devices.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Ultra-Fast Streaming</h3>
+                        <p>A highly optimized, lag-free UI utilizing Server-Sent Events (SSE) to stream responses token-by-token at maximum speed.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🎓</div>
+                        <h3>Best AI for Exam Preparation</h3>
+                        <p>Master competitive exams (UPSC, JEE, NEET, GATE, GRE) with step-by-step concept breakdowns, mock questions, and intelligent revision guides.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">💻</div>
+                        <h3>Coding & Technical Interviews</h3>
+                        <p>Solve DSA challenges, debug code across Python, C++, Java, and JS, and practice live mock coding interviews with instant AI feedback.</p>
+                    </div>
+                </div>
+            </section>
+            <!-- Why Section -->
+            <section class="section" id="why">
+                <div class="why-section">
+                    <div class="why-visual">
+                        <div class="why-image-card">
+                            <img src="/lexino-website/Image22.png" alt="Lexino AI smart assistant preview">
+                        </div>
+                        <!-- <div class="why-stats">
+>>>>>>> 036b00cbf8016cf10baa1264dbbd00311fb3ae01
                             <span>Fast</span>
                             <span>Private</span>
                             <span>Adaptive</span>
