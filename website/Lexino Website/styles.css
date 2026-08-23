@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 :root {
-    --color-bg-dark: #000000;
+    --color-bg-dark: #050506;
     --color-bg-light: #ffffff;
     --color-surface-dark: #0a0a0a;
     --color-surface-light: #f5f5f5;
     --color-text-dark: #ffffff;
-    --color-text-light: #000000;
+    --color-text-light: #050506;
     --color-text-secondary-dark: rgba(255, 255, 255, 0.7);
     --color-text-secondary-light: rgba(0, 0, 0, 0.7);
-    --color-primary: #4169ff;
+    --color-primary: #6d5efc;
     --color-secondary: #a855f7;
-    --color-accent: #00f0ff;
-    --color-gradient: linear-gradient(135deg, #4169ff 0%, #a855f7 100%);
+    --color-accent: #a855f7;
+    --color-gradient: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);
     --color-card-dark: rgba(255, 255, 255, 0.05);
     --color-card-light: rgba(0, 0, 0, 0.05);
     --color-border-dark: rgba(255, 255, 255, 0.1);
@@ -34,7 +34,7 @@
 }
 body {
     font-family: 'Inter', sans-serif;
-    /* font-family: 'Poppins', sans-serif; */
+    /* font-family: 'Inter', sans-serif; */
     /* background: var(--color-bg-dark); */
     /* color: var(--color-text-dark); */
     line-height: 1.6;
@@ -122,7 +122,7 @@ body.light-mode nav {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.8rem;
     font-weight: 900;
     background: var(--color-gradient);
@@ -135,7 +135,7 @@ body.light-mode nav {
     height: 2.1rem;
     width: auto;
     display: block;
-    filter: drop-shadow(0 0 8px rgba(65, 105, 255, 0.45));
+    filter: drop-shadow(0 0 8px rgba(109, 94, 252, 0.45));
 }
 .nav-right {
     display: flex;
@@ -193,7 +193,7 @@ body.light-mode .theme-toggle, body.light-mode .music-toggle {
     padding: 6rem 5% 3rem;
 }
 .legal-container h1 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: clamp(2rem, 5vw, 3.5rem);
     margin-bottom: 1rem;
     background: var(--color-gradient);
@@ -213,7 +213,7 @@ body.light-mode .legal-container .last-updated {
     margin-bottom: 3rem;
 }
 .legal-section h2 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.8rem;
     color: var(--color-primary);
     margin-bottom: 1rem;
@@ -249,7 +249,7 @@ body.light-mode .legal-container .last-updated {
     padding: 2rem 5%;
 }
 .hero h1 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: clamp(2.5rem, 6vw, 4.5rem);
     font-weight: 900;
     margin-bottom: 1.5rem;
@@ -290,12 +290,12 @@ body.light-mode .hero p {
     border-radius: 50px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 10px 30px rgba(65, 105, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(109, 94, 252, 0.3);
     animation: fadeInUp 1s ease 0.4s backwards;
 }
 .cta-button:hover {
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(65, 105, 255, 0.5);
+    box-shadow: 0 15px 40px rgba(109, 94, 252, 0.5);
     background: linear-gradient(135deg, #5579ff 0%, #b966ff 100%);
 }
 .video-container {
@@ -306,8 +306,8 @@ body.light-mode .hero p {
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 22px;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(65, 105, 255, 0.28), rgba(168, 85, 247, 0.22)), #050508;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 45px rgba(65, 105, 255, 0.18);
+    background: linear-gradient(135deg, rgba(109, 94, 252, 0.28), rgba(168, 85, 247, 0.22)), #050508;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 45px rgba(109, 94, 252, 0.18);
     animation: fadeInUp 1s ease 0.6s backwards;
 }
 .video-container .demo-preview {
@@ -350,7 +350,7 @@ body.light-mode .demo-preview {
     margin: 0 auto;
 }
 .section h2 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: clamp(2rem, 4vw, 3rem);
     text-align: center;
     margin-bottom: 3rem;
@@ -380,14 +380,14 @@ body.light-mode .card {
 .card:hover {
     transform: translateY(-10px);
     border-color: var(--color-primary);
-    box-shadow: 0 20px 40px rgba(65, 105, 255, 0.2);
+    box-shadow: 0 20px 40px rgba(109, 94, 252, 0.2);
 }
 .card-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
 }
 .card h3 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.5rem;
     margin-bottom: 1rem;
     color: var(--color-primary);
@@ -439,10 +439,10 @@ body.light-mode .panel-card {
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 30px;
     background:
-        radial-gradient(circle at 30% 20%, rgba(0, 240, 255, 0.22), transparent 35%),
+        radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.22), transparent 35%),
         radial-gradient(circle at 75% 80%, rgba(168, 85, 247, 0.28), transparent 38%),
         rgba(5, 5, 8, 0.78);
-    box-shadow: inset 0 0 45px rgba(65, 105, 255, 0.14), 0 20px 50px rgba(0, 0, 0, 0.28);
+    box-shadow: inset 0 0 45px rgba(109, 94, 252, 0.14), 0 20px 50px rgba(0, 0, 0, 0.28);
 }
 .why-image-card img {
     width: auto;
@@ -451,7 +451,7 @@ body.light-mode .panel-card {
     object-fit: contain;
     object-position: top center;
     border-radius: 30px;
-    filter: drop-shadow(0 0 26px rgba(0, 240, 255, 0.18));
+    filter: drop-shadow(0 0 26px rgba(168, 85, 247, 0.18));
 }
 .why-stats {
     display: grid;
@@ -462,7 +462,7 @@ body.light-mode .panel-card {
     padding: 0.75rem 0.5rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
-    background: rgba(65, 105, 255, 0.12);
+    background: rgba(109, 94, 252, 0.12);
     text-align: center;
     font-size: 0.9rem;
     font-weight: 600;
@@ -498,14 +498,14 @@ body.light-mode .why-content p {
 .why-list li {
     padding: 1rem 1.2rem;
     margin-bottom: 0.8rem;
-    background: rgba(65, 105, 255, 0.1);
+    background: rgba(109, 94, 252, 0.1);
     border-left: 4px solid var(--color-primary);
     border-radius: 10px;
     font-size: 0.98rem;
     transition: all 0.3s ease;
 }
 .why-list li:hover {
-    background: rgba(65, 105, 255, 0.2);
+    background: rgba(109, 94, 252, 0.2);
     transform: translateX(10px);
 }
 
@@ -702,11 +702,11 @@ body.light-mode .futuristic-footer {
 .footer-divider {
     width: 100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2) 20%, rgba(168, 85, 247, 0.2) 80%, transparent);
+    background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.2) 20%, rgba(168, 85, 247, 0.2) 80%, transparent);
     position: absolute;
     top: 0;
     left: 0;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
 }
 
 .footer-content {
@@ -719,7 +719,7 @@ body.light-mode .futuristic-footer {
 }
 
 .footer-credit {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
     letter-spacing: 2px;
@@ -734,7 +734,7 @@ body.light-mode .footer-credit {
 }
 
 .footer-credit:hover {
-    text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+    text-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
 }
 
 .footer-socials {
@@ -767,9 +767,9 @@ body.light-mode .social-icon {
 
 .social-icon:hover {
     color: white;
-    background: rgba(0, 240, 255, 0.1);
+    background: rgba(168, 85, 247, 0.1);
     border-color: var(--color-accent);
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
     transform: translateY(-2px);
 }
 
@@ -827,7 +827,7 @@ body.light-mode .placeholder-dot {
     text-align: center;
 }
 .try-container h1 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: clamp(2rem, 5vw, 4rem);
     margin-bottom: 2rem;
     background: var(--color-gradient);
@@ -891,12 +891,12 @@ body.light-mode .pricing-card {
 .pricing-card.featured {
     border-color: var(--color-primary);
     transform: scale(1.05);
-    box-shadow: 0 20px 60px rgba(65, 105, 255, 0.3);
+    box-shadow: 0 20px 60px rgba(109, 94, 252, 0.3);
 }
 .pricing-card:hover {
     transform: translateY(-10px);
     border-color: var(--color-primary);
-    box-shadow: 0 20px 50px rgba(65, 105, 255, 0.25);
+    box-shadow: 0 20px 50px rgba(109, 94, 252, 0.25);
 }
 .pricing-card.featured:hover {
     transform: scale(1.05) translateY(-10px);
@@ -918,7 +918,7 @@ body.light-mode .pricing-card {
     background: var(--color-gradient);
 }
 .pricing-card h3 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.8rem;
     margin: 1.5rem 0 1rem;
     text-align: center;
@@ -937,7 +937,7 @@ body.light-mode .pricing-card {
     color: rgba(255, 255, 255, 0.45);
     position: relative;
     display: inline-block;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 500;
     margin-bottom: 0.2rem;
     transition: all 0.3s ease;
@@ -991,7 +991,7 @@ body.light-mode .pricing-card:hover .original-price {
     }
 }
 .price .amount {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 3rem;
     font-weight: 900;
     background: var(--color-gradient);
@@ -1034,11 +1034,11 @@ body.light-mode .features-list li {
 .pricing-button.primary {
     background: var(--color-gradient);
     color: white;
-    box-shadow: 0 10px 30px rgba(65, 105, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(109, 94, 252, 0.3);
 }
 .pricing-button.primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(65, 105, 255, 0.5);
+    box-shadow: 0 15px 40px rgba(109, 94, 252, 0.5);
 }
 .pricing-button.secondary {
     background: transparent;
@@ -1076,7 +1076,7 @@ body.light-mode .newsletter-input-group input {
 .newsletter-input-group input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(65, 105, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(109, 94, 252, 0.1);
 }
 .newsletter-button {
     padding: 1rem 2.5rem;
@@ -1092,7 +1092,7 @@ body.light-mode .newsletter-input-group input {
 }
 .newsletter-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(65, 105, 255, 0.4);
+    box-shadow: 0 10px 30px rgba(109, 94, 252, 0.4);
 }
 .newsletter-message {
     margin-top: 1rem;
@@ -1199,7 +1199,7 @@ html {
 .team-member-card {
     position: relative;
     background: rgba(10, 10, 10, 0.6);
-    border: 1px solid rgba(0, 240, 255, 0.2);
+    border: 1px solid rgba(168, 85, 247, 0.2);
     border-radius: 24px;
     padding: 3rem;
     max-width: 680px;
@@ -1211,22 +1211,22 @@ html {
     flex-direction: column;
     gap: 1.5rem;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5),
-                0 0 30px rgba(0, 240, 255, 0.03);
+                0 0 30px rgba(168, 85, 247, 0.03);
 }
 
 body.light-mode .team-member-card {
     background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(0, 240, 255, 0.3);
+    border-color: rgba(168, 85, 247, 0.3);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05),
-                0 0 30px rgba(0, 240, 255, 0.05);
+                0 0 30px rgba(168, 85, 247, 0.05);
 }
 
 .team-member-card:hover {
     transform: translateY(-8px);
-    border-color: rgba(0, 240, 255, 0.55);
+    border-color: rgba(168, 85, 247, 0.55);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
-                0 0 40px rgba(0, 240, 255, 0.12),
-                0 0 20px rgba(212, 175, 55, 0.05);
+                0 0 40px rgba(168, 85, 247, 0.12),
+                0 0 20px rgba(217, 70, 239, 0.05);
 }
 
 .card-glow {
@@ -1236,16 +1236,16 @@ body.light-mode .team-member-card {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    background: radial-gradient(circle at 100% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
-                radial-gradient(circle at 0% 100%, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
+    background: radial-gradient(circle at 100% 0%, rgba(168, 85, 247, 0.08) 0%, transparent 60%),
+                radial-gradient(circle at 0% 100%, rgba(217, 70, 239, 0.05) 0%, transparent 60%);
     border-radius: 24px;
     z-index: 0;
     transition: opacity 0.3s ease;
 }
 
 .team-member-card:hover .card-glow {
-    background: radial-gradient(circle at 100% 0%, rgba(0, 240, 255, 0.15) 0%, transparent 55%),
-                radial-gradient(circle at 0% 100%, rgba(212, 175, 55, 0.1) 0%, transparent 55%);
+    background: radial-gradient(circle at 100% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 55%),
+                radial-gradient(circle at 0% 100%, rgba(217, 70, 239, 0.1) 0%, transparent 55%);
 }
 
 .member-header {
@@ -1262,8 +1262,8 @@ body.light-mode .team-member-card {
     height: 80px;
     border-radius: 50%;
     padding: 3px;
-    background: linear-gradient(135deg, #00f0ff 0%, #d4af37 100%);
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+    background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
 }
 
 .member-avatar {
@@ -1281,7 +1281,7 @@ body.light-mode .team-member-card {
     width: calc(100% + 10px);
     height: calc(100% + 10px);
     border-radius: 50%;
-    background: linear-gradient(135deg, #00f0ff 0%, #d4af37 100%);
+    background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%);
     filter: blur(8px);
     opacity: 0.35;
     z-index: -1;
@@ -1300,31 +1300,31 @@ body.light-mode .team-member-card {
 
 .member-badge {
     align-self: flex-start;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 1.5px;
     padding: 4px 10px;
     border-radius: 6px;
-    background: rgba(0, 240, 255, 0.1);
-    color: #00f0ff;
-    border: 1px solid rgba(0, 240, 255, 0.25);
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.05);
+    background: rgba(168, 85, 247, 0.1);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.05);
 }
 
 body.light-mode .member-badge {
-    background: rgba(0, 240, 255, 0.15);
+    background: rgba(168, 85, 247, 0.15);
     color: #09798a;
-    border-color: rgba(0, 240, 255, 0.3);
+    border-color: rgba(168, 85, 247, 0.3);
 }
 
 .badge-sub {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 1px;
-    color: #d4af37;
-    text-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
+    color: #d946ef;
+    text-shadow: 0 0 8px rgba(217, 70, 239, 0.25);
 }
 
 body.light-mode .badge-sub {
@@ -1337,7 +1337,7 @@ body.light-mode .badge-sub {
 }
 
 .member-name {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.6rem;
     font-weight: 700;
     color: #ffffff;
@@ -1345,7 +1345,7 @@ body.light-mode .badge-sub {
 }
 
 body.light-mode .member-name {
-    color: #000000;
+    color: #050506;
 }
 
 .member-role {
@@ -1379,10 +1379,10 @@ body.light-mode .skills-section {
 }
 
 .skills-title {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #d4af37;
+    color: #d946ef;
     margin-bottom: 1rem;
     letter-spacing: 1px;
 }
@@ -1415,15 +1415,15 @@ body.light-mode .skill-tag {
 }
 
 .skill-tag:hover {
-    border-color: rgba(0, 240, 255, 0.35);
-    background: rgba(0, 240, 255, 0.04);
-    color: #00f0ff;
+    border-color: rgba(168, 85, 247, 0.35);
+    background: rgba(168, 85, 247, 0.04);
+    color: #a855f7;
     transform: scale(1.03);
 }
 
 body.light-mode .skill-tag:hover {
-    border-color: rgba(0, 240, 255, 0.5);
-    background: rgba(0, 240, 255, 0.06);
+    border-color: rgba(168, 85, 247, 0.5);
+    background: rgba(168, 85, 247, 0.06);
     color: #09798a;
 }
 
@@ -1458,15 +1458,15 @@ body.light-mode .member-social-link {
 
 .member-social-link:hover {
     color: white;
-    background: rgba(0, 240, 255, 0.1);
-    border-color: rgba(0, 240, 255, 0.4);
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+    background: rgba(168, 85, 247, 0.1);
+    border-color: rgba(168, 85, 247, 0.4);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
 }
 
 body.light-mode .member-social-link:hover {
     color: #09798a;
-    background: rgba(0, 240, 255, 0.06);
-    border-color: rgba(0, 240, 255, 0.45);
+    background: rgba(168, 85, 247, 0.06);
+    border-color: rgba(168, 85, 247, 0.45);
 }
 
 .member-social-link.placeholder {
@@ -1531,19 +1531,19 @@ body.light-mode .member-social-link.placeholder:hover {
 
 .lexino-modal-card {
     background: rgba(10, 16, 24, 0.95);
-    border: 1px solid rgba(0, 240, 255, 0.25);
+    border: 1px solid rgba(168, 85, 247, 0.25);
     border-radius: 20px;
     padding: 2rem;
     max-width: 480px;
     width: 100%;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.1);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(168, 85, 247, 0.1);
     color: #f8fafc;
     position: relative;
 }
 
 body.light-mode .lexino-modal-card {
     background: rgba(255, 255, 255, 0.98);
-    border-color: rgba(65, 105, 255, 0.3);
+    border-color: rgba(109, 94, 252, 0.3);
     color: #0f172a;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
 }
@@ -1595,9 +1595,9 @@ body.light-mode .lexino-input {
 }
 
 .lexino-input:focus {
-    border-color: #00f0ff;
-    background: rgba(0, 240, 255, 0.05);
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.05);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
 }
 
 /* ===================================================
@@ -1664,3 +1664,4 @@ body.light-mode .lexino-input {
         padding: 1.25rem !important;
     }
 }
+\n\n/* ===================================================\n   LEXINO ERA — GLOBAL VISUAL SYSTEM\n   Applied across the existing website without changing\n   HTML structure or JavaScript behavior.\n=================================================== */\n:root {\n    --color-bg-dark: #050506;\n    --color-surface-dark: #0a0a0d;\n    --color-text-dark: #f2f2f5;\n    --color-text-secondary-dark: #a9a9b4;\n    --color-primary: #6d5efc;\n    --color-secondary: #a855f7;\n    --color-accent: #d946ef;\n    --color-gradient: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n    --color-card-dark: rgba(255,255,255,0.025);\n    --color-border-dark: rgba(255,255,255,0.08);\n    --lexino-blue: #3b82f6;\n    --lexino-pink: #d946ef;\n}\n\nhtml, body {\n    background: #050506;\n    color: #f2f2f5;\n    font-family: 'Inter', sans-serif;\n}\n\nbody {\n    background:\n        radial-gradient(circle at 12% 20%, rgba(168,85,247,0.045), transparent 28%),\n        radial-gradient(circle at 88% 35%, rgba(59,130,246,0.04), transparent 30%),\n        #050506;\n}\n\n/* Premium glass navigation */\nnav {\n    background: rgba(5,5,6,0.78);\n    border-bottom: 1px solid rgba(255,255,255,0.07);\n    backdrop-filter: blur(18px);\n    -webkit-backdrop-filter: blur(18px);\n}\n\n.logo, .legal-container h1, .section h2, .try-container h1, .pricing-card h3 {\n    font-family: 'Inter', sans-serif;\n    font-weight: 800;\n}\n\n.hero h1 {\n    font-family: 'Inter', sans-serif;\n    font-weight: 800;\n    letter-spacing: -0.035em;\n    line-height: 1.08;\n    color: #f2f2f5;\n    background: linear-gradient(90deg, #f2f2f5 0%, #f2f2f5 38%, #a855f7 72%, #d946ef 100%);\n    -webkit-background-clip: text;\n    background-clip: text;\n}\n\n.section h2, .legal-container h1, .try-container h1 {\n    background: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n    -webkit-background-clip: text;\n    background-clip: text;\n}\n\n.hero p, .card p, .why-content p, .legal-container .last-updated {\n    color: #a9a9b4;\n}\n\n/* Lexino-style buttons */\n.cta-button, .pricing-button.primary, .newsletter-button {\n    background: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n    box-shadow: 0 10px 30px rgba(109,94,252,0.22);\n}\n\n.cta-button:hover, .pricing-button.primary:hover, .newsletter-button:hover {\n    box-shadow: 0 15px 40px rgba(168,85,247,0.28);\n}\n\n/* Subtle glass cards instead of heavy neon panels */\n.card, .pricing-card, .why-section, .panel-card, .demo-preview, .app-placeholder, .team-member-card {\n    background: rgba(255,255,255,0.025);\n    border: 1px solid rgba(255,255,255,0.08);\n    box-shadow: 0 18px 50px rgba(0,0,0,0.22);\n    backdrop-filter: blur(14px);\n    -webkit-backdrop-filter: blur(14px);\n}\n\n.card:hover, .pricing-card:hover, .team-member-card:hover {\n    border-color: rgba(168,85,247,0.32);\n    box-shadow: 0 20px 50px rgba(0,0,0,0.35), 0 0 35px rgba(168,85,247,0.08);\n}\n\n.card h3, .member-role {\n    color: #a855f7;\n}\n\n.card-icon {\n    filter: drop-shadow(0 0 12px rgba(168,85,247,0.16));\n}\n\n/* Lexino palette for controls and inputs */\n.theme-toggle, .music-toggle, .social-icon, .member-social-link {\n    background: rgba(255,255,255,0.02);\n    border-color: rgba(255,255,255,0.08);\n}\n\n.theme-toggle:hover, .music-toggle:hover {\n    background: rgba(168,85,247,0.12);\n    color: #f2f2f5;\n    border-color: rgba(168,85,247,0.35);\n}\n\n.newsletter-input-group input, .lexino-input {\n    background: rgba(255,255,255,0.025);\n    border-color: rgba(255,255,255,0.09);\n    color: #f2f2f5;\n}\n\n.newsletter-input-group input:focus, .lexino-input:focus {\n    border-color: rgba(168,85,247,0.55);\n    box-shadow: 0 0 0 3px rgba(168,85,247,0.08), 0 0 22px rgba(168,85,247,0.08);\n}\n\n/* Replace cyan/gold visual language in the team area */\n.avatar-wrapper, .avatar-glow {\n    background: linear-gradient(135deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n}\n\n.member-badge {\n    background: rgba(168,85,247,0.08);\n    color: #b794f6;\n    border-color: rgba(168,85,247,0.25);\n}\n\n.badge-sub, .skills-title {\n    color: #d946ef;\n}\n\n.skill-tag:hover, .member-social-link:hover, .social-icon:hover {\n    color: #f2f2f5;\n    background: rgba(168,85,247,0.07);\n    border-color: rgba(168,85,247,0.35);\n    box-shadow: 0 0 18px rgba(168,85,247,0.10);\n}\n\n/* Footer */\n.futuristic-footer {\n    background: linear-gradient(180deg, transparent 0%, rgba(5,5,6,0.98) 100%);\n}\n\n.footer-divider {\n    background: linear-gradient(90deg, transparent, rgba(109,94,252,0.28) 25%, rgba(217,70,239,0.28) 75%, transparent);\n    box-shadow: 0 0 14px rgba(168,85,247,0.08);\n}\n\n/* Modal */\n.lexino-modal-card {\n    background: rgba(8,8,12,0.94);\n    border-color: rgba(168,85,247,0.22);\n    box-shadow: 0 25px 60px rgba(0,0,0,0.7), 0 0 35px rgba(168,85,247,0.08);\n}\n\n/* Existing animated orbs now use the Lexino palette */\n.orb-1 { background: #6d5efc; }\n.orb-2 { background: #a855f7; }\n.particle { background: #a855f7; }\n\n/* Keep the dedicated Lexino Era section perfectly aligned */\n.lexino-section {\n    background: #050506;\n    font-family: 'Inter', sans-serif;\n}\n\n@media (max-width: 768px) {\n    nav { background: rgba(5,5,6,0.84); }\n    .hero h1 { letter-spacing: -0.025em; }\n    .card, .pricing-card, .why-section, .team-member-card {\n        backdrop-filter: blur(10px);\n        -webkit-backdrop-filter: blur(10px);\n    }\n}\n
