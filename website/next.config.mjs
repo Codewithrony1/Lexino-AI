@@ -1,8 +1,3 @@
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -10,9 +5,6 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   distDir: process.env.NEXT_DIST_DIR || '.next',
-  turbopack: {
-    root: __dirname,
-  },
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 2678400, // 31 days
