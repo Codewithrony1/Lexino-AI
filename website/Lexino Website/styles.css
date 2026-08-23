@@ -16,6 +16,16 @@
     --color-card-light: rgba(0, 0, 0, 0.05);
     --color-border-dark: rgba(255, 255, 255, 0.1);
     --color-border-light: rgba(0, 0, 0, 0.1);
+
+  --bg-dark: #050506;
+  --purple: #a855f7;
+  --blue: #3b82f6;
+  --pink: #d946ef;
+  --text-primary: #f2f2f5;
+  --text-secondary: #a9a9b4;
+
+  --gradient-brand: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);
+  --gradient-blue: linear-gradient(90deg, #6d5efc, #3b82f6);
 }
 * {
     margin: 0;
@@ -23,12 +33,15 @@
     box-sizing: border-box;
 }
 body {
-    font-family: 'Poppins', sans-serif;
-    background: var(--color-bg-dark);
-    color: var(--color-text-dark);
+    font-family: 'Inter', sans-serif;
+    /* font-family: 'Poppins', sans-serif; */
+    /* background: var(--color-bg-dark); */
+    /* color: var(--color-text-dark); */
     line-height: 1.6;
     overflow-x: hidden;
     transition: background 0.3s ease, color 0.3s ease;
+     background: var(--bg-dark);
+     color: var(--text-primary);
 }
 body.light-mode {
     background: var(--color-bg-light);
