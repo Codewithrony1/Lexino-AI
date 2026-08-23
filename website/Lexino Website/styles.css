@@ -1665,3 +1665,487 @@ body.light-mode .lexino-input {
     }
 }
 \n\n/* ===================================================\n   LEXINO ERA — GLOBAL VISUAL SYSTEM\n   Applied across the existing website without changing\n   HTML structure or JavaScript behavior.\n=================================================== */\n:root {\n    --color-bg-dark: #050506;\n    --color-surface-dark: #0a0a0d;\n    --color-text-dark: #f2f2f5;\n    --color-text-secondary-dark: #a9a9b4;\n    --color-primary: #6d5efc;\n    --color-secondary: #a855f7;\n    --color-accent: #d946ef;\n    --color-gradient: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n    --color-card-dark: rgba(255,255,255,0.025);\n    --color-border-dark: rgba(255,255,255,0.08);\n    --lexino-blue: #3b82f6;\n    --lexino-pink: #d946ef;\n}\n\nhtml, body {\n    background: #050506;\n    color: #f2f2f5;\n    font-family: 'Inter', sans-serif;\n}\n\nbody {\n    background:\n        radial-gradient(circle at 12% 20%, rgba(168,85,247,0.045), transparent 28%),\n        radial-gradient(circle at 88% 35%, rgba(59,130,246,0.04), transparent 30%),\n        #050506;\n}\n\n/* Premium glass navigation */\nnav {\n    background: rgba(5,5,6,0.78);\n    border-bottom: 1px solid rgba(255,255,255,0.07);\n    backdrop-filter: blur(18px);\n    -webkit-backdrop-filter: blur(18px);\n}\n\n.logo, .legal-container h1, .section h2, .try-container h1, .pricing-card h3 {\n    font-family: 'Inter', sans-serif;\n    font-weight: 800;\n}\n\n.hero h1 {\n    font-family: 'Inter', sans-serif;\n    font-weight: 800;\n    letter-spacing: -0.035em;\n    line-height: 1.08;\n    color: #f2f2f5;\n    background: linear-gradient(90deg, #f2f2f5 0%, #f2f2f5 38%, #a855f7 72%, #d946ef 100%);\n    -webkit-background-clip: text;\n    background-clip: text;\n}\n\n.section h2, .legal-container h1, .try-container h1 {\n    background: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n    -webkit-background-clip: text;\n    background-clip: text;\n}\n\n.hero p, .card p, .why-content p, .legal-container .last-updated {\n    color: #a9a9b4;\n}\n\n/* Lexino-style buttons */\n.cta-button, .pricing-button.primary, .newsletter-button {\n    background: linear-gradient(90deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n    box-shadow: 0 10px 30px rgba(109,94,252,0.22);\n}\n\n.cta-button:hover, .pricing-button.primary:hover, .newsletter-button:hover {\n    box-shadow: 0 15px 40px rgba(168,85,247,0.28);\n}\n\n/* Subtle glass cards instead of heavy neon panels */\n.card, .pricing-card, .why-section, .panel-card, .demo-preview, .app-placeholder, .team-member-card {\n    background: rgba(255,255,255,0.025);\n    border: 1px solid rgba(255,255,255,0.08);\n    box-shadow: 0 18px 50px rgba(0,0,0,0.22);\n    backdrop-filter: blur(14px);\n    -webkit-backdrop-filter: blur(14px);\n}\n\n.card:hover, .pricing-card:hover, .team-member-card:hover {\n    border-color: rgba(168,85,247,0.32);\n    box-shadow: 0 20px 50px rgba(0,0,0,0.35), 0 0 35px rgba(168,85,247,0.08);\n}\n\n.card h3, .member-role {\n    color: #a855f7;\n}\n\n.card-icon {\n    filter: drop-shadow(0 0 12px rgba(168,85,247,0.16));\n}\n\n/* Lexino palette for controls and inputs */\n.theme-toggle, .music-toggle, .social-icon, .member-social-link {\n    background: rgba(255,255,255,0.02);\n    border-color: rgba(255,255,255,0.08);\n}\n\n.theme-toggle:hover, .music-toggle:hover {\n    background: rgba(168,85,247,0.12);\n    color: #f2f2f5;\n    border-color: rgba(168,85,247,0.35);\n}\n\n.newsletter-input-group input, .lexino-input {\n    background: rgba(255,255,255,0.025);\n    border-color: rgba(255,255,255,0.09);\n    color: #f2f2f5;\n}\n\n.newsletter-input-group input:focus, .lexino-input:focus {\n    border-color: rgba(168,85,247,0.55);\n    box-shadow: 0 0 0 3px rgba(168,85,247,0.08), 0 0 22px rgba(168,85,247,0.08);\n}\n\n/* Replace cyan/gold visual language in the team area */\n.avatar-wrapper, .avatar-glow {\n    background: linear-gradient(135deg, #6d5efc 0%, #a855f7 55%, #d946ef 100%);\n}\n\n.member-badge {\n    background: rgba(168,85,247,0.08);\n    color: #b794f6;\n    border-color: rgba(168,85,247,0.25);\n}\n\n.badge-sub, .skills-title {\n    color: #d946ef;\n}\n\n.skill-tag:hover, .member-social-link:hover, .social-icon:hover {\n    color: #f2f2f5;\n    background: rgba(168,85,247,0.07);\n    border-color: rgba(168,85,247,0.35);\n    box-shadow: 0 0 18px rgba(168,85,247,0.10);\n}\n\n/* Footer */\n.futuristic-footer {\n    background: linear-gradient(180deg, transparent 0%, rgba(5,5,6,0.98) 100%);\n}\n\n.footer-divider {\n    background: linear-gradient(90deg, transparent, rgba(109,94,252,0.28) 25%, rgba(217,70,239,0.28) 75%, transparent);\n    box-shadow: 0 0 14px rgba(168,85,247,0.08);\n}\n\n/* Modal */\n.lexino-modal-card {\n    background: rgba(8,8,12,0.94);\n    border-color: rgba(168,85,247,0.22);\n    box-shadow: 0 25px 60px rgba(0,0,0,0.7), 0 0 35px rgba(168,85,247,0.08);\n}\n\n/* Existing animated orbs now use the Lexino palette */\n.orb-1 { background: #6d5efc; }\n.orb-2 { background: #a855f7; }\n.particle { background: #a855f7; }\n\n/* Keep the dedicated Lexino Era section perfectly aligned */\n.lexino-section {\n    background: #050506;\n    font-family: 'Inter', sans-serif;\n}\n\n@media (max-width: 768px) {\n    nav { background: rgba(5,5,6,0.84); }\n    .hero h1 { letter-spacing: -0.025em; }\n    .card, .pricing-card, .why-section, .team-member-card {\n        backdrop-filter: blur(10px);\n        -webkit-backdrop-filter: blur(10px);\n    }\n}\n
+/* ===== LEXINO EXACT THEME OVERRIDES =====
+   Unified visual language:
+   #050506 background • Inter 400–800 • #f2f2f5 primary text
+   #a9a9b4 secondary text • #9a9aa5 small text
+   purple / violet / pink / blue accents
+*/
+:root {
+    --color-bg-dark: #050506;
+    --color-surface-dark: #0a0a0c;
+    --color-text-dark: #f2f2f5;
+    --color-text-secondary-dark: #a9a9b4;
+
+    --color-primary: #6d5efc;
+    --color-secondary: #a855f7;
+    --color-accent: #d946ef;
+
+    --color-gradient: linear-gradient(
+        90deg,
+        #6d5efc 0%,
+        #a855f7 55%,
+        #d946ef 100%
+    );
+
+    --color-card-dark: rgba(255, 255, 255, 0.025);
+    --color-border-dark: rgba(255, 255, 255, 0.08);
+
+    --bg-dark: #050506;
+    --purple: #a855f7;
+    --blue: #3b82f6;
+    --pink: #d946ef;
+    --text-primary: #f2f2f5;
+    --text-secondary: #a9a9b4;
+    --text-small: #9a9aa5;
+
+    --gradient-brand: linear-gradient(
+        90deg,
+        #6d5efc 0%,
+        #a855f7 55%,
+        #d946ef 100%
+    );
+    --gradient-blue: linear-gradient(90deg, #6d5efc, #3b82f6);
+}
+
+/* Global typography */
+html,
+body {
+    background: #050506;
+    color: #f2f2f5;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6,
+.logo,
+.legal-container h1,
+.legal-section h2,
+.try-container h1,
+.pricing-card h3,
+.card h3,
+.footer-credit,
+.member-name,
+.member-badge,
+.badge-sub,
+.skills-title {
+    font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #f2f2f5;
+}
+
+p {
+    color: #a9a9b4;
+}
+
+/* Premium atmospheric background */
+.bg-animation {
+    background:
+        radial-gradient(
+            circle at 8% 45%,
+            rgba(168, 85, 247, 0.055),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 92% 42%,
+            rgba(59, 130, 246, 0.055),
+            transparent 30%
+        );
+}
+
+/* Purple/pink left beam + blue/indigo right beam */
+.bg-animation::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(168, 85, 247, 0.10) 4%,
+            transparent 7%,
+            transparent 93%,
+            rgba(56, 189, 248, 0.08) 96%,
+            transparent 100%
+        );
+    opacity: 0.75;
+}
+
+/* Very subtle large ring arcs */
+.bg-animation::after {
+    content: "";
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    left: -520px;
+    top: 8%;
+    border: 1px solid rgba(168, 85, 247, 0.13);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 70px rgba(168, 85, 247, 0.018),
+        0 0 0 140px rgba(168, 85, 247, 0.012);
+    pointer-events: none;
+    animation: lexinoRingLeft 13s ease-in-out infinite;
+}
+
+@keyframes lexinoRingLeft {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(6px, 10px); }
+}
+
+/* Existing orbs become subtle atmospheric glows */
+.glow-orb {
+    filter: blur(110px);
+    opacity: 0.16;
+}
+
+.orb-1 {
+    background: #6d5efc;
+}
+
+.orb-2 {
+    background: #a855f7;
+}
+
+/* Particles use the same blue/purple family */
+.particle {
+    background: #a855f7;
+    opacity: 0.28;
+}
+
+/* Navigation: soft glass, not pure black */
+nav {
+    background: rgba(5, 5, 6, 0.78);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.logo {
+    color: #f2f2f5;
+    background: linear-gradient(90deg, #6d5efc, #a855f7, #d946ef);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav-links a {
+    color: #a9a9b4;
+}
+
+.nav-links a:hover {
+    color: #f2f2f5;
+}
+
+.theme-toggle,
+.music-toggle {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #dcdce4;
+}
+
+.theme-toggle:hover,
+.music-toggle:hover {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: rgba(168, 85, 247, 0.35);
+    color: #f2f2f5;
+}
+
+/* Section headings */
+.section h2,
+.legal-container h1,
+.try-container h1 {
+    background: linear-gradient(90deg, #6d5efc, #a855f7, #d946ef);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Hero */
+.hero h1 {
+    color: #f2f2f5;
+    background: linear-gradient(90deg, #6d5efc, #a855f7, #d946ef);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.025em;
+}
+
+.hero p,
+.why-content p,
+.card p,
+.legal-section p,
+.legal-section li {
+    color: #a9a9b4;
+}
+
+/* Lexino-style buttons */
+.cta-button,
+.pricing-button.primary,
+.newsletter-button {
+    background: linear-gradient(90deg, #6d5efc, #a855f7, #d946ef);
+    box-shadow: 0 10px 30px rgba(109, 94, 252, 0.20);
+}
+
+.cta-button:hover,
+.pricing-button.primary:hover,
+.newsletter-button:hover {
+    box-shadow: 0 15px 40px rgba(168, 85, 247, 0.28);
+}
+
+/* Cards: transparent premium glass */
+.card,
+.pricing-card,
+.why-section,
+.panel-card,
+.team-member-card,
+.demo-preview,
+.app-placeholder {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
+}
+
+.card:hover,
+.pricing-card:hover {
+    border-color: rgba(168, 85, 247, 0.32);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.28),
+        0 0 35px rgba(168, 85, 247, 0.08);
+}
+
+/* Card headings / accents */
+.card h3,
+.pricing-card h3 {
+    color: #f2f2f5;
+}
+
+.card-icon,
+.member-role {
+    color: #a855f7;
+}
+
+.features-list li {
+    border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+
+/* Why section */
+.why-section {
+    background:
+        radial-gradient(
+            circle at 15% 15%,
+            rgba(168, 85, 247, 0.055),
+            transparent 35%
+        ),
+        rgba(255, 255, 255, 0.025);
+}
+
+.why-list li {
+    background: rgba(168, 85, 247, 0.035);
+    border-left: 2px solid rgba(168, 85, 247, 0.55);
+}
+
+.why-list li:hover {
+    background: rgba(168, 85, 247, 0.07);
+}
+
+/* Media / preview surfaces */
+.video-container,
+.why-image-card {
+    background:
+        radial-gradient(
+            circle at 25% 20%,
+            rgba(168, 85, 247, 0.10),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 75% 80%,
+            rgba(59, 130, 246, 0.08),
+            transparent 38%
+        ),
+        #050506;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.38),
+        0 0 45px rgba(109, 94, 252, 0.08);
+}
+
+/* Pricing */
+.pricing-card.featured {
+    border-color: rgba(168, 85, 247, 0.45);
+    box-shadow: 0 20px 60px rgba(168, 85, 247, 0.12);
+}
+
+.plan-badge,
+.plan-badge.popular {
+    background: linear-gradient(90deg, #6d5efc, #a855f7, #d946ef);
+}
+
+.price .amount {
+    background: linear-gradient(90deg, #6d5efc, #a855f7, #d946ef);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Replace old cyan/gold team styling with the Lexino palette */
+.team-member-card {
+    border-color: rgba(168, 85, 247, 0.16);
+    background:
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(168, 85, 247, 0.055),
+            transparent 55%
+        ),
+        rgba(255, 255, 255, 0.025);
+}
+
+.team-member-card:hover {
+    border-color: rgba(168, 85, 247, 0.35);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.40),
+        0 0 40px rgba(168, 85, 247, 0.08);
+}
+
+.avatar-wrapper,
+.avatar-glow {
+    background: linear-gradient(135deg, #6d5efc, #a855f7, #d946ef);
+}
+
+.member-badge {
+    font-family: 'Inter', sans-serif;
+    background: rgba(168, 85, 247, 0.07);
+    color: #b794f6;
+    border-color: rgba(168, 85, 247, 0.25);
+}
+
+.badge-sub,
+.skills-title {
+    color: #b794f6;
+}
+
+.member-name {
+    color: #f2f2f5;
+}
+
+.member-bio {
+    color: #a9a9b4;
+}
+
+.skills-section {
+    border-top-color: rgba(255, 255, 255, 0.07);
+}
+
+.skill-tag {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.07);
+    color: #a9a9b4;
+}
+
+.skill-tag:hover {
+    border-color: rgba(168, 85, 247, 0.30);
+    background: rgba(168, 85, 247, 0.06);
+    color: #dcdce4;
+}
+
+/* Footer */
+.futuristic-footer {
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(5, 5, 6, 0.96) 100%
+    );
+}
+
+.footer-divider {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(168, 85, 247, 0.22) 30%,
+        rgba(217, 70, 239, 0.22) 70%,
+        transparent
+    );
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.08);
+}
+
+.footer-credit {
+    color: #f2f2f5;
+}
+
+.social-icon {
+    color: #a9a9b4;
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.social-icon:hover {
+    color: #f2f2f5;
+    background: rgba(168, 85, 247, 0.07);
+    border-color: rgba(168, 85, 247, 0.30);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.10);
+}
+
+/* Inputs */
+.newsletter-input-group input {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #f2f2f5;
+}
+
+.newsletter-input-group input::placeholder {
+    color: #9a9aa5;
+}
+
+.newsletter-input-group input:focus {
+    border-color: rgba(168, 85, 247, 0.45);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.08);
+}
+
+/* Small / muted text */
+.legal-container .last-updated,
+.feature .text p,
+p.sub,
+.bottom-pill {
+    color: #9a9aa5;
+}
+
+/* Lexino Era section stays exactly in the same palette */
+.lexino-section {
+    background: #050506;
+    font-family: 'Inter', sans-serif;
+}
+
+.lexino-section h1.headline {
+    color: #f2f2f5;
+}
+
+.lexino-section p.sub {
+    color: #a9a9b4;
+}
+
+.lexino-section .feature .text h3 {
+    color: #f0f0f3;
+}
+
+.lexino-section .feature .text p {
+    color: #9a9aa5;
+}
+
+.lexino-section .pill,
+.lexino-section .bottom-pill {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(168, 85, 247, 0.25);
+}
+
+/* Keep reduced-motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .bg-animation::after {
+        animation: none;
+    }
+}
