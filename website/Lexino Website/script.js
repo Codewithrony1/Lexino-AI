@@ -323,3 +323,98 @@ window.addEventListener('load', () => {
         observer.observe(card);
     });
 });
+
+
+//    <!-- Lexino ERA Section Start -->
+function initWave(canvasId, hueStart, hueEnd, direction) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  let w, h, dpr;
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    w = canvas.width = canvas.offsetWidth * dpr;
+    h = canvas.height = canvas.offsetHeight * dpr;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const strandCount = 22;
+  const perStrand = 46;
+  const strands = [];
+
+  for (let s = 0; s < strandCount; s++) {
+    const sNorm = s / (strandCount - 1);
+    const particles = [];
+    for (let p = 0; p < perStrand; p++) {
+      particles.push({
+        t0: p / perStrand,
+        jitter: (Math.random() - 0.5) * 0.035,
+        sizeJ: Math.random()
+      });
+    }
+    strands.push({
+      sNorm,
+      lift: 0.06 + sNorm * 0.9,
+      freq: 2.4 + sNorm * 1.6,
+      phase: sNorm * 8.4,
+      amp: 0.05 + (1 - sNorm) * 0.05,
+      speed: 0.00002 + sNorm * 0.00003,
+      particles
+    });
+  }
+
+  function draw(time) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (const strand of strands) {
+      const flowOffset = (time * strand.speed) % 1;
+
+      for (const pt of strand.particles) {
+        let t = (pt.t0 + flowOffset) % 1;
+
+        const reach = 0.18 + strand.sNorm * 0.95;
+        if (t > reach) continue;
+
+        const tn = t / reach;
+
+        const nx = direction === 'left' ? tn : 1 - tn;
+        const baseY = 1 - strand.lift * tn;
+
+        const wave = Math.sin(tn * strand.freq * Math.PI * 2 + strand.phase + time * 0.0004) * strand.amp * tn;
+        const ny = baseY + wave + pt.jitter * tn;
+
+        const px = nx * w;
+        const py = ny * h;
+        if (py < -10 || py > h + 10) continue;
+
+        const fadeIn = Math.min(tn / 0.08, 1);
+        const fadeOut = 1 - Math.pow(tn, 2.2);
+        const strandFade = 0.35 + (1 - strand.sNorm) * 0.65;
+        const alpha = Math.max(0, fadeIn * fadeOut * strandFade * 0.85);
+        if (alpha <= 0.015) continue;
+
+        const size = (0.5 + pt.sizeJ * 1.3 + (1 - tn) * 0.6) * dpr;
+        const hue = hueStart + (hueEnd - hueStart) * tn;
+        const light = 60 + tn * 18;
+
+        ctx.beginPath();
+        ctx.fillStyle = `hsla(${hue}, 90%, ${light}%, ${alpha})`;
+        ctx.shadowBlur = 3.5 * dpr;
+        ctx.shadowColor = `hsla(${hue}, 95%, 65%, ${Math.min(alpha * 1.4, 0.9)})`;
+        ctx.arc(direction === 'left' ? px : w - px, py, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+initWave('wave-left', 285, 245, 'left');
+initWave('wave-right', 195, 235, 'right');
+
+//    <!-- Lexino ERA Section -->
