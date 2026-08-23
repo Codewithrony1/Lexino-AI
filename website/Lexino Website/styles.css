@@ -527,11 +527,11 @@ body.light-mode .why-content p {
   @keyframes driftR { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-6px,-8px)} }
 
   /* corner wave mesh */
-  #wave-left, #wave-right {
+  /* #wave-left, #wave-right {
     position: absolute; bottom: 0; width: 48%; height: 260px; z-index: 1; pointer-events: none;
   }
   #wave-left { left: 0; }
-  #wave-right { right: 0; }
+  #wave-right { right: 0; } */
 
   .content {
     position: relative; z-index: 2;

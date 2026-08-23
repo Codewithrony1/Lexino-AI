@@ -414,7 +414,7 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
   requestAnimationFrame(draw);
 }
 
-initWave('wave-left', 285, 245, 'left');
-initWave('wave-right', 195, 235, 'right');
+// initWave('wave-left', 285, 245, 'left');
+// initWave('wave-right', 195, 235, 'right');
 
 //    <!-- Lexino ERA Section -->
