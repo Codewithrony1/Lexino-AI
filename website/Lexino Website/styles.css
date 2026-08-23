@@ -511,8 +511,7 @@ body.light-mode .why-content p {
 
    
 /* <!-- Lexino ERA Section Start --> */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #050506; }
@@ -540,11 +539,11 @@ body.light-mode .why-content p {
   @keyframes driftR { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-6px,-8px)} }
 
   /* corner wave mesh */
-  /* #wave-left, #wave-right {
+  #wave-left, #wave-right {
     position: absolute; bottom: 0; width: 48%; height: 260px; z-index: 1; pointer-events: none;
   }
   #wave-left { left: 0; }
-  #wave-right { right: 0; } */
+  #wave-right { right: 0; }
 
   .content {
     position: relative; z-index: 2;
@@ -682,6 +681,7 @@ body.light-mode .why-content p {
       animation: none !important; opacity: 1 !important; transform: none !important;
     }
   }
+
      /* <!-- Lexino ERA Section End --> */
 
 
