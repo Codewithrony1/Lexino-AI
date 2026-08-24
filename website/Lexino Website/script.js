@@ -395,3 +395,6 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
   }
   requestAnimationFrame(draw);
 }
+
+initWave('wave-left', 280, 250, 'left');
+initWave('wave-right', 200, 230, 'right');
