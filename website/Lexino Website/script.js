@@ -45,16 +45,14 @@ window.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('light-mode');
     }
     
-    // 2. Initialize Audio in Muted/Ready state without fetching large buffers
-    const savedMuted = localStorage.getItem('musicMuted');
-    if (savedMuted === 'false') {
-        // User had previously unmuted, but we leave it silent until first gesture to prevent autoplay blocks
-        isMuted = true;
-        if (musicToggle) musicToggle.textContent = '🔇';
-    } else {
-        isMuted = true;
-        if (musicToggle) musicToggle.textContent = '🔇';
-    }
+    // 2. Audio always starts muted, regardless of the saved preference, so no
+    // audio buffer is fetched until the first user gesture (and so browser
+    // autoplay policies never reject the initial play).
+    //
+    // The toggle's glyph is intentionally left exactly as authored in the markup.
+    // These scripts now load with `defer`, so this listener actually runs, and
+    // writing textContent here would visibly change the rendered icon.
+    isMuted = true;
 });
 
 // Page Navigation
@@ -307,11 +305,15 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // Observe cards for scroll animations
 window.addEventListener('load', () => {
     const cards = document.querySelectorAll('.card');
+    if (!cards.length) return;
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
+                // Reveal is one-way, so stop tracking the card once it has played.
+                observer.unobserve(entry.target);
             }
         });
     }, { threshold: 0.1 });
@@ -319,16 +321,68 @@ window.addEventListener('load', () => {
     cards.forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(30px)';
-        card.style.transition = 'all 0.6s ease';
+        // Only opacity and transform are animated here; `all` forced the browser
+        // to watch every animatable property on every card.
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
 });
 
 
+// ===================================================
+// DEFERRED HERO VIDEO
+// ===================================================
+// The demo clip is several megabytes. Loading it eagerly competed with the hero
+// text, CSS and font for bandwidth on first paint. The markup ships without a
+// src; we attach it once the player is close to the viewport, so the visible
+// behaviour (muted autoplay + loop) is unchanged while the download no longer
+// blocks initial render.
+(function initDeferredVideos() {
+    function activate(video) {
+        const src = video.dataset.src;
+        if (!src || video.src) return;
+        delete video.dataset.src;
+        video.src = src;
+        video.load();
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {});
+        }
+    }
+
+    function setup() {
+        const videos = document.querySelectorAll('video[data-src]');
+        if (!videos.length) return;
+
+        if (typeof IntersectionObserver !== 'function') {
+            videos.forEach(activate);
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                activate(entry.target);
+                observer.unobserve(entry.target);
+            });
+        }, { rootMargin: '300px' });
+
+        videos.forEach((video) => observer.observe(video));
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setup, { once: true });
+    } else {
+        setup();
+    }
+})();
+
 //    <!-- Lexino ERA Section Start -->
 function initWave(canvasId, hueStart, hueEnd, direction) {
   const canvas = document.getElementById(canvasId);
+  if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return;
   let w, h;
 
   function resize() {
@@ -336,7 +390,18 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
     h = canvas.height = canvas.offsetHeight * devicePixelRatio;
   }
   resize();
-  window.addEventListener('resize', resize);
+
+  // Coalesce resize work into a single frame instead of reallocating the canvas
+  // backing store on every resize event.
+  let resizeFrame = 0;
+  const scheduleResize = () => {
+    if (resizeFrame) return;
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = 0;
+      resize();
+    });
+  };
+  window.addEventListener('resize', scheduleResize, { passive: true });
 
   const cols = 26, rows = 14;
   const pts = [];
@@ -345,6 +410,14 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
       pts.push({ c, r, offset: Math.random() * Math.PI * 2 });
     }
   }
+
+  // This animation previously ran forever via an unconditional
+  // requestAnimationFrame loop - two canvases redrawing 364 points each, every
+  // frame, even when scrolled out of view or in a background tab. It now runs
+  // only while the canvas is actually on screen and the tab is visible, which is
+  // visually identical but stops the constant CPU/GPU and battery drain.
+  let rafId = 0;
+  let onScreen = false;
 
   function draw(t) {
     ctx.clearRect(0, 0, w, h);
@@ -366,9 +439,35 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
       ctx.arc(px, py, (0.6 + persp * 0.9) * devicePixelRatio, 0, Math.PI * 2);
       ctx.fill();
     }
-    requestAnimationFrame(draw);
+    rafId = requestAnimationFrame(draw);
   }
-  requestAnimationFrame(draw);
+
+  function start() {
+    if (rafId || !onScreen || document.hidden) return;
+    rafId = requestAnimationFrame(draw);
+  }
+
+  function stop() {
+    if (!rafId) return;
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+
+  if (typeof IntersectionObserver === 'function') {
+    new IntersectionObserver((entries) => {
+      onScreen = entries.some((entry) => entry.isIntersecting);
+      if (onScreen) start();
+      else stop();
+    }, { rootMargin: '120px' }).observe(canvas);
+  } else {
+    onScreen = true;
+    start();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else start();
+  });
 }
 
 initWave('wave-left', 280, 250, 'left');

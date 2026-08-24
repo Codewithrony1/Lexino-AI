@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { ChatUserButtonMount } from '../../components/ChatUserButtonMount';
-import { ClientScriptLoader } from '../../components/ClientScriptLoader';
+import { DeferredScripts } from '../../components/DeferredScripts';
 import { prisma } from '../../lib/prisma';
 import { STATIC_CHAT_HTML } from '../../lib/staticChatHtml';
 
@@ -45,11 +45,27 @@ export default async function ChatPage() {
       let dbUser: any = null;
       if (process.env.DATABASE_URL) {
         try {
-          dbUser = await prisma.user.upsert({
-            where: { id: user.id },
-            update: { email, name, avatarUrl },
-            create: { id: user.id, email, name, avatarUrl },
-          });
+          // Every chat page load previously issued an unconditional upsert, i.e. a
+          // write (and its WAL flush + replication) on a pure read path, even when
+          // nothing about the profile had changed. Reading first turns the common
+          // case into a single indexed primary-key lookup and only writes when the
+          // Clerk profile actually differs - same end state, far less DB work.
+          dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+
+          if (!dbUser) {
+            dbUser = await prisma.user.create({
+              data: { id: user.id, email, name, avatarUrl },
+            });
+          } else if (
+            dbUser.email !== email ||
+            dbUser.name !== name ||
+            dbUser.avatarUrl !== avatarUrl
+          ) {
+            dbUser = await prisma.user.update({
+              where: { id: user.id },
+              data: { email, name, avatarUrl },
+            });
+          }
         } catch (err) {
           console.error('Error auto-syncing user on page load:', err);
         }
@@ -86,7 +102,11 @@ export default async function ChatPage() {
         data-user={JSON.stringify(userData)}
       />
       <ChatUserButtonMount />
-      <ClientScriptLoader
+      {/* `marked` comes from a third-party origin; warming the connection while the
+          document is still parsing removes the DNS + TLS handshake from its
+          critical path. */}
+      <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+      <DeferredScripts
         scripts={[
           'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
           '/api.js',

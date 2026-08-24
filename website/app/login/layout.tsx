@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ClerkAuthProvider } from '../../components/ClerkAuthProvider';
 
 const siteUrl = 'https://lexinoai.in';
 
@@ -18,5 +19,5 @@ export const metadata: Metadata = {
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <ClerkAuthProvider>{children}</ClerkAuthProvider>;
 }

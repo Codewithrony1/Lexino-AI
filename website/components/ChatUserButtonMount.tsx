@@ -10,30 +10,58 @@ export function ChatUserButtonMount() {
   const { isLoaded } = useUser();
 
   useEffect(() => {
-    let currentTarget: HTMLElement | null = null;
+    const SLOT_ID = 'clerkHeaderSlot';
 
-    const checkSlot = () => {
-      const activeEl = document.getElementById('clerkHeaderSlot');
-      if (activeEl) {
-        if (activeEl !== currentTarget) {
-          currentTarget = activeEl;
-          setTarget(activeEl);
-        }
-      } else {
-        if (currentTarget !== null) {
-          currentTarget = null;
+    // The slot is part of the server-rendered chat markup, so it is normally found
+    // on the first synchronous check. A MutationObserver covers the case where the
+    // chat script swaps the header out later. This replaces a 150ms setInterval
+    // that previously ran for the entire lifetime of the page.
+    let slotObserver: MutationObserver | null = null;
+    let parentObserver: MutationObserver | null = null;
+
+    const disconnectAll = () => {
+      slotObserver?.disconnect();
+      slotObserver = null;
+      parentObserver?.disconnect();
+      parentObserver = null;
+    };
+
+    const attach = (slot: HTMLElement) => {
+      setTarget(slot);
+      disconnectAll();
+
+      // Watch only the slot's direct siblings (no subtree) so streaming message
+      // updates elsewhere in the DOM never trigger this callback.
+      const parent = slot.parentElement;
+      if (!parent) return;
+
+      parentObserver = new MutationObserver(() => {
+        if (!document.getElementById(SLOT_ID)) {
           setTarget(null);
+          disconnectAll();
+          waitForSlot();
         }
+      });
+      parentObserver.observe(parent, { childList: true });
+    };
+
+    function waitForSlot() {
+      const existing = document.getElementById(SLOT_ID);
+      if (existing) {
+        attach(existing);
+        return;
       }
-    };
 
-    // Run check immediately and set a periodic verification loop
-    checkSlot();
-    const interval = setInterval(checkSlot, 150);
+      slotObserver = new MutationObserver(() => {
+        const slot = document.getElementById(SLOT_ID);
+        if (slot) attach(slot);
+      });
+      slotObserver.observe(document.body, { childList: true, subtree: true });
+    }
 
-    return () => {
-      clearInterval(interval);
-    };
+    waitForSlot();
+
+    return disconnectAll;
   }, []);
 
   useEffect(() => {

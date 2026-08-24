@@ -3,6 +3,7 @@ import { verifyAdminAuth } from '../../../../lib/adminAuth';
 import fs from 'fs';
 import path from 'path';
 import { logAdminAction } from '../../../../lib/adminSecurity';
+import { invalidateLaiConfig } from '../../../../lib/laiConfig';
 
 const CONFIG_FILE = path.join(process.cwd(), 'lai-config.json');
 
@@ -42,6 +43,10 @@ export async function POST(request: Request) {
     }
 
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+
+    // /api/config and /api/chat read this file through a short-lived cache; drop
+    // it now so this instance serves the new flags on the very next request.
+    invalidateLaiConfig();
 
     await logAdminAction(authCheck.userId!, 'UPDATE_CONFIG', { config }, request);
 

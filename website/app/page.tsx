@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { auth } from '@clerk/nextjs/server';
-import { ClientScriptLoader } from '../components/ClientScriptLoader';
+import { DeferredScripts } from '../components/DeferredScripts';
 import { STATIC_LANDING_HTML } from '../lib/staticLandingHtml';
 
 const siteUrl = 'https://lexinoai.in';
@@ -86,7 +86,7 @@ export default async function LandingPage() {
       />
       <link rel="stylesheet" href="/lexino-website/styles.css" />
       <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: websiteMarkup }} />
-      <ClientScriptLoader scripts={['/lexino-website/script.js']} />
+      <DeferredScripts scripts={['/lexino-website/script.js']} />
     </>
   );
 }

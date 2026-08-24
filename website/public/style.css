@@ -1,4 +1,5 @@
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        /* Inter (weights 300-800) is loaded once from the document head in app/layout.tsx.
+           Importing it here would delay font discovery until this file has parsed. */
 
         * {
             margin: 0;

@@ -65,6 +65,18 @@ model Message {
   modelUsed  String?     // e.g. "gpt-4o", "claude-3-5-sonnet", etc.
   createdAt  DateTime    @default(now())
   fileUrls   String[]    // List of uploaded file URLs associated with this message
+
+  // PostgreSQL does not create indexes for foreign keys automatically, and this
+  // table had none at all - so loading one conversation sequentially scanned every
+  // message ever written by every user, getting slower as the table grows.
+  //
+  // The composite index matches `findMany({ where: { sessionId }, orderBy:
+  // { createdAt: 'asc' } })` exactly, so rows come back already ordered and
+  // Postgres can skip the sort entirely.
+  @@index([sessionId, createdAt])
+  // Serves `message.count({ where: { userId } })` and the ON DELETE CASCADE
+  // lookup when a user is removed.
+  @@index([userId])
 }
 
 model ApiLog {
@@ -75,6 +87,10 @@ model ApiLog {
   tokensUsed Int     @default(0)
   action    String   // "chat" | "image"
   createdAt DateTime @default(now())
+
+  // Required for the ON DELETE SET NULL to find this user's rows without scanning
+  // the whole log table.
+  @@index([userId])
 }
 
 model CleanupLog {
@@ -87,6 +103,8 @@ model CleanupLog {
   deletedFiles         Int      @default(0)
   deletedAt            DateTime @default(now())
   reason               String
+
+  @@index([userId])
 }
 
 model Payment {
@@ -105,4 +123,6 @@ model Payment {
   receipt           String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }

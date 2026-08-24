@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
-import fs from 'fs';
-import path from 'path';
+import { getLaiConfig } from '../../../lib/laiConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,19 +117,7 @@ export async function POST(request: Request) {
       : 'llama-3.1-8b-instant';
 
     // Server-side deactivation check for LAI models
-    let config = {
-      'timetable-lai': true,
-      'predict-lai': false,
-      'explore-lais': true
-    };
-    try {
-      const configPath = path.join(process.cwd(), 'lai-config.json');
-      if (fs.existsSync(configPath)) {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      }
-    } catch (e) {
-      console.warn('Failed to read config in chat route:', e);
-    }
+    const config = await getLaiConfig();
 
     if (selectedModel === 'timetable-ai' && config['timetable-lai'] === false) {
       return NextResponse.json({ error: 'The Timetable LAI is currently deactivated by the administrator for system maintenance.' }, { status: 403 });

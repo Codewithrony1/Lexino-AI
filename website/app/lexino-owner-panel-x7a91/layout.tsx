@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ClerkAuthProvider } from '../../components/ClerkAuthProvider';
 
 export const metadata: Metadata = {
   title: 'Lexino Owner Panel',
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function OwnerPanelLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <ClerkAuthProvider>{children}</ClerkAuthProvider>;
 }

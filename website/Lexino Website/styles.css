@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Inter (weights 300-800) is loaded once from the document head in app/layout.tsx.
+   Importing it here would delay font discovery until this file has parsed. */
 :root {
     --color-bg-dark: #050506;
     --color-bg-light: #ffffff;
@@ -79,6 +80,11 @@ body.light-mode {
     filter: blur(100px);
     opacity: 0.3;
     animation: pulse 8s infinite ease-in-out;
+    /* Promote to its own compositor layer. Without this the 100px+ blur is
+       re-rasterized every frame of the `pulse` animation across a 400px box;
+       with it the blur is rasterized once and only composited. Purely a
+       rendering hint - the painted result is identical. */
+    will-change: transform, opacity;
 }
 .orb-1 {
     width: 400px;
@@ -112,7 +118,10 @@ nav {
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--color-border-dark);
-    transition: all 0.3s ease;
+    /* Only background and border colour differ between dark/light mode, so
+       transition exactly those. `all` made the browser watch every animatable
+       property on a fixed, backdrop-filtered element. */
+    transition: background 0.3s ease, border-bottom-color 0.3s ease;
 }
 body.light-mode nav {
     background: rgba(255, 255, 255, 0.9);
@@ -1973,6 +1982,9 @@ p {
         0 0 0 140px rgba(168, 85, 247, 0.012);
     pointer-events: none;
     animation: lexinoRingLeft 13s ease-in-out infinite;
+    /* Isolate the 900px ring + its two large box-shadow spreads onto their own
+       layer so the infinite drift animation composites instead of repainting. */
+    will-change: transform;
 }
 
 @keyframes lexinoRingLeft {
