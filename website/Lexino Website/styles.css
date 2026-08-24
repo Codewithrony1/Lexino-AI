@@ -138,7 +138,7 @@ body.light-mode nav {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: 2px;
+    letter-spacing: 0px;
 }
 .brand-logo {
     height: 2.1rem;
