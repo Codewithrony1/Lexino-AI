@@ -347,3 +347,51 @@ window.addEventListener('load', () => {
         observer.observe(card);
     });
 });
+
+
+// Join the lexino ERA section 
+
+function initWave(canvasId, hueStart, hueEnd, direction) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  let w, h;
+
+  function resize() {
+    w = canvas.width = canvas.offsetWidth * devicePixelRatio;
+    h = canvas.height = canvas.offsetHeight * devicePixelRatio;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const cols = 26, rows = 14;
+  const pts = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      pts.push({ c, r, offset: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of pts) {
+      const nx = direction === 'left' ? p.c / (cols - 1) : 1 - p.c / (cols - 1);
+      const ny = p.r / (rows - 1);
+
+      const persp = 0.35 + nx * 0.65;
+      const px = (direction === 'left' ? nx : 1 - nx) * w;
+      const wobble = Math.sin(t * 0.0006 + p.offset + nx * 4) * 10 * devicePixelRatio * ny;
+      const py = h - (ny * h * 0.9) + wobble;
+
+      const alpha = (1 - nx) * 0.6 * (0.4 + ny * 0.6);
+      if (alpha <= 0.02) continue;
+      const hue = hueStart + (hueEnd - hueStart) * ny;
+
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${hue}, 85%, 66%, ${alpha})`;
+      ctx.arc(px, py, (0.6 + persp * 0.9) * devicePixelRatio, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
