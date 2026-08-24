@@ -1,7 +1,22 @@
 import type { Metadata, Viewport } from 'next';
+import { Poppins, Orbitron } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  weight: ['400', '500', '700', '900'],
+  variable: '--font-orbitron',
+  display: 'swap',
+});
 
 const siteUrl = 'https://lexinoai.in';
 
@@ -170,14 +185,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       signInFallbackRedirectUrl="/chat"
       signUpFallbackRedirectUrl="/chat"
     >
-      <html lang="en" suppressHydrationWarning>
+      <html
+        lang="en"
+        className={`${poppins.variable} ${orbitron.variable}`}
+        suppressHydrationWarning
+      >
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap"
-            rel="stylesheet"
-          />
         </head>
         <body>
           <script

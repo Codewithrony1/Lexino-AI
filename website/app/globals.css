@@ -22,23 +22,30 @@ body {
   margin: 0;
   background: var(--lexino-bg);
   color: var(--lexino-text);
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a, p, span, li, button, input, textarea, select {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6,
-.auth-logo,
-.brand-title,
-.btn-orbitron {
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.5px;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   background: linear-gradient(135deg, #ffffff 20%, #c084fc 65%, #f472b6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.auth-logo,
+.brand-title,
+.btn-orbitron {
+  font-family: var(--font-orbitron), 'Orbitron', sans-serif;
+  letter-spacing: 2px;
 }
 
 .auth-page,
