@@ -1,8 +1,0 @@
-User-agent: *
-Disallow: /admin/
-Disallow: /lexino-owner-panel-x7a91/
-Disallow: /api/
-Disallow: /chat/
-Disallow: /chat
-
-Sitemap: https://lexinoai.in/sitemap.xml

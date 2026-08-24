@@ -38,22 +38,43 @@ function toggleMusic() {
     localStorage.setItem('musicMuted', isMuted.toString());
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// Create animated particles
+function createParticles() {
+    const container = document.querySelector('.bg-animation');
+    if (!container || container.querySelector('.particle')) return;
+    const particleCount = 50;
+
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        container.appendChild(particle);
+    }
+}
+
+function initLanding() {
     // 1. Load Saved Theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light') {
         document.body.classList.add('light-mode');
     }
     
-    // 2. Audio always starts muted, regardless of the saved preference, so no
-    // audio buffer is fetched until the first user gesture (and so browser
-    // autoplay policies never reject the initial play).
-    //
-    // The toggle's glyph is intentionally left exactly as authored in the markup.
-    // These scripts now load with `defer`, so this listener actually runs, and
-    // writing textContent here would visibly change the rendered icon.
+    // 2. Initialize Audio in Muted/Ready state
     isMuted = true;
-});
+    if (musicToggle) musicToggle.textContent = '🔇';
+
+    // 3. Create background particles
+    createParticles();
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initLanding);
+} else {
+    initLanding();
+}
 
 // Page Navigation
 function navigateToTry() {
@@ -238,6 +259,11 @@ function showPaymentSuccess(planName) {
     const text = document.getElementById('successPlanText');
     if (text) text.textContent = `Your Lexino AI ${planName} Plan is now active.`;
     if (modal) modal.style.display = 'flex';
+
+    // Auto-redirect to chat workspace after 2.5s
+    setTimeout(() => {
+        window.location.href = '/chat';
+    }, 2500);
 }
 
 function closeSuccessModal() {
@@ -305,15 +331,11 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // Observe cards for scroll animations
 window.addEventListener('load', () => {
     const cards = document.querySelectorAll('.card');
-    if (!cards.length) return;
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
-                // Reveal is one-way, so stop tracking the card once it has played.
-                observer.unobserve(entry.target);
             }
         });
     }, { threshold: 0.1 });
@@ -321,156 +343,7 @@ window.addEventListener('load', () => {
     cards.forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(30px)';
-        // Only opacity and transform are animated here; `all` forced the browser
-        // to watch every animatable property on every card.
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        card.style.transition = 'all 0.6s ease';
         observer.observe(card);
     });
 });
-
-
-// ===================================================
-// DEFERRED HERO VIDEO
-// ===================================================
-// The demo clip is several megabytes. Loading it eagerly competed with the hero
-// text, CSS and font for bandwidth on first paint. The markup ships without a
-// src; we attach it once the player is close to the viewport, so the visible
-// behaviour (muted autoplay + loop) is unchanged while the download no longer
-// blocks initial render.
-(function initDeferredVideos() {
-    function activate(video) {
-        const src = video.dataset.src;
-        if (!src || video.src) return;
-        delete video.dataset.src;
-        video.src = src;
-        video.load();
-        const playPromise = video.play();
-        if (playPromise && typeof playPromise.catch === 'function') {
-            playPromise.catch(() => {});
-        }
-    }
-
-    function setup() {
-        const videos = document.querySelectorAll('video[data-src]');
-        if (!videos.length) return;
-
-        if (typeof IntersectionObserver !== 'function') {
-            videos.forEach(activate);
-            return;
-        }
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                activate(entry.target);
-                observer.unobserve(entry.target);
-            });
-        }, { rootMargin: '300px' });
-
-        videos.forEach((video) => observer.observe(video));
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setup, { once: true });
-    } else {
-        setup();
-    }
-})();
-
-//    <!-- Lexino ERA Section Start -->
-function initWave(canvasId, hueStart, hueEnd, direction) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || !canvas.getContext) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  let w, h;
-
-  function resize() {
-    w = canvas.width = canvas.offsetWidth * devicePixelRatio;
-    h = canvas.height = canvas.offsetHeight * devicePixelRatio;
-  }
-  resize();
-
-  // Coalesce resize work into a single frame instead of reallocating the canvas
-  // backing store on every resize event.
-  let resizeFrame = 0;
-  const scheduleResize = () => {
-    if (resizeFrame) return;
-    resizeFrame = requestAnimationFrame(() => {
-      resizeFrame = 0;
-      resize();
-    });
-  };
-  window.addEventListener('resize', scheduleResize, { passive: true });
-
-  const cols = 26, rows = 14;
-  const pts = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      pts.push({ c, r, offset: Math.random() * Math.PI * 2 });
-    }
-  }
-
-  // This animation previously ran forever via an unconditional
-  // requestAnimationFrame loop - two canvases redrawing 364 points each, every
-  // frame, even when scrolled out of view or in a background tab. It now runs
-  // only while the canvas is actually on screen and the tab is visible, which is
-  // visually identical but stops the constant CPU/GPU and battery drain.
-  let rafId = 0;
-  let onScreen = false;
-
-  function draw(t) {
-    ctx.clearRect(0, 0, w, h);
-    for (const p of pts) {
-      const nx = direction === 'left' ? p.c / (cols - 1) : 1 - p.c / (cols - 1);
-      const ny = p.r / (rows - 1);
-
-      const persp = 0.35 + nx * 0.65;
-      const px = (direction === 'left' ? nx : 1 - nx) * w;
-      const wobble = Math.sin(t * 0.0006 + p.offset + nx * 4) * 10 * devicePixelRatio * ny;
-      const py = h - (ny * h * 0.9) + wobble;
-
-      const alpha = (1 - nx) * 0.6 * (0.4 + ny * 0.6);
-      if (alpha <= 0.02) continue;
-      const hue = hueStart + (hueEnd - hueStart) * ny;
-
-      ctx.beginPath();
-      ctx.fillStyle = `hsla(${hue}, 85%, 66%, ${alpha})`;
-      ctx.arc(px, py, (0.6 + persp * 0.9) * devicePixelRatio, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    rafId = requestAnimationFrame(draw);
-  }
-
-  function start() {
-    if (rafId || !onScreen || document.hidden) return;
-    rafId = requestAnimationFrame(draw);
-  }
-
-  function stop() {
-    if (!rafId) return;
-    cancelAnimationFrame(rafId);
-    rafId = 0;
-  }
-
-  if (typeof IntersectionObserver === 'function') {
-    new IntersectionObserver((entries) => {
-      onScreen = entries.some((entry) => entry.isIntersecting);
-      if (onScreen) start();
-      else stop();
-    }, { rootMargin: '120px' }).observe(canvas);
-  } else {
-    onScreen = true;
-    start();
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stop();
-    else start();
-  });
-}
-
-initWave('wave-left', 280, 250, 'left');
-initWave('wave-right', 200, 230, 'right');
-
-//    <!-- Lexino ERA Section -->

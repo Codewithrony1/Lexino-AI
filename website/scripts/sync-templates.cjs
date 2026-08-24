@@ -29,15 +29,12 @@ if (fs.existsSync(srcScript)) {
 }
 
 // 3. Sync all media assets (images, videos, audio)
-// Everything in the markup and CSS references these under `/lexino-website/...`,
-// so only that copy is emitted. A second copy was previously written to the
-// public root as well, which duplicated ~21MB of binaries into every build
-// without a single reference pointing at it.
 const allFiles = fs.readdirSync(lexinoWebsiteDir);
 for (const file of allFiles) {
   const ext = path.extname(file).toLowerCase();
   if (['.png', '.jpg', '.jpeg', '.svg', '.mp4', '.mp3', '.webp', '.ico'].includes(ext)) {
     const src = path.join(lexinoWebsiteDir, file);
+    fs.copyFileSync(src, path.join(publicDir, file));
     fs.copyFileSync(src, path.join(publicLexinoDir, file));
     console.log(`✅ Synchronized asset: ${file}`);
   }

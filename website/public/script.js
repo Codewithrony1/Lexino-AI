@@ -1464,7 +1464,11 @@
 
         window.navigateToPricingFromLock = function() {
             window.closePremiumLockModal();
-            openExternal("https://lexino.ai/pricing");
+            if (window.__TAURI__) {
+                openExternal("https://lexinoai.in/pricing");
+            } else {
+                window.location.href = "/pricing";
+            }
         }
 
         window.showPremiumLockModal = function(mode) {
@@ -2376,7 +2380,11 @@
         };
 
         function upgradePlan() {
-            openExternal("https://lexino.ai/pricing");
+            if (window.__TAURI__) {
+                openExternal("https://lexinoai.in/pricing");
+            } else {
+                window.location.href = "/pricing";
+            }
         }
 
         function startTempChat() {
@@ -2929,25 +2937,6 @@
                 let accumulatedReply = '';
                 let streamBuffer = '';
 
-                // Streaming used to re-parse the whole reply and rewrite innerHTML on
-                // *every* SSE token, which is O(n^2) over the length of the response and
-                // blocks the main thread (input lag, dropped frames) on long answers.
-                // Instead we coalesce: tokens accumulate immediately, but the markdown
-                // parse + DOM write happen at most once per animation frame, so the
-                // visible update rate still matches the display refresh rate.
-                let streamRenderFrame = 0;
-
-                const paintStream = () => {
-                    streamRenderFrame = 0;
-                    textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
-                    scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
-                };
-
-                const scheduleStreamPaint = () => {
-                    if (streamRenderFrame) return;
-                    streamRenderFrame = requestAnimationFrame(paintStream);
-                };
-
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
@@ -2963,20 +2952,13 @@
                                 const parsed = JSON.parse(trimmed.slice(6));
                                 if (parsed.text) {
                                     accumulatedReply += parsed.text;
-                                    scheduleStreamPaint();
+                                    textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
+                                    scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
                                 }
                             } catch (e) {}
                         }
                     }
                 }
-
-                // Final flush: guarantees the complete reply is rendered even if the
-                // stream ended before the last scheduled frame ran.
-                if (streamRenderFrame) {
-                    cancelAnimationFrame(streamRenderFrame);
-                    streamRenderFrame = 0;
-                }
-                textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
 
                 if (actionsContainer) {
                     actionsContainer.style.display = 'flex';

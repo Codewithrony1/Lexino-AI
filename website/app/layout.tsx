@@ -1,19 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
-
-/**
- * Inter is requested from the document head as a single variable-font stylesheet
- * covering every weight the app uses (300-800).
- *
- * Previously each stylesheet pulled Inter in with `@import url(...)`, which the
- * browser can only discover *after* that stylesheet has downloaded and parsed —
- * a serialized round trip on the critical path. Declaring it here makes the font
- * discoverable in the initial HTML and preconnects the two Google Fonts origins
- * so the TLS handshakes overlap with the rest of the page load.
- */
-const INTER_STYLESHEET =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap';
 
 const siteUrl = 'https://lexinoai.in';
 
@@ -147,13 +135,13 @@ const jsonLdData = [
       },
       {
         '@type': 'Offer',
-        price: '149',
+        price: '49',
         priceCurrency: 'INR',
-        name: 'Student Preparation Plan',
+        name: 'Student Preparation Monthly Plan',
       },
       {
         '@type': 'Offer',
-        price: '399',
+        price: '299',
         priceCurrency: 'INR',
         name: 'Pro Access Plan',
       },
@@ -170,20 +158,36 @@ const jsonLdData = [
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href={INTER_STYLESHEET} />
-      </head>
-      <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
-        />
-        {children}
-        <Analytics />
-      </body>
-    </html>
+    <ClerkProvider
+      publishableKey={
+        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+        'pk_test_Y2xlYW4td2hpcHBldC04OS5jbGVyay5hY2NvdW50cy5kZXYk'
+      }
+      signInUrl="/login"
+      signUpUrl="/signup"
+      signInForceRedirectUrl="/chat"
+      signUpForceRedirectUrl="/chat"
+      signInFallbackRedirectUrl="/chat"
+      signUpFallbackRedirectUrl="/chat"
+    >
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap"
+            rel="stylesheet"
+          />
+        </head>
+        <body>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
+          />
+          {children}
+          <Analytics />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

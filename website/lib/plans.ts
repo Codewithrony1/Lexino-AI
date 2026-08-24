@@ -36,8 +36,8 @@ export const PLANS: Record<string, PlanConfig> = {
     name: 'Student',
     badge: 'STUDENT',
     tier: 'STUDENT',
-    priceInr: 149,
-    amountInPaise: 14900, // ₹149.00
+    priceInr: 49,
+    amountInPaise: 4900, // ₹49.00
     originalPriceInr: 499,
     period: '/month',
     queriesPerDay: 300,
@@ -59,8 +59,8 @@ export const PLANS: Record<string, PlanConfig> = {
     name: 'Pro',
     badge: 'BEST VALUE',
     tier: 'PRO',
-    priceInr: 399,
-    amountInPaise: 39900, // ₹399.00
+    priceInr: 299,
+    amountInPaise: 29900, // ₹299.00
     originalPriceInr: 999,
     period: '/month',
     queriesPerDay: 1500,

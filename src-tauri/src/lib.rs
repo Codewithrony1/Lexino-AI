@@ -16,14 +16,14 @@ fn is_online(host: &str) -> bool {
 #[tauri::command]
 fn check_connection(window: tauri::WebviewWindow) -> bool {
     let production_url = std::env::var("LEXINO_PRODUCTION_URL")
-        .unwrap_or_else(|_| "https://lexinoai.in".to_string());
+        .unwrap_or_else(|_| "https://lexinoai.vercel.app".to_string());
     
     let host = production_url
         .replace("https://", "")
         .replace("http://", "")
         .split('/')
         .next()
-        .unwrap_or("lexinoai.in")
+        .unwrap_or("lexinoai.vercel.app")
         .to_string();
         
     if is_online(&host) {
@@ -50,14 +50,14 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![check_connection, open_in_browser])
         .setup(|app| {
             let production_url = std::env::var("LEXINO_PRODUCTION_URL")
-                .unwrap_or_else(|_| "https://lexinoai.in".to_string());
+                .unwrap_or_else(|_| "https://lexinoai.vercel.app".to_string());
             
             let host = production_url
                 .replace("https://", "")
                 .replace("http://", "")
                 .split('/')
                 .next()
-                .unwrap_or("lexinoai.in")
+                .unwrap_or("lexinoai.vercel.app")
                 .to_string();
 
             if is_online(&host) {

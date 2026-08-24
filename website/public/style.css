@@ -1,5 +1,4 @@
-        /* Inter (weights 300-800) is loaded once from the document head in app/layout.tsx.
-           Importing it here would delay font discovery until this file has parsed. */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
         * {
             margin: 0;
@@ -169,7 +168,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
             background:
                 radial-gradient(circle at 50% 112%, rgba(16, 163, 127, 0.15), transparent 34%),
                 radial-gradient(circle at 18% 16%, rgba(148, 163, 184, 0.1), transparent 28%),

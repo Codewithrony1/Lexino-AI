@@ -1,13 +1,11 @@
 {
-  "dependencies": {
-    "@heyputer/puter.js": "^2.6.1",
-    "@tauri-apps/api": "^2.11.0",
-    "@vercel/speed-insights": "^2.0.0"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.11.2"
-  },
+  "name": "lexino-ai-monorepo",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "tauri": "tauri"
+    "dev": "npm --prefix website run dev",
+    "build": "npm --prefix website run build",
+    "start": "npm --prefix website run start",
+    "install:all": "npm --prefix website install"
   }
 }

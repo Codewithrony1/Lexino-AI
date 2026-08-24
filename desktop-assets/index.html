@@ -168,7 +168,7 @@
         }
 
         function fallbackFetchCheck() {
-            const defaultUrl = 'https://lexinoai.in';
+            const defaultUrl = 'https://lexinoai.vercel.app';
             fetch(`${defaultUrl}/api/config`, { mode: 'no-cors', cache: 'no-store' })
                 .then(() => {
                     window.location.href = `${defaultUrl}/chat`;
