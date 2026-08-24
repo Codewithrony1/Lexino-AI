@@ -310,13 +310,24 @@ body.light-mode .theme-toggle, body.light-mode .music-toggle {
     padding: 3rem 6%;
 }
 
-.hero h1 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: clamp(2.2rem, 5vw, 4rem);
+/* Headings Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-weight: 800;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.025em;
+    background: var(--color-gradient-heading);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero h1 {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(2.4rem, 5.8vw, 4.4rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
     margin-bottom: 1.5rem;
-    line-height: 1.2;
+    line-height: 1.18;
     color: #f2f2f5;
     background: var(--color-gradient-heading);
     -webkit-background-clip: text;
@@ -350,6 +361,7 @@ body.light-mode .hero p {
 }
 
 .cta-button {
+    font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #9333ea 0%, #c026d3 50%, #db2777 100%);
     color: white;
     padding: 0.95rem 2.8rem;
@@ -397,14 +409,6 @@ body.light-mode .hero p {
 /* ===================================================
    SECTIONS & CARDS
    ================================================== */
-/* Universal Headings Gradient */
-h1, h2, h3, h4, h5, h6 {
-    background: var(--color-gradient-heading);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
 .section {
     padding: 5rem 6%;
     max-width: 1300px;
@@ -412,10 +416,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .section h2 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(2rem, 3.8vw, 2.8rem);
     font-weight: 800;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.025em;
     text-align: center;
     margin-bottom: 1.25rem;
     background: var(--color-gradient-heading);
@@ -465,9 +469,10 @@ body.light-mode .card {
 }
 
 .card h3 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.2rem;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 1.25rem;
     font-weight: 700;
+    letter-spacing: -0.015em;
     margin-bottom: 0.75rem;
     background: var(--color-gradient-heading);
     -webkit-background-clip: text;
@@ -666,10 +671,10 @@ body.light-mode .pricing-card {
 }
 
 .pricing-card h3 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     margin: 1rem 0 0.75rem;
     text-align: center;
     background: var(--color-gradient-heading);
@@ -688,12 +693,12 @@ body.light-mode .pricing-card {
 }
 
 .original-price {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 1.15rem;
     color: #9a9aa5;
     position: relative;
     display: inline-block;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 0.2rem;
     transition: all 0.3s ease;
 }
@@ -716,10 +721,10 @@ body.light-mode .original-price {
 }
 
 .price .amount {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 2.8rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
     color: #f2f2f5;
     background: var(--color-gradient-heading);
     -webkit-background-clip: text;
