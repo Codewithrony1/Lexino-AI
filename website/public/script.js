@@ -148,34 +148,171 @@
             return window.LexinoApi.getResponse(content, history);
         }
 
-        function appendCopyButton(codeEl) {
-            const pre = codeEl.parentElement;
-            if (!pre || pre.querySelector('.copy-code-btn')) return;
-            pre.style.position = 'relative';
-            const btn = document.createElement('button');
-            btn.className = 'copy-code-btn';
-            btn.innerHTML = 'Copy';
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(codeEl.textContent).then(() => {
-                    btn.innerHTML = 'Copied!';
-                    setTimeout(() => { btn.innerHTML = 'Copy'; }, 2000);
-                });
+        const AIMessageRenderer = (function () {
+            // Strict XSS Sanitizer for AI Message Content
+            function sanitizeHtml(dirtyHtml) {
+                if (typeof dirtyHtml !== 'string') return '';
+                if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+                    return window.DOMPurify.sanitize(dirtyHtml, {
+                        ADD_ATTR: ['target', 'align'],
+                        FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+                        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
+                    });
+                }
+                
+                try {
+                    const doc = new DOMParser().parseFromString(dirtyHtml, 'text/html');
+                    doc.querySelectorAll('script, style, iframe, object, embed, form').forEach(el => el.remove());
+                    const allEls = doc.querySelectorAll('*');
+                    for (let i = 0; i < allEls.length; i++) {
+                        const el = allEls[i];
+                        const attrs = Array.from(el.attributes);
+                        for (let j = 0; j < attrs.length; j++) {
+                            const attr = attrs[j];
+                            if (attr.name.toLowerCase().startsWith('on') || String(attr.value).toLowerCase().includes('javascript:')) {
+                                el.removeAttribute(attr.name);
+                            }
+                        }
+                    }
+                    return doc.body.innerHTML;
+                } catch (e) {
+                    return dirtyHtml.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+                }
+            }
+
+            let customRenderer = null;
+            function getRenderer() {
+                if (customRenderer) return customRenderer;
+                if (typeof marked === 'undefined') return null;
+
+                const renderer = new marked.Renderer();
+                const proto = Object.getPrototypeOf(renderer);
+
+                // 1. Table Wrapper Renderer (Horizontally Scrollable & Styled)
+                renderer.table = function (tokenOrHeader, body) {
+                    let html = '';
+                    if (typeof tokenOrHeader === 'object' && tokenOrHeader !== null && proto && proto.table) {
+                        html = proto.table.call(this, tokenOrHeader);
+                    } else {
+                        html = '<table><thead>' + (tokenOrHeader || '') + '</thead><tbody>' + (body || '') + '</tbody></table>';
+                    }
+                    if (!html.includes('class="lexino-table"')) {
+                        html = html.replace('<table', '<table class="lexino-table"');
+                    }
+                    return '<div class="table-wrapper lexino-table-wrapper">' + html + '</div>';
+                };
+
+                // 2. Table Cell Renderer (Alignment + Empty Cell Preservation)
+                renderer.tablecell = function (tokenOrContent, flags) {
+                    if (typeof tokenOrContent === 'object' && tokenOrContent !== null && proto && proto.tablecell) {
+                        const cellHtml = proto.tablecell.call(this, tokenOrContent);
+                        return cellHtml.replace(/>\s*</g, '>&nbsp;<');
+                    }
+                    const content = tokenOrContent;
+                    const type = (flags && flags.header) ? 'th' : 'td';
+                    const align = (flags && flags.align) ? ' align="' + flags.align + '" style="text-align: ' + flags.align + ';"' : '';
+                    const safeContent = (!content || content.trim() === '') ? '&nbsp;' : content;
+                    return '<' + type + align + '>' + safeContent + '</' + type + '>';
+                };
+
+                // 3. Fenced Code Block Renderer (Header + Language + Copy Button)
+                renderer.code = function (tokenOrCode, infostring) {
+                    let text = '';
+                    let lang = 'text';
+                    if (typeof tokenOrCode === 'object' && tokenOrCode !== null) {
+                        text = tokenOrCode.text || '';
+                        lang = (tokenOrCode.lang || '').match(/\S*/)[0] || 'text';
+                    } else {
+                        text = typeof tokenOrCode === 'string' ? tokenOrCode : '';
+                        lang = (infostring || '').match(/\S*/)[0] || 'text';
+                    }
+                    const safeLang = (lang || 'code').toLowerCase();
+                    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                    return '<div class="code-block-wrapper">' +
+                        '<div class="code-block-header">' +
+                            '<span class="code-lang">' + safeLang + '</span>' +
+                            '<button type="button" class="copy-code-btn" onclick="AIMessageRenderer.copyCode(this)">Copy</button>' +
+                        '</div>' +
+                        '<pre><code class="language-' + safeLang + '">' + escaped + '</code></pre>' +
+                    '</div>';
+                };
+
+                customRenderer = renderer;
+                return customRenderer;
+            }
+
+            function render(markdownText) {
+                if (!markdownText || typeof markdownText !== 'string') return '';
+
+                try {
+                    if (typeof marked !== 'undefined') {
+                        const renderer = getRenderer();
+                        if (typeof marked.setOptions === 'function') {
+                            marked.setOptions({
+                                renderer: renderer || new marked.Renderer(),
+                                gfm: true,
+                                breaks: true,
+                                pedantic: false,
+                                headerIds: false,
+                                mangle: false
+                            });
+                        }
+                        const parsed = marked.parse(markdownText, { renderer: renderer });
+                        return sanitizeHtml(parsed);
+                    }
+                } catch (err) {
+                    console.warn('AIMessageRenderer parse warning (streaming mid-chunk):', err);
+                }
+
+                // Fallback escaping
+                const tempDiv = document.createElement('div');
+                tempDiv.textContent = markdownText;
+                return tempDiv.innerHTML;
+            }
+
+            function copyCode(btn) {
+                try {
+                    const wrapper = btn.closest('.code-block-wrapper');
+                    const codeEl = wrapper ? wrapper.querySelector('pre code') : null;
+                    const text = codeEl ? codeEl.textContent : '';
+                    if (!text) return;
+
+                    navigator.clipboard.writeText(text).then(() => {
+                        const orig = btn.textContent;
+                        btn.textContent = 'Copied!';
+                        btn.style.color = '#34d399';
+                        setTimeout(() => {
+                            btn.textContent = orig;
+                            btn.style.color = '';
+                        }, 2000);
+                    }).catch(() => {
+                        const ta = document.createElement('textarea');
+                        ta.value = text;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        ta.remove();
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+                    });
+                } catch (e) {
+                    console.error('Copy error:', e);
+                }
+            }
+
+            return {
+                render: render,
+                copyCode: copyCode,
+                sanitize: sanitizeHtml
             };
-            pre.appendChild(btn);
-        }
+        })();
+        window.AIMessageRenderer = AIMessageRenderer;
 
         function renderMarkdown(text) {
-            const rawHtml = marked.parse(text);
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = rawHtml;
-            if (window.hljs) {
-                tempDiv.querySelectorAll('pre code').forEach((el) => {
-                    window.hljs.highlightElement(el);
-                    appendCopyButton(el);
-                });
-            }
-            return tempDiv.innerHTML;
+            return AIMessageRenderer.render(text);
         }
 
         function applyAutoResize(textarea) {
