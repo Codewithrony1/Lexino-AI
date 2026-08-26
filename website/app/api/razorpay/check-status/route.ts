@@ -85,25 +85,29 @@ export async function GET(request: Request) {
         }
 
         if ((prisma as any)?.payment) {
-          await (prisma as any).payment.upsert({
-            where: { orderId },
-            update: {
-              paymentId: paymentId || undefined,
-              status: 'paid',
-              tier: targetTier,
-              planId: targetPlan.id,
-            },
-            create: {
-              userId: userId || 'unknown',
-              orderId,
-              paymentId,
-              status: 'paid',
-              tier: targetTier,
-              planId: targetPlan.id,
-              amount: targetPlan.amountInPaise,
-              currency: 'INR',
-            },
-          });
+          try {
+            await (prisma as any).payment.upsert({
+              where: { orderId },
+              update: {
+                paymentId: paymentId || undefined,
+                status: 'paid',
+                tier: targetTier,
+                planId: targetPlan.id,
+              },
+              create: {
+                userId: userId || 'unknown',
+                orderId,
+                paymentId,
+                status: 'paid',
+                tier: targetTier,
+                planId: targetPlan.id,
+                amount: targetPlan.amountInPaise,
+                currency: 'INR',
+              },
+            });
+          } catch (payDbErr) {
+            console.warn('⚠️ [Check Payment Status] Note on recording Payment row:', payDbErr);
+          }
         }
       }
 
