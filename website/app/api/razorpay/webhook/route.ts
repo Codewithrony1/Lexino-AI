@@ -6,40 +6,75 @@ import { verifyWebhookSignature } from '../../../../lib/razorpay';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  console.log('⚡ [Razorpay Webhook] Received webhook POST event at', new Date().toISOString());
+
   try {
     const rawBody = await request.text();
     const signature = request.headers.get('x-razorpay-signature') || '';
 
     if (!signature) {
+      console.error('❌ [Razorpay Webhook] Missing x-razorpay-signature header');
       return NextResponse.json({ error: 'Missing x-razorpay-signature header' }, { status: 400 });
     }
 
     const isValid = verifyWebhookSignature(rawBody, signature);
     if (!isValid) {
-      console.error('Invalid Razorpay Webhook signature received.');
+      console.error('❌ [Razorpay Webhook] Invalid webhook signature');
       return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
     }
 
     const event = JSON.parse(rawBody);
     const eventType = event.event;
-    console.log(`Received verified Razorpay webhook event: ${eventType}`);
+    console.log(`🔔 [Razorpay Webhook] Verified event: ${eventType} (ID: ${event.id || 'n/a'})`);
 
     if (eventType === 'payment.captured' || eventType === 'order.paid') {
       const paymentEntity = event.payload?.payment?.entity || {};
-      const orderId = paymentEntity.order_id;
+      const orderEntity = event.payload?.order?.entity || {};
+      const orderId = paymentEntity.order_id || orderEntity.id;
       const paymentId = paymentEntity.id;
-      const notes = paymentEntity.notes || {};
-      const userId = notes.userId;
-      const planId = (notes.planId || 'pro').toLowerCase();
-      const targetPlan = PLANS[planId] || PLANS['pro'];
+
+      const notes = {
+        ...(orderEntity.notes || {}),
+        ...(paymentEntity.notes || {}),
+      };
+
+      let userId = notes.userId;
+      let planId = (notes.planId || '').toLowerCase();
+
+      console.log('🔍 [Razorpay Webhook] Event details:', {
+        orderId,
+        paymentId,
+        notesUserId: userId,
+        notesPlanId: planId,
+      });
 
       if (process.env.DATABASE_URL && orderId) {
         try {
+          // Look up existing order in DB to recover userId or planId if missing from webhook notes
+          let existingPayment: any = null;
+          if ((prisma as any)?.payment) {
+            existingPayment = await (prisma as any).payment.findUnique({
+              where: { orderId },
+            });
+          }
+
+          if (!userId && existingPayment?.userId) {
+            userId = existingPayment.userId;
+            console.log(`ℹ️ [Razorpay Webhook] Recovered userId (${userId}) from database record`);
+          }
+
+          if (!planId && existingPayment?.planId) {
+            planId = existingPayment.planId;
+          }
+
+          const targetPlan = PLANS[planId] || PLANS['pro'];
+          const targetTier = targetPlan.tier;
+
           if (userId) {
             await prisma.user.upsert({
               where: { id: userId },
               update: {
-                tier: targetPlan.tier,
+                tier: targetTier,
                 cooldownUntil: null,
                 messageCountToday: 0,
               },
@@ -47,18 +82,21 @@ export async function POST(request: Request) {
                 id: userId,
                 email: `${userId}@placeholder.clerk.accounts`,
                 name: 'User',
-                tier: targetPlan.tier,
+                tier: targetTier,
               },
             });
+            console.log(`✅ [Razorpay Webhook] Successfully upgraded user ${userId} to ${targetTier} tier`);
+          } else {
+            console.warn(`⚠️ [Razorpay Webhook] Payment captured for order ${orderId} but no userId could be identified.`);
           }
 
-          if ((prisma as any).payment) {
+          if ((prisma as any)?.payment) {
             await (prisma as any).payment.upsert({
               where: { orderId },
               update: {
                 paymentId: paymentId || undefined,
                 status: 'paid',
-                tier: targetPlan.tier,
+                tier: targetTier,
                 planId: targetPlan.id,
               },
               create: {
@@ -66,16 +104,15 @@ export async function POST(request: Request) {
                 orderId,
                 paymentId,
                 status: 'paid',
-                tier: targetPlan.tier,
+                tier: targetTier,
                 planId: targetPlan.id,
                 amount: paymentEntity.amount || targetPlan.amountInPaise,
                 currency: paymentEntity.currency || 'INR',
               },
             });
           }
-          console.log(`Webhook successfully processed ${eventType} for order ${orderId}`);
         } catch (dbErr) {
-          console.error('Database update failed in webhook handler:', dbErr);
+          console.error('❌ [Razorpay Webhook] Database update failed:', dbErr);
         }
       }
     } else if (eventType === 'payment.failed') {
@@ -83,21 +120,23 @@ export async function POST(request: Request) {
       const orderId = paymentEntity.order_id;
       if (process.env.DATABASE_URL && orderId) {
         try {
-          if ((prisma as any).payment) {
+          if ((prisma as any)?.payment) {
             await (prisma as any).payment.updateMany({
               where: { orderId },
               data: { status: 'failed' },
             });
+            console.log(`ℹ️ [Razorpay Webhook] Marked order ${orderId} as failed`);
           }
         } catch (dbErr) {
-          console.error('Failed to record payment failure in webhook:', dbErr);
+          console.error('❌ [Razorpay Webhook] Failed to record payment failure:', dbErr);
         }
       }
     }
 
-    return NextResponse.json({ status: 'ok', received: true });
+    return NextResponse.json({ status: 'ok', received: true, processed: true });
   } catch (error: any) {
-    console.error('Error handling Razorpay webhook:', error);
+    console.error('❌ [Razorpay Webhook] Internal handler error:', error);
     return NextResponse.json({ error: error.message || 'Webhook internal error' }, { status: 500 });
   }
 }
+

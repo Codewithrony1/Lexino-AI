@@ -191,6 +191,7 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
         }
 
         // 2. Open Razorpay Checkout modal
+        const callbackUrl = window.location.origin + '/api/razorpay/callback';
         const options = {
             key: orderData.keyId,
             amount: orderData.amount,
@@ -199,6 +200,8 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
             description: `${orderData.planName} Plan Access`,
             image: '/lexino-website/Lexino_AI_Logo-removebg-preview.png',
             order_id: orderData.orderId,
+            callback_url: callbackUrl,
+            redirect: false,
             prefill: {
                 name: orderData.userName || '',
                 email: orderData.userEmail || '',
@@ -208,10 +211,11 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
             },
             modal: {
                 ondismiss: function () {
-                    showPaymentFailure('Payment was cancelled before completion. You can retry whenever you are ready.');
+                    console.log('ℹ️ [Razorpay Modal] Dismissed by user.');
                 },
             },
             handler: async function (response) {
+                console.log('⚡ [Razorpay Modal] Payment success returned from gateway:', response);
                 // 3. Verify signature on server
                 try {
                     const verifyRes = await fetch('/api/razorpay/verify', {
@@ -226,12 +230,15 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
                     });
 
                     const verifyData = await verifyRes.json();
+                    console.log('🔍 [Razorpay Modal] Server verification result:', verifyData);
+
                     if (verifyRes.ok && verifyData.success) {
                         showPaymentSuccess(orderData.planName);
                     } else {
                         showPaymentFailure(verifyData.message || 'Payment signature verification failed.');
                     }
                 } catch (verifyErr) {
+                    console.error('❌ [Razorpay Modal] Verification fetch error:', verifyErr);
                     showPaymentFailure('Network error verifying transaction. Please contact support if amount was deducted.');
                 }
             },
@@ -239,6 +246,7 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
 
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', function (response) {
+            console.error('❌ [Razorpay Modal] Payment failed:', response);
             showPaymentFailure(response.error?.description || 'Transaction was declined by bank/gateway.');
         });
         rzp.open();

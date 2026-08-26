@@ -1,15 +1,30 @@
 import crypto from 'crypto';
 
 export function getRazorpayKeyId(): string {
-  return (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '').trim();
+  return (
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+    process.env.RAZORPAY_KEY_ID ||
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY ||
+    ''
+  ).trim();
 }
 
 export function getRazorpayKeySecret(): string {
-  return (process.env.RAZORPAY_KEY_SECRET || '').trim();
+  return (
+    process.env.RAZORPAY_KEY_SECRET ||
+    process.env.RAZORPAY_SECRET ||
+    process.env.RAZORPAY_API_SECRET ||
+    ''
+  ).trim();
 }
 
 export function getRazorpayWebhookSecret(): string {
-  return (process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || '').trim();
+  return (
+    process.env.RAZORPAY_WEBHOOK_SECRET ||
+    process.env.RAZORPAY_KEY_SECRET ||
+    process.env.RAZORPAY_SECRET ||
+    ''
+  ).trim();
 }
 
 export interface CreateOrderParams {
@@ -38,7 +53,7 @@ export async function createRazorpayOrder(params: CreateOrderParams): Promise<Ra
   const keySecret = getRazorpayKeySecret();
 
   if (!keyId || !keySecret) {
-    throw new Error('Razorpay credentials are not properly configured on the server.');
+    throw new Error('Razorpay credentials (Key ID or Key Secret) are not properly configured in environment variables.');
   }
 
   const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
@@ -75,7 +90,12 @@ export function verifyPaymentSignature(
 ): boolean {
   const keySecret = getRazorpayKeySecret();
   if (!keySecret) {
-    console.error('RAZORPAY_KEY_SECRET is missing during signature verification.');
+    console.error('❌ [Razorpay] RAZORPAY_KEY_SECRET is missing during signature verification.');
+    return false;
+  }
+
+  if (!orderId || !paymentId || !signature) {
+    console.error('❌ [Razorpay] Missing parameter in verifyPaymentSignature:', { orderId, paymentId, hasSignature: !!signature });
     return false;
   }
 
@@ -84,7 +104,14 @@ export function verifyPaymentSignature(
     .update(`${orderId}|${paymentId}`)
     .digest('hex');
 
-  return generatedSignature.toLowerCase() === signature.toLowerCase();
+  const matches = generatedSignature.toLowerCase() === signature.toLowerCase();
+  if (!matches) {
+    console.error(`❌ [Razorpay] Signature mismatch! Generated: ${generatedSignature}, Received: ${signature}`);
+  } else {
+    console.log(`✅ [Razorpay] Payment signature verified successfully for order: ${orderId}, payment: ${paymentId}`);
+  }
+
+  return matches;
 }
 
 export function verifyWebhookSignature(
@@ -93,7 +120,7 @@ export function verifyWebhookSignature(
 ): boolean {
   const webhookSecret = getRazorpayWebhookSecret();
   if (!webhookSecret) {
-    console.error('RAZORPAY_WEBHOOK_SECRET is missing during webhook verification.');
+    console.error('❌ [Razorpay] RAZORPAY_WEBHOOK_SECRET is missing during webhook verification.');
     return false;
   }
 
@@ -102,5 +129,10 @@ export function verifyWebhookSignature(
     .update(rawBody)
     .digest('hex');
 
-  return expectedSignature.toLowerCase() === signatureHeader.toLowerCase();
+  const matches = expectedSignature.toLowerCase() === signatureHeader.toLowerCase();
+  if (!matches) {
+    console.error(`❌ [Razorpay Webhook] Signature mismatch! Expected: ${expectedSignature}, Received: ${signatureHeader}`);
+  }
+
+  return matches;
 }
