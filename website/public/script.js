@@ -3638,6 +3638,7 @@
         fetchLaiConfig();
         loadSidebarBrandImage();
         loadProfile();
+        checkPaymentSuccessNotification();
         initMobileAppShell();
         
         // Restore preferred model on startup
@@ -3649,6 +3650,64 @@
         syncComposerModelFromSelect();
         updateComposerState();
         loadChatState();
+
+        function checkPaymentSuccessNotification() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('payment') === 'success') {
+                    const paidTier = (urlParams.get('tier') || 'PRO').toUpperCase();
+                    window.lexinoUserTier = paidTier;
+                    
+                    // Clear local cached cooldowns and limits
+                    window.lexinoCooldownUntil = null;
+                    try {
+                        localStorage.removeItem('lexino_rate_limit_cooldown');
+                        localStorage.removeItem('lexino_ratelimit_v1');
+                    } catch (_) {}
+
+                    if (typeof updateModelLocksUI === 'function') {
+                        updateModelLocksUI(paidTier);
+                    }
+                    if (typeof syncProfileUI === 'function') {
+                        syncProfileUI();
+                    }
+
+                    // Show success notification banner
+                    setTimeout(() => {
+                        const alertBox = document.createElement('div');
+                        alertBox.style.position = 'fixed';
+                        alertBox.style.top = '24px';
+                        alertBox.style.left = '50%';
+                        alertBox.style.transform = 'translateX(-50%)';
+                        alertBox.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))';
+                        alertBox.style.color = '#ffffff';
+                        alertBox.style.padding = '14px 28px';
+                        alertBox.style.borderRadius = '50px';
+                        alertBox.style.fontWeight = '700';
+                        alertBox.style.fontSize = '14px';
+                        alertBox.style.boxShadow = '0 10px 30px rgba(16, 185, 129, 0.4)';
+                        alertBox.style.zIndex = '99999';
+                        alertBox.style.display = 'flex';
+                        alertBox.style.alignItems = 'center';
+                        alertBox.style.gap = '10px';
+                        alertBox.innerHTML = `<span>🎉</span> <span>Your Lexino AI ${paidTier === 'STUDENT' ? 'Student' : 'Pro'} Plan is now active! All features unlocked.</span>`;
+                        document.body.appendChild(alertBox);
+
+                        setTimeout(() => {
+                            alertBox.style.opacity = '0';
+                            alertBox.style.transition = 'opacity 0.5s ease';
+                            setTimeout(() => alertBox.remove(), 500);
+                        }, 5000);
+                    }, 500);
+
+                    // Clean URL parameter
+                    const cleanUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
+            } catch (e) {
+                console.warn('Error handling payment success notification:', e);
+            }
+        }
 
         // Performance Optimization & Feedback Popup triggers
         initPerformanceModeDetection();
