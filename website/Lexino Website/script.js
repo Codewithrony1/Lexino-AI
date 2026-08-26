@@ -190,7 +190,59 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
             throw new Error(orderData.message || 'Could not initiate payment order.');
         }
 
-        // 2. Open Razorpay Checkout modal
+        // 2. Setup Real-Time Status Polling (for UPI QR Code scanning on mobile)
+        let pollingInterval = null;
+        let isPaymentCompleted = false;
+
+        const stopPolling = () => {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        };
+
+        const startStatusPolling = (orderId, planName) => {
+            stopPolling();
+            const startTime = Date.now();
+            const timeoutMs = 5 * 60 * 1000; // 5 minutes
+
+            pollingInterval = setInterval(async () => {
+                if (isPaymentCompleted) {
+                    stopPolling();
+                    return;
+                }
+
+                if (Date.now() - startTime > timeoutMs) {
+                    console.log('⏱️ [UPI Polling] Polling timed out after 5 minutes.');
+                    stopPolling();
+                    return;
+                }
+
+                try {
+                    const statusRes = await fetch(`/api/check-payment-status?order_id=${encodeURIComponent(orderId)}`, {
+                        cache: 'no-store',
+                    });
+                    if (statusRes.ok) {
+                        const statusData = await statusRes.json();
+                        if (statusData.isPaid || statusData.status === 'paid') {
+                            console.log('🎉 [UPI QR Polling] Payment detected as paid in real-time!', statusData);
+                            isPaymentCompleted = true;
+                            stopPolling();
+                            try {
+                                if (rzp && typeof rzp.close === 'function') {
+                                    rzp.close();
+                                }
+                            } catch (_) {}
+                            showPaymentSuccess(statusData.planName || planName, statusData.tier);
+                        }
+                    }
+                } catch (pollErr) {
+                    console.warn('⚠️ [UPI Polling] Check error:', pollErr);
+                }
+            }, 3000);
+        };
+
+        // 3. Open Razorpay Checkout modal
         const callbackUrl = window.location.origin + '/api/razorpay/callback';
         const options = {
             key: orderData.keyId,
@@ -211,14 +263,18 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
             },
             modal: {
                 ondismiss: function () {
-                    console.log('ℹ️ [Razorpay Modal] Dismissed by user.');
+                    console.log('ℹ️ [Razorpay Modal] Dismissed by user. Keeping polling active for 60s in case UPI app confirms.');
+                    setTimeout(stopPolling, 60000);
                 },
             },
             handler: async function (response) {
                 console.log('⚡ [Razorpay Modal] Payment success returned from gateway:', response);
-                // 3. Verify signature on server
+                isPaymentCompleted = true;
+                stopPolling();
+
+                // 4. Verify signature on server
                 try {
-                    const verifyRes = await fetch('/api/razorpay/verify', {
+                    const verifyRes = await fetch('/api/verify-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -233,7 +289,7 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
                     console.log('🔍 [Razorpay Modal] Server verification result:', verifyData);
 
                     if (verifyRes.ok && verifyData.success) {
-                        showPaymentSuccess(orderData.planName);
+                        showPaymentSuccess(orderData.planName, verifyData.tier);
                     } else {
                         showPaymentFailure(verifyData.message || 'Payment signature verification failed.');
                     }
@@ -247,9 +303,13 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', function (response) {
             console.error('❌ [Razorpay Modal] Payment failed:', response);
+            stopPolling();
             showPaymentFailure(response.error?.description || 'Transaction was declined by bank/gateway.');
         });
         rzp.open();
+
+        // Start active polling for UPI QR scan completion
+        startStatusPolling(orderData.orderId, orderData.planName);
 
     } catch (err) {
         console.error('Payment initiation error:', err);
@@ -262,16 +322,19 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
     }
 }
 
-function showPaymentSuccess(planName) {
+function showPaymentSuccess(planName, tier) {
+    const targetTier = (tier || (planName?.toLowerCase().includes('student') ? 'STUDENT' : 'PRO')).toUpperCase();
+    window.lexinoUserTier = targetTier;
+
     const modal = document.getElementById('paymentSuccessModal');
     const text = document.getElementById('successPlanText');
     if (text) text.textContent = `Your Lexino AI ${planName} Plan is now active.`;
     if (modal) modal.style.display = 'flex';
 
-    // Auto-redirect to chat workspace after 2.5s
+    // Auto-redirect to chat workspace with query parameter
     setTimeout(() => {
-        window.location.href = '/chat';
-    }, 2500);
+        window.location.href = `/chat?payment=success&tier=${targetTier}`;
+    }, 2000);
 }
 
 function closeSuccessModal() {

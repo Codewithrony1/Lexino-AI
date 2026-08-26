@@ -136,3 +136,52 @@ export function verifyWebhookSignature(
 
   return matches;
 }
+
+export async function fetchRazorpayOrderPayments(orderId: string): Promise<any[]> {
+  const keyId = getRazorpayKeyId();
+  const keySecret = getRazorpayKeySecret();
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials missing');
+  }
+
+  const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+  const response = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(orderId)}/payments`, {
+    method: 'GET',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error(`❌ [Razorpay API] Failed to fetch payments for order ${orderId} (${response.status}):`, errText);
+    return [];
+  }
+
+  const data = await response.json();
+  return Array.isArray(data?.items) ? data.items : [];
+}
+
+export async function fetchRazorpayOrder(orderId: string): Promise<any> {
+  const keyId = getRazorpayKeyId();
+  const keySecret = getRazorpayKeySecret();
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials missing');
+  }
+
+  const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+  const response = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(orderId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) return null;
+  return await response.json();
+}
+
