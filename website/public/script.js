@@ -1168,6 +1168,24 @@
                         }
                         
                         syncProfileUI();
+
+                        // Asynchronously verify latest tier from database in background
+                        fetch('/api/auth/sync', { method: 'POST' })
+                            .then(r => r.json())
+                            .then(syncRes => {
+                                if (syncRes?.user?.tier) {
+                                    const freshTier = (syncRes.user.tier || "FREE").toUpperCase();
+                                    if (freshTier !== window.lexinoUserTier) {
+                                        console.log(`✨ [Auth Sync] Live tier updated from ${window.lexinoUserTier} to ${freshTier}`);
+                                        window.lexinoUserTier = freshTier;
+                                        window.lexinoCooldownUntil = syncRes.user.cooldownUntil || null;
+                                        updateModelLocksUI(freshTier);
+                                        syncProfileUI();
+                                    }
+                                }
+                            })
+                            .catch(() => {});
+
                         return;
                     }
                 } catch (e) {
