@@ -59,6 +59,8 @@ export async function POST(request: Request) {
 
     if (process.env.DATABASE_URL) {
       try {
+        const { ensureDbTables } = await import('@/lib/ensureDbTables');
+        await ensureDbTables();
         if ((prisma as any)?.payment) {
           await (prisma as any).payment.upsert({
             where: { orderId: order.id },

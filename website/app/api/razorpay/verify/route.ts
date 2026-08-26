@@ -75,11 +75,18 @@ export async function POST(request: Request) {
 
     if (process.env.DATABASE_URL) {
       try {
+        const { ensureDbTables } = await import('@/lib/ensureDbTables');
+        await ensureDbTables();
+      } catch (_) {}
+
+      try {
         let existingPayment: any = null;
         if ((prisma as any)?.payment) {
-          existingPayment = await (prisma as any).payment.findUnique({
-            where: { orderId: razorpay_order_id },
-          });
+          try {
+            existingPayment = await (prisma as any).payment.findUnique({
+              where: { orderId: razorpay_order_id },
+            });
+          } catch (_) {}
         }
 
         if (!targetUserId && existingPayment?.userId) {
@@ -95,46 +102,55 @@ export async function POST(request: Request) {
           );
         }
 
-        if ((prisma as any)?.payment) {
-          await (prisma as any).payment.upsert({
-            where: { orderId: razorpay_order_id },
+        // 1. Upgrade User tier in PostgreSQL
+        try {
+          await prisma.user.upsert({
+            where: { id: targetUserId },
             update: {
-              paymentId: razorpay_payment_id,
-              signature: razorpay_signature,
-              status: 'paid',
               tier: updatedTier,
-              planId: targetPlan.id,
+              cooldownUntil: null,
+              messageCountToday: 0,
             },
             create: {
-              userId: targetUserId,
-              orderId: razorpay_order_id,
-              paymentId: razorpay_payment_id,
-              signature: razorpay_signature,
-              status: 'paid',
+              id: targetUserId,
+              email: `${targetUserId}@placeholder.clerk.accounts`,
+              name: 'User',
               tier: updatedTier,
-              planId: targetPlan.id,
-              amount: targetPlan.amountInPaise,
-              currency: 'INR',
             },
           });
+          console.log(`✅ [Razorpay Verify] User ${targetUserId} successfully upgraded to ${updatedTier} tier for order ${razorpay_order_id}`);
+        } catch (userDbErr) {
+          console.error('❌ [Razorpay Verify] Failed to update User table in DB:', userDbErr);
         }
 
-        await prisma.user.upsert({
-          where: { id: targetUserId },
-          update: {
-            tier: updatedTier,
-            cooldownUntil: null,
-            messageCountToday: 0,
-          },
-          create: {
-            id: targetUserId,
-            email: `${targetUserId}@placeholder.clerk.accounts`,
-            name: 'User',
-            tier: updatedTier,
-          },
-        });
-
-        console.log(`✅ [Razorpay Verify] User ${targetUserId} successfully upgraded to ${updatedTier} tier for order ${razorpay_order_id}`);
+        // 2. Record Payment record in PostgreSQL
+        if ((prisma as any)?.payment) {
+          try {
+            await (prisma as any).payment.upsert({
+              where: { orderId: razorpay_order_id },
+              update: {
+                paymentId: razorpay_payment_id,
+                signature: razorpay_signature,
+                status: 'paid',
+                tier: updatedTier,
+                planId: targetPlan.id,
+              },
+              create: {
+                userId: targetUserId,
+                orderId: razorpay_order_id,
+                paymentId: razorpay_payment_id,
+                signature: razorpay_signature,
+                status: 'paid',
+                tier: updatedTier,
+                planId: targetPlan.id,
+                amount: targetPlan.amountInPaise,
+                currency: 'INR',
+              },
+            });
+          } catch (payDbErr) {
+            console.warn('⚠️ [Razorpay Verify] Note on recording Payment row:', payDbErr);
+          }
+        }
       } catch (dbErr) {
         console.error('❌ [Razorpay Verify] Database update error:', dbErr);
       }

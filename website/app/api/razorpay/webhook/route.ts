@@ -50,12 +50,19 @@ export async function POST(request: Request) {
 
       if (process.env.DATABASE_URL && orderId) {
         try {
+          const { ensureDbTables } = await import('@/lib/ensureDbTables');
+          await ensureDbTables();
+        } catch (_) {}
+
+        try {
           // Look up existing order in DB to recover userId or planId if missing from webhook notes
           let existingPayment: any = null;
           if ((prisma as any)?.payment) {
-            existingPayment = await (prisma as any).payment.findUnique({
-              where: { orderId },
-            });
+            try {
+              existingPayment = await (prisma as any).payment.findUnique({
+                where: { orderId },
+              });
+            } catch (_) {}
           }
 
           if (!userId && existingPayment?.userId) {
@@ -70,46 +77,56 @@ export async function POST(request: Request) {
           const targetPlan = PLANS[planId] || PLANS['pro'];
           const targetTier = targetPlan.tier;
 
-          if (userId) {
-            await prisma.user.upsert({
-              where: { id: userId },
-              update: {
-                tier: targetTier,
-                cooldownUntil: null,
-                messageCountToday: 0,
-              },
-              create: {
-                id: userId,
-                email: `${userId}@placeholder.clerk.accounts`,
-                name: 'User',
-                tier: targetTier,
-              },
-            });
-            console.log(`✅ [Razorpay Webhook] Successfully upgraded user ${userId} to ${targetTier} tier`);
+          // 1. Upgrade User tier in PostgreSQL
+          if (userId && userId !== 'unknown') {
+            try {
+              await prisma.user.upsert({
+                where: { id: userId },
+                update: {
+                  tier: targetTier,
+                  cooldownUntil: null,
+                  messageCountToday: 0,
+                },
+                create: {
+                  id: userId,
+                  email: `${userId}@placeholder.clerk.accounts`,
+                  name: 'User',
+                  tier: targetTier,
+                },
+              });
+              console.log(`✅ [Razorpay Webhook] Successfully upgraded user ${userId} to ${targetTier} tier`);
+            } catch (userDbErr) {
+              console.error('❌ [Razorpay Webhook] Failed to update User table in DB:', userDbErr);
+            }
           } else {
             console.warn(`⚠️ [Razorpay Webhook] Payment captured for order ${orderId} but no userId could be identified.`);
           }
 
+          // 2. Record Payment record in PostgreSQL
           if ((prisma as any)?.payment) {
-            await (prisma as any).payment.upsert({
-              where: { orderId },
-              update: {
-                paymentId: paymentId || undefined,
-                status: 'paid',
-                tier: targetTier,
-                planId: targetPlan.id,
-              },
-              create: {
-                userId: userId || 'unknown',
-                orderId,
-                paymentId,
-                status: 'paid',
-                tier: targetTier,
-                planId: targetPlan.id,
-                amount: paymentEntity.amount || targetPlan.amountInPaise,
-                currency: paymentEntity.currency || 'INR',
-              },
-            });
+            try {
+              await (prisma as any).payment.upsert({
+                where: { orderId },
+                update: {
+                  paymentId: paymentId || undefined,
+                  status: 'paid',
+                  tier: targetTier,
+                  planId: targetPlan.id,
+                },
+                create: {
+                  userId: userId || 'unknown',
+                  orderId,
+                  paymentId,
+                  status: 'paid',
+                  tier: targetTier,
+                  planId: targetPlan.id,
+                  amount: paymentEntity.amount || targetPlan.amountInPaise,
+                  currency: paymentEntity.currency || 'INR',
+                },
+              });
+            } catch (payDbErr) {
+              console.warn('⚠️ [Razorpay Webhook] Note on recording Payment row:', payDbErr);
+            }
           }
         } catch (dbErr) {
           console.error('❌ [Razorpay Webhook] Database update failed:', dbErr);

@@ -14,12 +14,21 @@ export async function GET(request: Request) {
   }
 
   try {
+    if (process.env.DATABASE_URL) {
+      try {
+        const { ensureDbTables } = await import('@/lib/ensureDbTables');
+        await ensureDbTables();
+      } catch (_) {}
+    }
+
     // 1. Check if DB already recorded it as paid (e.g. via webhook or parallel verify)
     let dbPayment: any = null;
     if (process.env.DATABASE_URL && (prisma as any)?.payment) {
-      dbPayment = await (prisma as any).payment.findUnique({
-        where: { orderId },
-      });
+      try {
+        dbPayment = await (prisma as any).payment.findUnique({
+          where: { orderId },
+        });
+      } catch (_) {}
     }
 
     if (dbPayment?.status === 'paid') {
