@@ -1435,9 +1435,6 @@
                             <div class="chip" onclick="useSuggestion('Optimize revision cycles')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
                                 Optimize revision cycles
                             </div>
-                            <div class="chip" onclick="useSuggestion('Build a realistic UPSC roadmap')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
-                                Build a realistic UPSC roadmap
-                            </div>
                         </div>
                     </div>
                 `;
