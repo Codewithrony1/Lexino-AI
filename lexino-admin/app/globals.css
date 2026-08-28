@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #08080c;
+  --bg-secondary: #0f1017;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --cyan-glow: #00f0ff;
+  --purple-glow: #8a2be2;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: #f3f4f6;
+}
+
+.glass-panel {
+  background: rgba(15, 16, 23, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(138, 43, 226, 0.25);
+}

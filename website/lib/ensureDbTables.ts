@@ -52,12 +52,31 @@ export async function ensureDbTables(): Promise<void> {
 
       ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP(3);
 
-      CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
-      CREATE UNIQUE INDEX IF NOT EXISTS "Payment_orderId_key" ON "Payment"("orderId");
-      CREATE UNIQUE INDEX IF NOT EXISTS "Payment_paymentId_key" ON "Payment"("paymentId");
+      CREATE TABLE IF NOT EXISTS "AdminAuditLog" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "adminUserId" TEXT NOT NULL,
+        "action" TEXT NOT NULL,
+        "targetUserId" TEXT NOT NULL,
+        "targetEmail" TEXT,
+        "oldPlan" TEXT,
+        "newPlan" TEXT,
+        "oldStatus" TEXT,
+        "newStatus" TEXT,
+        "oldExpiresAt" TIMESTAMP(3),
+        "newExpiresAt" TIMESTAMP(3),
+        "reason" TEXT,
+        "ipAddress" TEXT,
+        "userAgent" TEXT,
+        "metadata" JSONB,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS "AdminAuditLog_adminUserId_idx" ON "AdminAuditLog"("adminUserId");
+      CREATE INDEX IF NOT EXISTS "AdminAuditLog_targetUserId_idx" ON "AdminAuditLog"("targetUserId");
+      CREATE INDEX IF NOT EXISTS "AdminAuditLog_createdAt_idx" ON "AdminAuditLog"("createdAt");
     `);
     hasEnsuredTables = true;
-    console.log('✅ [Database Migration] Ensured User & Payment tables with subscription lifecycle exist in PostgreSQL.');
+    console.log('✅ [Database Migration] Ensured User, Payment & AdminAuditLog tables exist in PostgreSQL.');
   } catch (err: any) {
     console.warn('⚠️ [Database Migration] Table check note:', err?.message || err);
   }

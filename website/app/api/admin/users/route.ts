@@ -66,78 +66,139 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { targetUserId, action, tier, banDays } = body;
+    const { targetUserId, action, tier, banDays, reason, months = 1 } = body;
 
     if (!targetUserId || !action) {
       return NextResponse.json({ error: 'Missing targetUserId or action' }, { status: 400 });
     }
 
+    let targetUser: any = null;
+    if (process.env.DATABASE_URL) {
+      targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    }
+
     const client = await clerkClient();
+    const now = new Date();
+    const oldPlan = targetUser?.tier || 'FREE';
+    const oldStatus = targetUser?.subscriptionStatus || 'inactive';
+    const oldExpiresAt = targetUser?.subscriptionExpiresAt || null;
 
-    if (action === 'setTier') {
-      const targetTier = (tier || 'FREE').toUpperCase();
-      const isPaid = targetTier === 'STUDENT' || targetTier === 'PRO';
-      const now = new Date();
-      const oneMonthLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    let newPlan = oldPlan;
+    let newStatus = oldStatus;
+    let newExpiresAt = oldExpiresAt;
+    let newStartedAt = targetUser?.subscriptionStartedAt || now;
 
-      // 1. Sync in Clerk publicMetadata
-      await client.users.updateUserMetadata(targetUserId, {
-        publicMetadata: {
-          tier: targetTier,
-          subscriptionStatus: isPaid ? 'active' : 'inactive',
-          subscriptionExpiresAt: isPaid ? oneMonthLater.toISOString() : null,
-        }
-      });
-
-      // 2. Sync in DB if available
-      if (process.env.DATABASE_URL) {
-        await prisma.user.update({
-          where: { id: targetUserId },
-          data: {
-            tier: targetTier,
-            subscriptionStatus: isPaid ? 'active' : 'inactive',
-            subscriptionStartedAt: isPaid ? now : null,
-            subscriptionExpiresAt: isPaid ? oneMonthLater : null,
-          },
-        });
+    if (action === 'activateStudent' || (action === 'setTier' && (tier || '').toUpperCase() === 'STUDENT')) {
+      newPlan = 'STUDENT';
+      newStatus = 'active';
+      newStartedAt = now;
+      newExpiresAt = new Date(now.getTime() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000);
+    } else if (
+      action === 'activateUnlimited' ||
+      action === 'activatePro' ||
+      (action === 'setTier' && ((tier || '').toUpperCase() === 'PRO' || (tier || '').toUpperCase() === 'UNLIMITED'))
+    ) {
+      newPlan = 'PRO';
+      newStatus = 'active';
+      newStartedAt = now;
+      newExpiresAt = new Date(now.getTime() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000);
+    } else if (action === 'extendSubscription') {
+      const activeExpiry = oldExpiresAt && new Date(oldExpiresAt) > now ? new Date(oldExpiresAt) : now;
+      newExpiresAt = new Date(activeExpiry.getTime() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000);
+      newStatus = 'active';
+      if (newPlan === 'FREE') newPlan = 'STUDENT';
+    } else if (action === 'changePlan') {
+      const targetTier = (tier || 'STUDENT').toUpperCase();
+      newPlan = targetTier === 'PRO' || targetTier === 'UNLIMITED' ? 'PRO' : 'STUDENT';
+      newStatus = 'active';
+      if (!newExpiresAt || new Date(newExpiresAt) <= now) {
+        newExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       }
+    } else if (action === 'deactivateSubscription' || (action === 'setTier' && (tier || '').toUpperCase() === 'FREE')) {
+      newPlan = 'FREE';
+      newStatus = 'inactive';
+      newExpiresAt = null;
+    }
 
-      await logAdminAction(authCheck.userId!, 'SET_TIER', { targetUserId, tier: targetTier }, request);
-    } 
-    else if (action === 'banUser') {
-      const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));
-      if (process.env.DATABASE_URL) {
+    // 1. Sync in Database
+    if (process.env.DATABASE_URL) {
+      if (action.includes('banUser') || action === 'banUser') {
+        const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));
         await prisma.user.update({
           where: { id: targetUserId },
           data: { cooldownUntil: banUntil },
         });
-      }
-      // Also lock account via metadata if running database-offline
-      await client.users.updateUserMetadata(targetUserId, {
-        publicMetadata: {
-          cooldownUntil: banUntil.toISOString()
-        }
-      });
-
-      await logAdminAction(authCheck.userId!, 'BAN_USER', { targetUserId, banDays, banUntil: banUntil.toISOString() }, request);
-    } 
-    else if (action === 'unbanUser') {
-      if (process.env.DATABASE_URL) {
+      } else if (action === 'unbanUser') {
         await prisma.user.update({
           where: { id: targetUserId },
           data: { cooldownUntil: null },
         });
+      } else {
+        await prisma.user.update({
+          where: { id: targetUserId },
+          data: {
+            tier: newPlan,
+            subscriptionStatus: newStatus,
+            subscriptionStartedAt: newStatus === 'active' ? newStartedAt : null,
+            subscriptionExpiresAt: newExpiresAt,
+            cooldownUntil: null,
+            messageCountToday: 0,
+          },
+        });
       }
-      await client.users.updateUserMetadata(targetUserId, {
-        publicMetadata: {
-          cooldownUntil: null
-        }
-      });
-
-      await logAdminAction(authCheck.userId!, 'UNBAN_USER', { targetUserId }, request);
     }
 
-    return NextResponse.json({ success: true });
+    // 2. Sync in Clerk publicMetadata for fast JWT validation
+    try {
+      if (action === 'banUser') {
+        const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));
+        await client.users.updateUserMetadata(targetUserId, {
+          publicMetadata: { cooldownUntil: banUntil.toISOString() },
+        });
+      } else if (action === 'unbanUser') {
+        await client.users.updateUserMetadata(targetUserId, {
+          publicMetadata: { cooldownUntil: null },
+        });
+      } else {
+        await client.users.updateUserMetadata(targetUserId, {
+          publicMetadata: {
+            tier: newPlan,
+            subscriptionStatus: newStatus,
+            subscriptionExpiresAt: newExpiresAt ? newExpiresAt.toISOString() : null,
+          },
+        });
+      }
+    } catch (clerkMetaErr) {
+      console.warn('⚠️ [Admin Action] Note on updating Clerk metadata:', clerkMetaErr);
+    }
+
+    // 3. Log into AdminAuditLog in Neon DB and file
+    await logAdminAction(
+      authCheck.userId!,
+      action.toUpperCase(),
+      {
+        targetUserId,
+        targetEmail: targetUser?.email,
+        oldPlan,
+        newPlan,
+        oldStatus,
+        newStatus,
+        oldExpiresAt,
+        newExpiresAt,
+        reason: reason || `Admin manual ${action}`,
+      },
+      request
+    );
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: targetUserId,
+        tier: newPlan,
+        subscriptionStatus: newStatus,
+        subscriptionExpiresAt: newExpiresAt ? newExpiresAt.toISOString() : null,
+      },
+    });
   } catch (err) {
     console.error('Admin user action error:', err);
     return NextResponse.json({ error: 'Action failed. Please verify userId is valid.' }, { status: 500 });

@@ -189,12 +189,20 @@ export async function POST(request: Request) {
         }
 
         if (dbUser) {
-          const { evaluateSubscription } = await import('@/lib/subscription');
-          const subInfo = evaluateSubscription(dbUser);
-          userTier = subInfo.tier; // Automatically evaluated to 'FREE' if 1-month window has elapsed
+          const { getUserEntitlements, isModelAllowedForUser } = await import('@/lib/entitlements');
+          const entitlements = getUserEntitlements(dbUser);
+          userTier = entitlements.tier;
+
+          // Enforce model lock server-side (cannot be bypassed by frontend payload)
+          if (!isModelAllowedForUser(selectedModel, dbUser)) {
+            return NextResponse.json({
+              error: 'premium_model_locked',
+              message: `The model '${selectedModel}' requires a ${selectedModel.includes('claude') ? 'Pro / Unlimited' : 'Student'} subscription. Please upgrade to unlock.`,
+            }, { status: 403 });
+          }
 
           // If expired, auto-update database user record
-          if (subInfo.isExpired && dbUser.tier !== 'FREE') {
+          if (entitlements.isExpired && dbUser.tier !== 'FREE') {
             try {
               await prisma.user.update({
                 where: { id: userId },
@@ -233,7 +241,7 @@ export async function POST(request: Request) {
             messageCount = 0;
           }
 
-          const limit = userTier === 'PRO' ? 1500 : (userTier === 'STUDENT' ? 300 : 50);
+          const limit = entitlements.dailyQueryLimit;
           if (messageCount >= limit) {
             const cooldownDuration = userTier === 'STUDENT' ? 30 * 60 * 1000 : 60 * 60 * 1000;
             const nextCooldown = new Date(Date.now() + cooldownDuration);

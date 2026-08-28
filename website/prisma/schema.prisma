@@ -110,3 +110,26 @@ model Payment {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  adminUserId   String
+  action        String   // "ACTIVATE_STUDENT" | "ACTIVATE_PRO" | "EXTEND_SUBSCRIPTION" | "DEACTIVATE_SUBSCRIPTION" | "CHANGE_PLAN" | "BAN_USER" | "UNBAN_USER" | "DELETE_USER"
+  targetUserId  String
+  targetEmail   String?
+  oldPlan       String?
+  newPlan       String?
+  oldStatus     String?
+  newStatus     String?
+  oldExpiresAt  DateTime?
+  newExpiresAt  DateTime?
+  reason        String?
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([adminUserId])
+  @@index([targetUserId])
+  @@index([createdAt])
+}

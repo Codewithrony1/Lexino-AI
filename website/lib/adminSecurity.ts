@@ -157,7 +157,23 @@ export async function recordSuccessfulLogin(userId: string, req?: Request) {
 }
 
 // Log general admin dashboard actions
-export async function logAdminAction(userId: string, action: string, details?: any, req?: Request) {
+export async function logAdminAction(
+  userId: string,
+  action: string,
+  details?: {
+    targetUserId?: string;
+    targetEmail?: string;
+    oldPlan?: string;
+    newPlan?: string;
+    oldStatus?: string;
+    newStatus?: string;
+    oldExpiresAt?: Date | string | null;
+    newExpiresAt?: Date | string | null;
+    reason?: string;
+    [key: string]: any;
+  },
+  req?: Request
+) {
   const state = loadState();
   const { ip, userAgent } = await getClientMetadata(req);
 
@@ -176,6 +192,38 @@ export async function logAdminAction(userId: string, action: string, details?: a
     state.logs = state.logs.slice(0, 500);
   }
   saveState(state);
+
+  // Persist to Neon PostgreSQL AdminAuditLog
+  if (process.env.DATABASE_URL) {
+    try {
+      const { prisma } = await import('@/lib/prisma');
+      const { ensureDbTables } = await import('@/lib/ensureDbTables');
+      await ensureDbTables();
+
+      if ((prisma as any)?.adminAuditLog) {
+        await (prisma as any).adminAuditLog.create({
+          data: {
+            adminUserId: userId,
+            action,
+            targetUserId: details?.targetUserId || 'system',
+            targetEmail: details?.targetEmail || null,
+            oldPlan: details?.oldPlan || null,
+            newPlan: details?.newPlan || null,
+            oldStatus: details?.oldStatus || null,
+            newStatus: details?.newStatus || null,
+            oldExpiresAt: details?.oldExpiresAt ? new Date(details.oldExpiresAt) : null,
+            newExpiresAt: details?.newExpiresAt ? new Date(details.newExpiresAt) : null,
+            reason: details?.reason || 'Manual Admin Action',
+            ipAddress: ip,
+            userAgent,
+            metadata: details || {},
+          },
+        });
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ [Admin Audit Log] Could not write to DB table:', dbErr);
+    }
+  }
 }
 
 // Get logs (most recent first)
