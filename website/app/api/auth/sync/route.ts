@@ -75,13 +75,23 @@ export async function POST() {
       };
     }
 
+    const userTier = effectiveSub.tier;
+    const quotaLimit = userTier === 'PRO' ? 1500 : (userTier === 'STUDENT' ? 300 : 50);
+
     return NextResponse.json({
       success: true,
       user: {
-        ...dbUser,
-        tier: effectiveSub.tier,
+        id: userId,
+        email,
+        name,
+        avatarUrl,
+        tier: userTier,
         subscriptionStatus: effectiveSub.status,
         subscriptionExpiresAt: effectiveSub.expiresAt ? effectiveSub.expiresAt.toISOString() : null,
+        preferences: dbUser?.preferences || {},
+        limit: quotaLimit,
+        messageCountToday: dbUser?.messageCountToday || 0,
+        cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
       },
     });
   } catch (error) {

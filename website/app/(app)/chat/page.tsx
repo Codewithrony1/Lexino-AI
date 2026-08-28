@@ -41,6 +41,8 @@ export default async function ChatPage() {
     tier: 'FREE',
     subscriptionStatus: 'inactive' as string,
     subscriptionExpiresAt: null as string | null,
+    preferences: {} as Record<string, any>,
+    limit: 50,
     cooldownUntil: null as string | null,
     messageCountToday: 0
   };
@@ -100,6 +102,8 @@ export default async function ChatPage() {
         tier: effectiveTier,
         subscriptionStatus,
         subscriptionExpiresAt: subscriptionExpiresAtStr,
+        preferences: (dbUser?.preferences as Record<string, any>) || {},
+        limit: effectiveTier === 'PRO' ? 1500 : (effectiveTier === 'STUDENT' ? 300 : 50),
         cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
         messageCountToday: dbUser?.messageCountToday || 0,
       };

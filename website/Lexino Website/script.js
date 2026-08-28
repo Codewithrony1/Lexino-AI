@@ -326,6 +326,24 @@ function showPaymentSuccess(planName, tier) {
     const targetTier = (tier || (planName?.toLowerCase().includes('student') ? 'STUDENT' : 'PRO')).toUpperCase();
     window.lexinoUserTier = targetTier;
 
+    // Cross-tab broadcast to all open Lexino AI tabs
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('lexino_global_state_channel');
+            bc.postMessage({
+                type: 'STATE_CHANGE',
+                path: 'subscription.tier',
+                value: targetTier,
+            });
+            bc.close();
+        }
+        localStorage.setItem('lexino_state_broadcast', JSON.stringify({
+            type: 'SUBSCRIPTION_UPGRADED',
+            tier: targetTier,
+            timestamp: Date.now()
+        }));
+    } catch (_) {}
+
     const modal = document.getElementById('paymentSuccessModal');
     const text = document.getElementById('successPlanText');
     if (text) text.textContent = `Your Lexino AI ${planName} Plan is now active.`;

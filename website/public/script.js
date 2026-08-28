@@ -1,3 +1,114 @@
+        // ==========================================
+        // LEXINO AI UNIFIED GLOBAL STATE MANAGER
+        // Single Source of Truth & Inter-Tab Event Bus
+        // ==========================================
+        (function() {
+            const listeners = {};
+            const broadcast = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('lexino_global_state_channel') : null;
+            let prefSyncTimeout = null;
+
+            window.LexinoState = {
+                data: {
+                    user: { id: '', name: 'User', email: '', imageUrl: '', bio: '' },
+                    subscription: { tier: 'FREE', status: 'inactive', expiresAt: null },
+                    limits: { limit: 50, countToday: 0, cooldownUntil: null },
+                    preferences: {
+                        wallpaper: 'none',
+                        theme: 'dark',
+                        accentColor: 'cyan',
+                        fontSize: 'medium',
+                        density: 'default',
+                        sidebarBehavior: 'fixed',
+                        chatWidth: 'default',
+                        messageStyle: 'bubble',
+                        animationIntensity: 'normal',
+                        selectedModel: 'llama-3.1-8b-instant'
+                    }
+                },
+
+                get(path) {
+                    if (!path) return this.data;
+                    return path.split('.').reduce((acc, part) => acc && acc[part], this.data);
+                },
+
+                set(path, value, options = { broadcast: true }) {
+                    const parts = path.split('.');
+                    let current = this.data;
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        if (!current[parts[i]]) current[parts[i]] = {};
+                        current = current[parts[i]];
+                    }
+                    const oldVal = current[parts[parts.length - 1]];
+                    current[parts[parts.length - 1]] = value;
+
+                    this.notify(path, value, oldVal);
+
+                    if (options.broadcast && broadcast) {
+                        try {
+                            broadcast.postMessage({ type: 'STATE_CHANGE', path, value });
+                        } catch (_) {}
+                    }
+                },
+
+                subscribe(path, callback) {
+                    if (!listeners[path]) listeners[path] = [];
+                    listeners[path].push(callback);
+                    try { callback(this.get(path)); } catch (_) {}
+                    return () => {
+                        listeners[path] = (listeners[path] || []).filter(cb => cb !== callback);
+                    };
+                },
+
+                notify(path, newVal, oldVal) {
+                    if (listeners[path]) {
+                        listeners[path].forEach(cb => {
+                            try { cb(newVal, oldVal); } catch (e) { console.error('Subscriber error:', e); }
+                        });
+                    }
+                    const rootKey = path.split('.')[0];
+                    if (rootKey !== path && listeners[rootKey]) {
+                        listeners[rootKey].forEach(cb => {
+                            try { cb(this.get(rootKey)); } catch (e) { console.error('Subscriber error:', e); }
+                        });
+                    }
+                },
+
+                queueSavePreferences(prefs) {
+                    clearTimeout(prefSyncTimeout);
+                    prefSyncTimeout = setTimeout(() => {
+                        fetch('/api/user/preferences', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ preferences: prefs }),
+                        }).catch(() => {});
+                    }, 1000);
+                }
+            };
+
+            if (broadcast) {
+                broadcast.onmessage = (event) => {
+                    if (event.data?.type === 'STATE_CHANGE') {
+                        window.LexinoState.set(event.data.path, event.data.value, { broadcast: false });
+                    }
+                };
+            }
+
+            // Also listen to storage events for cross-tab legacy fallback
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'lexino_state_broadcast' && e.newValue) {
+                    try {
+                        const parsed = JSON.parse(e.newValue);
+                        if (parsed?.type === 'SUBSCRIPTION_UPGRADED' && parsed.tier) {
+                            window.LexinoState.set('subscription.tier', parsed.tier, { broadcast: false });
+                            window.lexinoUserTier = parsed.tier;
+                            if (typeof updateModelLocksUI === 'function') updateModelLocksUI(parsed.tier);
+                            if (typeof syncProfileUI === 'function') syncProfileUI();
+                        }
+                    } catch (_) {}
+                }
+            });
+        })();
+
         let isRecording = false;
         let uploadedFiles = [];
 
@@ -734,6 +845,10 @@
             const safe = allowedWallpapers.includes(name) ? name : "none";
             applyWallpaper(safe);
             localStorage.setItem(WALLPAPER_STORAGE_KEY, safe);
+            if (window.LexinoState) {
+                window.LexinoState.set('preferences.wallpaper', safe);
+                window.LexinoState.queueSavePreferences({ wallpaper: safe });
+            }
             updateWallpaperOptions();
         }
 
@@ -919,58 +1034,60 @@
             localStorage.setItem('lexino_access_' + setting.replace('-', '_'), value);
         };
 
-        // Load all Preferences from localStorage
+        // Load all Preferences from LexinoState / localStorage
         window.loadHubPreferences = function() {
-            const savedAccent = localStorage.getItem('lexino_accent_color') || 'cyan';
+            const serverPrefs = window.LexinoState ? window.LexinoState.get('preferences') : {};
+
+            const savedAccent = serverPrefs?.accentColor || localStorage.getItem('lexino_accent_color') || 'cyan';
             window.setAccentColor(savedAccent);
             
-            const savedDensity = localStorage.getItem('lexino_density') || 'default';
+            const savedDensity = serverPrefs?.density || localStorage.getItem('lexino_density') || 'default';
             window.setDensity(savedDensity);
             
-            const savedFontSize = localStorage.getItem('lexino_font_size') || 'medium';
+            const savedFontSize = serverPrefs?.fontSize || localStorage.getItem('lexino_font_size') || 'medium';
             window.setFontSize(savedFontSize);
             
-            const savedSidebar = localStorage.getItem('lexino_sidebar_behavior') || 'fixed';
+            const savedSidebar = serverPrefs?.sidebarBehavior || localStorage.getItem('lexino_sidebar_behavior') || 'fixed';
             window.setSidebarBehavior(savedSidebar);
             
-            const savedWidth = localStorage.getItem('lexino_chat_width') || 'default';
+            const savedWidth = serverPrefs?.chatWidth || localStorage.getItem('lexino_chat_width') || 'default';
             window.setChatWidth(savedWidth);
             
-            const savedMsgStyle = localStorage.getItem('lexino_message_style') || 'bubble';
+            const savedMsgStyle = serverPrefs?.messageStyle || localStorage.getItem('lexino_message_style') || 'bubble';
             window.setMessageStyle(savedMsgStyle);
             
-            const savedAnim = localStorage.getItem('lexino_animation_intensity') || 'normal';
+            const savedAnim = serverPrefs?.animationIntensity || localStorage.getItem('lexino_animation_intensity') || 'normal';
             window.setAnimationIntensity(savedAnim);
             
-            const savedGlowOrbs = localStorage.getItem('lexino_effect_glow_orbs') || 'enabled';
+            const savedGlowOrbs = serverPrefs?.glowOrbs || localStorage.getItem('lexino_effect_glow_orbs') || 'enabled';
             const glowBox = document.getElementById('toggle-glow-orbs');
             if (glowBox) {
                 glowBox.checked = (savedGlowOrbs === 'enabled');
                 document.documentElement.setAttribute('data-glow-orbs', savedGlowOrbs);
             }
             
-            const savedGrid = localStorage.getItem('lexino_effect_grid_overlay') || 'enabled';
+            const savedGrid = serverPrefs?.gridOverlay || localStorage.getItem('lexino_effect_grid_overlay') || 'enabled';
             const gridBox = document.getElementById('toggle-grid-overlay');
             if (gridBox) {
                 gridBox.checked = (savedGrid === 'enabled');
                 document.documentElement.setAttribute('data-grid-overlay', savedGrid);
             }
             
-            const savedHC = localStorage.getItem('lexino_access_high_contrast') || 'disabled';
+            const savedHC = serverPrefs?.highContrast || localStorage.getItem('lexino_access_high_contrast') || 'disabled';
             const hcBox = document.getElementById('toggle-high-contrast');
             if (hcBox) {
                 hcBox.checked = (savedHC === 'enabled');
                 document.documentElement.setAttribute('data-high-contrast', savedHC);
             }
             
-            const savedDys = localStorage.getItem('lexino_access_dyslexic_font') || 'disabled';
+            const savedDys = serverPrefs?.dyslexicFont || localStorage.getItem('lexino_access_dyslexic_font') || 'disabled';
             const dysBox = document.getElementById('toggle-dyslexic-font');
             if (dysBox) {
                 dysBox.checked = (savedDys === 'enabled');
                 document.documentElement.setAttribute('data-dyslexic-font', savedDys);
             }
             
-            const savedRM = localStorage.getItem('lexino_access_reduced_motion') || 'disabled';
+            const savedRM = serverPrefs?.reducedMotion || localStorage.getItem('lexino_access_reduced_motion') || 'disabled';
             const rmBox = document.getElementById('toggle-reduced-motion');
             if (rmBox) {
                 rmBox.checked = (savedRM === 'enabled');
@@ -1158,9 +1275,31 @@
                         window.lexinoCooldownUntil = data.cooldownUntil || null;
                         window.lexinoSubscriptionExpiresAt = data.subscriptionExpiresAt || null;
                         
+                        // Seed global state store
+                        if (window.LexinoState) {
+                            window.LexinoState.set('user', currentProfile, { broadcast: false });
+                            window.LexinoState.set('subscription', {
+                                tier: window.lexinoUserTier,
+                                status: data.subscriptionStatus || 'inactive',
+                                expiresAt: window.lexinoSubscriptionExpiresAt
+                            }, { broadcast: false });
+                            window.LexinoState.set('limits', {
+                                limit: data.limit || (window.lexinoUserTier === 'PRO' ? 1500 : (window.lexinoUserTier === 'STUDENT' ? 300 : 50)),
+                                countToday: data.messageCountToday || 0,
+                                cooldownUntil: data.cooldownUntil || null
+                            }, { broadcast: false });
+                            if (data.preferences) {
+                                window.LexinoState.set('preferences', data.preferences, { broadcast: false });
+                            }
+                        }
+
                         // If subscription is expired, auto-downgrade client state to FREE
                         if (window.lexinoSubscriptionExpiresAt && new Date(window.lexinoSubscriptionExpiresAt) <= new Date()) {
                             window.lexinoUserTier = "FREE";
+                            if (window.LexinoState) {
+                                window.LexinoState.set('subscription.tier', 'FREE', { broadcast: false });
+                                window.LexinoState.set('subscription.status', 'expired', { broadcast: false });
+                            }
                         }
                         
                         try {
@@ -1175,22 +1314,39 @@
                         
                         syncProfileUI();
 
-                        // Asynchronously verify latest tier from database in background
+                        // Asynchronously verify authoritative state from database in background
                         fetch('/api/auth/sync', { method: 'POST' })
                             .then(r => r.json())
                             .then(syncRes => {
-                                if (syncRes?.user?.tier) {
-                                    const freshTier = (syncRes.user.tier || "FREE").toUpperCase();
-                                    const freshExpiresAt = syncRes.user.subscriptionExpiresAt || null;
+                                if (syncRes?.user) {
+                                    const freshUser = syncRes.user;
+                                    const freshTier = (freshUser.tier || "FREE").toUpperCase();
+                                    const freshExpiresAt = freshUser.subscriptionExpiresAt || null;
+                                    
                                     window.lexinoSubscriptionExpiresAt = freshExpiresAt;
+                                    window.lexinoUserTier = freshTier;
+                                    window.lexinoCooldownUntil = freshUser.cooldownUntil || null;
 
-                                    if (freshTier !== window.lexinoUserTier) {
-                                        console.log(`✨ [Auth Sync] Live tier updated from ${window.lexinoUserTier} to ${freshTier}`);
-                                        window.lexinoUserTier = freshTier;
-                                        window.lexinoCooldownUntil = syncRes.user.cooldownUntil || null;
-                                        updateModelLocksUI(freshTier);
-                                        syncProfileUI();
+                                    if (window.LexinoState) {
+                                        window.LexinoState.set('subscription.tier', freshTier, { broadcast: false });
+                                        window.LexinoState.set('subscription.status', freshUser.subscriptionStatus || 'inactive', { broadcast: false });
+                                        window.LexinoState.set('subscription.expiresAt', freshExpiresAt, { broadcast: false });
+                                        window.LexinoState.set('limits', {
+                                            limit: freshUser.limit || (freshTier === 'PRO' ? 1500 : (freshTier === 'STUDENT' ? 300 : 50)),
+                                            countToday: freshUser.messageCountToday || 0,
+                                            cooldownUntil: freshUser.cooldownUntil || null
+                                        }, { broadcast: false });
+                                        
+                                        if (freshUser.preferences && Object.keys(freshUser.preferences).length > 0) {
+                                            // Apply cloud-saved wallpaper or theme if not already customized locally
+                                            if (freshUser.preferences.wallpaper && typeof applyWallpaper === 'function') {
+                                                applyWallpaper(freshUser.preferences.wallpaper);
+                                            }
+                                        }
                                     }
+
+                                    updateModelLocksUI(freshTier);
+                                    syncProfileUI();
                                 }
                             })
                             .catch(() => {});
