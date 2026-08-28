@@ -166,110 +166,129 @@ export async function POST(request: Request) {
     let userCooldownUntil: Date | null = null;
     let messageCount = 0;
 
+    let curUser: any = null;
+    try {
+      const { currentUser } = await import('@clerk/nextjs/server');
+      curUser = await currentUser();
+    } catch (_) {}
+
+    const clerkTier = (curUser?.publicMetadata?.tier as string) || 'FREE';
+    const clerkStatus = (curUser?.publicMetadata?.subscriptionStatus as string) || (clerkTier !== 'FREE' ? 'active' : 'inactive');
+    const clerkExpiresAt = (curUser?.publicMetadata?.subscriptionExpiresAt as string) || null;
+
+    let dbUser: any = null;
+
     if (process.env.DATABASE_URL) {
       try {
-        let dbUser: any = await prisma.user.findUnique({
+        dbUser = await prisma.user.findUnique({
           where: { id: userId },
         });
 
-        if (!dbUser) {
-          try {
-            const { currentUser } = await import('@clerk/nextjs/server');
-            const curUser = await currentUser();
-            if (curUser) {
-              const { syncCanonicalUser } = await import('@/lib/userAccount');
-              dbUser = await syncCanonicalUser({
-                id: userId,
-                email: curUser.emailAddresses[0]?.emailAddress || '',
-                name: `${curUser.firstName || ''} ${curUser.lastName || ''}`.trim() || curUser.username,
-                avatarUrl: curUser.imageUrl,
-              });
-            }
-          } catch (_) {}
+        if (!dbUser || (dbUser.tier === 'FREE' && clerkTier !== 'FREE')) {
+          if (curUser) {
+            const { syncCanonicalUser } = await import('@/lib/userAccount');
+            dbUser = await syncCanonicalUser({
+              id: userId,
+              email: curUser.emailAddresses[0]?.emailAddress || '',
+              name: `${curUser.firstName || ''} ${curUser.lastName || ''}`.trim() || curUser.username,
+              avatarUrl: curUser.imageUrl,
+              tier: clerkTier,
+              subscriptionStatus: clerkStatus,
+              subscriptionExpiresAt: clerkExpiresAt,
+            });
+          }
         }
+      } catch (dbErr) {
+        console.warn('⚠️ [Chat API] Database lookup warning:', dbErr);
+      }
+    }
 
-        if (dbUser) {
-          const { getUserEntitlements, isModelAllowedForUser } = await import('@/lib/entitlements');
-          const entitlements = getUserEntitlements(dbUser);
-          userTier = entitlements.tier;
+    const effectiveUser = dbUser || {
+      id: userId,
+      tier: clerkTier,
+      subscriptionStatus: clerkStatus,
+      subscriptionExpiresAt: clerkExpiresAt ? new Date(clerkExpiresAt) : null,
+    };
 
-          // Enforce model lock server-side (cannot be bypassed by frontend payload)
-          if (!isModelAllowedForUser(selectedModel, dbUser)) {
-            return NextResponse.json({
-              error: 'premium_model_locked',
-              message: `The model '${selectedModel}' requires a ${selectedModel.includes('claude') ? 'Pro / Unlimited' : 'Student'} subscription. Please upgrade to unlock.`,
-            }, { status: 403 });
-          }
+    const { getUserEntitlements, isModelAllowedForUser } = await import('@/lib/entitlements');
+    const entitlements = getUserEntitlements(effectiveUser);
+    userTier = entitlements.tier;
 
-          // If expired, auto-update database user record
-          if (entitlements.isExpired && dbUser.tier !== 'FREE') {
-            try {
-              await prisma.user.update({
-                where: { id: userId },
-                data: {
-                  tier: 'FREE',
-                  subscriptionStatus: 'expired',
-                },
-              });
-              console.log(`ℹ️ [Chat API] User ${userId} subscription expired on ${dbUser.subscriptionExpiresAt}. Auto-downgraded to FREE.`);
-            } catch (_) {}
-          }
+    // Enforce model lock server-side (cannot be bypassed by frontend payload)
+    if (!isModelAllowedForUser(selectedModel, effectiveUser)) {
+      return NextResponse.json({
+        error: 'premium_model_locked',
+        message: `The model '${selectedModel}' requires a ${selectedModel.includes('claude') ? 'Pro / Unlimited' : 'Student'} subscription. Please upgrade to unlock.`,
+      }, { status: 403 });
+    }
 
-          userCooldownUntil = dbUser.cooldownUntil;
-          messageCount = dbUser.messageCountToday;
-
-          if (userCooldownUntil && userCooldownUntil > new Date()) {
-            return NextResponse.json({
-              error: 'cooldown_active',
-              cooldownUntil: userCooldownUntil.toISOString(),
-              message: userTier === 'PRO'
-                ? 'High traffic detected. Priority systems optimizing your stream.'
-                : (userTier === 'STUDENT'
-                  ? 'Your premium stream quota is temporarily cooling down.'
-                  : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
-            }, { status: 429 });
-          }
-
-          const now = new Date();
-          const lastMsgAt = dbUser.lastMessageAt;
-          const isDifferentDay = !lastMsgAt ||
-            lastMsgAt.getUTCFullYear() !== now.getUTCFullYear() ||
-            lastMsgAt.getUTCMonth() !== now.getUTCMonth() ||
-            lastMsgAt.getUTCDate() !== now.getUTCDate();
-
-          if (isDifferentDay) {
-            messageCount = 0;
-          }
-
-          const limit = entitlements.dailyQueryLimit;
-          if (messageCount >= limit) {
-            const cooldownDuration = userTier === 'STUDENT' ? 30 * 60 * 1000 : 60 * 60 * 1000;
-            const nextCooldown = new Date(Date.now() + cooldownDuration);
-            
+    if (dbUser && process.env.DATABASE_URL) {
+      try {
+        // If expired, auto-update database user record
+        if (entitlements.isExpired && dbUser.tier !== 'FREE') {
+          try {
             await prisma.user.update({
               where: { id: userId },
               data: {
-                cooldownUntil: nextCooldown,
-                messageCountToday: 0,
-              }
+                tier: 'FREE',
+                subscriptionStatus: 'expired',
+              },
             });
+          } catch (_) {}
+        }
 
-            return NextResponse.json({
-              error: 'cooldown_active',
-              cooldownUntil: nextCooldown.toISOString(),
-              message: userTier === 'PRO'
-                ? 'High traffic detected. Priority systems optimizing your stream.'
-                : (userTier === 'STUDENT'
-                  ? 'Your premium stream quota is temporarily cooling down.'
-                  : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
-            }, { status: 429 });
-          }
+        userCooldownUntil = dbUser.cooldownUntil;
+        messageCount = dbUser.messageCountToday;
+
+        if (userCooldownUntil && userCooldownUntil > new Date()) {
+          return NextResponse.json({
+            error: 'cooldown_active',
+            cooldownUntil: userCooldownUntil.toISOString(),
+            message: userTier === 'PRO'
+              ? 'High traffic detected. Priority systems optimizing your stream.'
+              : (userTier === 'STUDENT'
+                ? 'Your premium stream quota is temporarily cooling down.'
+                : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
+          }, { status: 429 });
+        }
+
+        const now = new Date();
+        const lastMsgAt = dbUser.lastMessageAt;
+        const isDifferentDay = !lastMsgAt ||
+          lastMsgAt.getUTCFullYear() !== now.getUTCFullYear() ||
+          lastMsgAt.getUTCMonth() !== now.getUTCMonth() ||
+          lastMsgAt.getUTCDate() !== now.getUTCDate();
+
+        if (isDifferentDay) {
+          messageCount = 0;
+        }
+
+        const limit = entitlements.dailyQueryLimit;
+        if (messageCount >= limit) {
+          const cooldownDuration = userTier === 'STUDENT' ? 30 * 60 * 1000 : 60 * 60 * 1000;
+          const nextCooldown = new Date(Date.now() + cooldownDuration);
+          
+          await prisma.user.update({
+            where: { id: userId },
+            data: {
+              cooldownUntil: nextCooldown,
+              messageCountToday: 0,
+            }
+          });
+
+          return NextResponse.json({
+            error: 'cooldown_active',
+            cooldownUntil: nextCooldown.toISOString(),
+            message: userTier === 'PRO'
+              ? 'High traffic detected. Priority systems optimizing your stream.'
+              : (userTier === 'STUDENT'
+                ? 'Your premium stream quota is temporarily cooling down.'
+                : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
+          }, { status: 429 });
         }
       } catch (limitErr) {
         console.error('Error during quota validation:', limitErr);
       }
-    } else {
-      console.warn('DATABASE_URL is not set. Bypassing database quota check on server.');
     }
 
     // B. Sync User and Message to Database (concurrent safe writes)

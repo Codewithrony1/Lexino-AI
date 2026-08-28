@@ -18,8 +18,18 @@ export async function POST() {
     const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
     const avatarUrl = user.imageUrl;
 
+    const clerkTier = (user.publicMetadata?.tier as string) || 'FREE';
+    const clerkStatus = (user.publicMetadata?.subscriptionStatus as string) || (clerkTier !== 'FREE' ? 'active' : 'inactive');
+    const clerkExpiresAt = (user.publicMetadata?.subscriptionExpiresAt as string) || null;
+
     let dbUser: any = null;
-    let effectiveSub: any = { tier: 'FREE', isActive: false, isExpired: false, status: 'inactive' };
+    let effectiveSub: any = {
+      tier: clerkTier,
+      isActive: clerkTier !== 'FREE',
+      isExpired: false,
+      status: clerkStatus,
+      expiresAt: clerkExpiresAt ? new Date(clerkExpiresAt) : null,
+    };
 
     if (process.env.DATABASE_URL) {
       try {
@@ -29,6 +39,9 @@ export async function POST() {
           email,
           name,
           avatarUrl,
+          tier: clerkTier,
+          subscriptionStatus: clerkStatus,
+          subscriptionExpiresAt: clerkExpiresAt,
         });
       } catch (syncErr) {
         console.error('Error in syncCanonicalUser within auth/sync:', syncErr);
@@ -53,14 +66,14 @@ export async function POST() {
         }
       }
     } else {
-      console.warn('DATABASE_URL is not set. Running in database-offline mode.');
       dbUser = {
         id: userId,
         email,
         name,
         avatarUrl,
-        tier: 'FREE',
-        subscriptionStatus: 'inactive',
+        tier: clerkTier,
+        subscriptionStatus: clerkStatus,
+        subscriptionExpiresAt: clerkExpiresAt ? new Date(clerkExpiresAt) : null,
         cooldownUntil: null,
         messageCountToday: 0,
         lastMessageAt: null,

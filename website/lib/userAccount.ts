@@ -7,6 +7,9 @@ export interface CanonicalUserProfile {
   email: string;
   name?: string | null;
   avatarUrl?: string | null;
+  tier?: string | null;
+  subscriptionStatus?: string | null;
+  subscriptionExpiresAt?: Date | string | null;
 }
 
 /**
@@ -15,7 +18,7 @@ export interface CanonicalUserProfile {
  * user account (userId / email) and are automatically unlocked on any device.
  */
 export async function syncCanonicalUser(profile: CanonicalUserProfile) {
-  const { id: userId, email, name, avatarUrl } = profile;
+  const { id: userId, email, name, avatarUrl, tier, subscriptionStatus, subscriptionExpiresAt } = profile;
   const normalizedEmail = (email || '').toLowerCase().trim();
 
   if (process.env.DATABASE_URL) {
@@ -74,6 +77,10 @@ export async function syncCanonicalUser(profile: CanonicalUserProfile) {
     // 3. If still no record, create brand new user
     if (!dbUser) {
       const fallbackEmail = normalizedEmail || `${userId}@lexinoai.in`;
+      const metaExpires = subscriptionExpiresAt ? new Date(subscriptionExpiresAt) : null;
+      const initialTier = (tier && tier !== 'FREE') ? tier : 'FREE';
+      const initialStatus = (tier && tier !== 'FREE') ? (subscriptionStatus || 'active') : 'inactive';
+
       try {
         dbUser = await prisma.user.create({
           data: {
@@ -81,8 +88,9 @@ export async function syncCanonicalUser(profile: CanonicalUserProfile) {
             email: fallbackEmail,
             name: name || 'User',
             avatarUrl: avatarUrl || '',
-            tier: 'FREE',
-            subscriptionStatus: 'inactive',
+            tier: initialTier,
+            subscriptionStatus: initialStatus,
+            subscriptionExpiresAt: metaExpires,
           },
         });
       } catch (createErr) {
@@ -90,6 +98,26 @@ export async function syncCanonicalUser(profile: CanonicalUserProfile) {
         dbUser = await prisma.user.findFirst({
           where: { OR: [{ id: userId }, { email: fallbackEmail }] },
         });
+      }
+    }
+
+    // 3.1. If Clerk has active tier metadata and DB is still FREE, sync Clerk metadata to DB!
+    if (dbUser && dbUser.tier === 'FREE' && tier && tier !== 'FREE') {
+      const metaExpires = subscriptionExpiresAt ? new Date(subscriptionExpiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      if (metaExpires > new Date()) {
+        console.log(`✨ [Canonical User] Syncing Clerk metadata plan (${tier}) to database for user ${userId}`);
+        try {
+          dbUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+              tier,
+              subscriptionStatus: subscriptionStatus || 'active',
+              subscriptionExpiresAt: metaExpires,
+              cooldownUntil: null,
+              messageCountToday: 0,
+            },
+          });
+        } catch (_) {}
       }
     }
 

@@ -67,6 +67,9 @@ export default async function ChatPage() {
             email,
             name,
             avatarUrl,
+            tier: effectiveTier,
+            subscriptionStatus,
+            subscriptionExpiresAt: subscriptionExpiresAtStr,
           });
 
           if (dbUser) {
