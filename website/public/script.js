@@ -3257,6 +3257,17 @@
                 let accumulatedReply = '';
                 let streamBuffer = '';
 
+                let renderPending = false;
+                const scheduleStreamRender = () => {
+                    if (renderPending) return;
+                    renderPending = true;
+                    requestAnimationFrame(() => {
+                        renderPending = false;
+                        textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
+                        scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
+                    });
+                };
+
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
@@ -3272,13 +3283,15 @@
                                 const parsed = JSON.parse(trimmed.slice(6));
                                 if (parsed.text) {
                                     accumulatedReply += parsed.text;
-                                    textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
-                                    scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
+                                    scheduleStreamRender();
                                 }
                             } catch (e) {}
                         }
                     }
                 }
+
+                // Final immediate flush
+                textContainer.innerHTML = `<div>${renderMarkdown(accumulatedReply)}</div>`;
 
                 if (actionsContainer) {
                     actionsContainer.style.display = 'flex';

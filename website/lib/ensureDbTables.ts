@@ -74,6 +74,10 @@ export async function ensureDbTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "AdminAuditLog_adminUserId_idx" ON "AdminAuditLog"("adminUserId");
       CREATE INDEX IF NOT EXISTS "AdminAuditLog_targetUserId_idx" ON "AdminAuditLog"("targetUserId");
       CREATE INDEX IF NOT EXISTS "AdminAuditLog_createdAt_idx" ON "AdminAuditLog"("createdAt");
+
+      CREATE INDEX IF NOT EXISTS "Payment_userId_status_idx" ON "Payment"("userId", "status");
+      CREATE INDEX IF NOT EXISTS "Payment_status_createdAt_idx" ON "Payment"("status", "createdAt");
+      CREATE INDEX IF NOT EXISTS "User_tier_subscriptionStatus_idx" ON "User"("tier", "subscriptionStatus");
     `);
     hasEnsuredTables = true;
     console.log('✅ [Database Migration] Ensured User, Payment & AdminAuditLog tables exist in PostgreSQL.');

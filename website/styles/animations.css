@@ -1,39 +1,54 @@
-/* Keyframe animations & transitions */
+/* Keyframe animations & GPU-accelerated transitions */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
 @keyframes statusGlow {
-  0%, 100% { opacity: 0.6; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
-  50% { opacity: 1; box-shadow: 0 0 6px 2px rgba(52, 211, 153, 0.4); }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 @keyframes lockIconPulse {
   0%, 100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.4));
+    transform: scale(1) translateZ(0);
   }
   50% {
-    transform: scale(1.08);
-    filter: drop-shadow(0 0 22px rgba(251, 191, 36, 0.7));
+    transform: scale(1.08) translateZ(0);
   }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  25% { transform: translateY(-100px) translateX(50px); }
-  50% { transform: translateY(-200px) translateX(-30px); }
-  75% { transform: translateY(-100px) translateX(-70px); }
+  0%, 100% { transform: translateY(0) translateX(0) translateZ(0); }
+  25% { transform: translateY(-100px) translateX(50px) translateZ(0); }
+  50% { transform: translateY(-200px) translateX(-30px) translateZ(0); }
+  75% { transform: translateY(-100px) translateX(-70px) translateZ(0); }
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.3; }
-  50% { transform: scale(1.2); opacity: 0.5; }
+  0%, 100% { transform: scale(1) translateZ(0); opacity: 0.3; }
+  50% { transform: scale(1.2) translateZ(0); opacity: 0.5; }
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(30px) translateZ(0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -6,14 +6,14 @@ import './globals.css';
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-poppins',
   display: 'swap',
 });
 
 const orbitron = Orbitron({
   subsets: ['latin'],
-  weight: ['400', '500', '700', '900'],
+  weight: ['500', '700'],
   variable: '--font-orbitron',
   display: 'swap',
 });
@@ -190,10 +190,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         className={`${poppins.variable} ${orbitron.variable}`}
         suppressHydrationWarning
       >
-        <head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        </head>
+        <head />
         <body>
           <script
             type="application/ld+json"

@@ -272,32 +272,32 @@ export async function POST(request: Request) {
       console.warn('DATABASE_URL is not set. Bypassing database quota check on server.');
     }
 
-    // B. Sync User and Message to Database (safe writes)
+    // B. Sync User and Message to Database (concurrent safe writes)
     if (process.env.DATABASE_URL) {
       try {
-        await prisma.user.upsert({
-          where: { id: userId },
-          update: {
-            messageCountToday: { increment: 1 },
-            lastMessageAt: new Date(),
-          },
-          create: { id: userId, email: `${userId}@placeholder.clerk.accounts`, name: 'User', messageCountToday: 1, lastMessageAt: new Date() },
-        });
-
-        await prisma.chatSession.upsert({
-          where: { id: sessionId },
-          update: { updatedAt: new Date() },
-          create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
-        });
-
-        await prisma.message.create({
-          data: {
-            sessionId,
-            userId,
-            role: 'user',
-            content,
-          },
-        });
+        await Promise.all([
+          prisma.user.upsert({
+            where: { id: userId },
+            update: {
+              messageCountToday: { increment: 1 },
+              lastMessageAt: new Date(),
+            },
+            create: { id: userId, email: `${userId}@placeholder.clerk.accounts`, name: 'User', messageCountToday: 1, lastMessageAt: new Date() },
+          }),
+          prisma.chatSession.upsert({
+            where: { id: sessionId },
+            update: { updatedAt: new Date() },
+            create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
+          }),
+          prisma.message.create({
+            data: {
+              sessionId,
+              userId,
+              role: 'user',
+              content,
+            },
+          }),
+        ]);
       } catch (dbErr) {
         console.error('Database write error (user message):', dbErr);
       }
