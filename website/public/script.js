@@ -1473,12 +1473,13 @@
             const title = typeof session.title === "string" && session.title.trim() ? session.title.trim() : "New chat";
             const updatedAt = typeof session.updatedAt === "number" ? session.updatedAt : Date.now();
             const pinned = session.pinned === true;
+            const assistant = typeof session.assistant === "string" && session.assistant.trim() ? session.assistant.trim() : "default";
             const thread = Array.isArray(session.thread)
                 ? session.thread.filter((m) =>
                     m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
                 ).map((m) => ({ role: m.role, content: m.content }))
                 : [];
-            return { id, html, title, updatedAt, pinned, thread };
+            return { id, html, title, updatedAt, pinned, thread, assistant };
         }
 
         function createSessionId() {
@@ -2007,16 +2008,14 @@
             const tier = window.lexinoUserTier || "FREE";
             
             if (mode === 'default') {
-                window.setAssistantMode('default');
-                startNewChat();
+                startNewChat({ mode: 'default' });
                 return;
             }
 
             if (tier === "FREE") {
                 window.showPremiumLockModal(mode);
             } else {
-                window.setAssistantMode(mode);
-                startNewChat();
+                startNewChat({ mode: mode });
             }
         }
 
@@ -2312,6 +2311,10 @@
             activeChatId = target.id;
             previousNormalChatId = target.id;
 
+            // Restore the assistant mode associated with this session (or 'default')
+            const sessionAssistant = target.assistant || 'default';
+            window.setAssistantMode(sessionAssistant);
+
             const messagesDiv = getMessagesDiv();
             if (messagesDiv) {
                 messagesDiv.innerHTML = target.html || getEmptyStateMarkup();
@@ -2338,7 +2341,8 @@
                     html: getSavableChatHtml(messagesDiv),
                     title: "New chat",
                     updatedAt: Date.now(),
-                    thread: []
+                    thread: [],
+                    assistant: window.currentAssistant || 'default'
                 };
                 chatSessions.unshift(newSession);
                 activeChatId = newSession.id;
@@ -2350,6 +2354,9 @@
 
             target.html = getSavableChatHtml(messagesDiv);
             target.thread = currentConversation.map((m) => ({ role: m.role, content: m.content }));
+            if (window.currentAssistant) {
+                target.assistant = window.currentAssistant;
+            }
             if ((target.title === "New chat" || !target.title) && currentConversation.length > 0) {
                 const firstUser = currentConversation.find((m) => m.role === "user" && m.content.trim());
                 if (firstUser) {
@@ -2482,13 +2489,17 @@
                 return match ? decodeURIComponent(match[1]) : "";
             })();
             const mostRecent = chatSessions.find((session) => session.id === (importedChatId || hashChatId)) || getOrderedChatSessions()[0];
-            activeChatId = mostRecent.id;
-            previousNormalChatId = mostRecent.id;
-            currentConversation = Array.isArray(mostRecent.thread)
-                ? mostRecent.thread.map((m) => ({ role: m.role, content: m.content }))
-                : [];
-            messagesDiv.innerHTML = mostRecent.html || getEmptyStateMarkup();
-            ensureMessageMoreMenus(messagesDiv);
+            if (mostRecent) {
+                const sessionAssistant = mostRecent.assistant || 'default';
+                window.setAssistantMode(sessionAssistant);
+                activeChatId = mostRecent.id;
+                previousNormalChatId = mostRecent.id;
+                currentConversation = Array.isArray(mostRecent.thread)
+                    ? mostRecent.thread.map((m) => ({ role: m.role, content: m.content }))
+                    : [];
+                messagesDiv.innerHTML = mostRecent.html || getEmptyStateMarkup();
+                ensureMessageMoreMenus(messagesDiv);
+            }
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
@@ -2514,19 +2525,27 @@
             updateTempModeUI();
         }
 
-        function startNewChat() {
+        function startNewChat(options = {}) {
+            const targetMode = (options && typeof options === 'object' && options.mode) ? options.mode : 'default';
+
+            // Explicitly set/reset assistant mode (ensures clicking New Chat always lands on default Lexino AI base mode)
+            window.setAssistantMode(targetMode);
+
             const messagesDiv = document.getElementById('chatMessages');
-            messagesDiv.innerHTML = getEmptyStateMarkup();
+            if (messagesDiv) {
+                messagesDiv.innerHTML = getEmptyStateMarkup();
+            }
             uploadedFiles = [];
             displayUploaded();
 
             if (!isTempMode) {
                 const newSession = {
                     id: createSessionId(),
-                    html: messagesDiv.innerHTML,
+                    html: messagesDiv ? messagesDiv.innerHTML : '',
                     title: "New chat",
                     updatedAt: Date.now(),
-                    thread: []
+                    thread: [],
+                    assistant: targetMode
                 };
                 chatSessions.unshift(newSession);
                 activeChatId = newSession.id;
