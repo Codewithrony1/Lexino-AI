@@ -10,9 +10,9 @@ export interface CanonicalUserProfile {
 }
 
 /**
- * Synchronizes and resolves a user account across multiple devices.
- * If the user logs in on a new device (laptop/phone) with the same verified email,
- * this function unifies the account so subscriptions and chat history are instantly accessible.
+ * Synchronizes and resolves a user account across multiple devices (phone, laptop, tablet).
+ * Guarantees that active subscriptions, payments, preferences, and history belong to the
+ * user account (userId / email) and are automatically unlocked on any device.
  */
 export async function syncCanonicalUser(profile: CanonicalUserProfile) {
   const { id: userId, email, name, avatarUrl } = profile;
@@ -23,13 +23,15 @@ export async function syncCanonicalUser(profile: CanonicalUserProfile) {
       await ensureDbTables();
     } catch (_) {}
 
+    let dbUser: any = null;
+
     // 1. Check if user exists by Clerk User ID
-    let dbUser = await prisma.user.findUnique({
+    dbUser = await prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (dbUser) {
-      // User found by ID. If email has changed or was placeholder, update it
+      // If email has changed or was a placeholder, update it
       if (normalizedEmail && dbUser.email !== normalizedEmail) {
         const conflictingUser = await prisma.user.findUnique({
           where: { email: normalizedEmail },
@@ -45,7 +47,7 @@ export async function syncCanonicalUser(profile: CanonicalUserProfile) {
             },
           });
         } else if (conflictingUser.id !== userId) {
-          // Merge conflicting account (e.g. from phone checkout) into the active userId
+          // Merge conflicting account into active session
           dbUser = await mergeUserAccounts(conflictingUser.id, userId, { name, avatarUrl });
         }
       } else {
@@ -57,45 +59,84 @@ export async function syncCanonicalUser(profile: CanonicalUserProfile) {
           },
         });
       }
-      return dbUser;
-    }
-
-    // 2. User NOT found by ID. Check if an account already exists with this verified email
-    if (normalizedEmail) {
+    } else if (normalizedEmail) {
+      // 2. User not found by ID. Check if an account already exists with this verified email
       const existingByEmail = await prisma.user.findUnique({
         where: { email: normalizedEmail },
       });
 
       if (existingByEmail) {
-        // An existing account with this email (e.g. created on Phone) exists.
-        // Migrate and link it directly to the active session ID!
+        // Merge the existing record into the current session ID
         dbUser = await mergeUserAccounts(existingByEmail.id, userId, { name, avatarUrl });
-        return dbUser;
       }
     }
 
-    // 3. Brand new user account
-    const fallbackEmail = normalizedEmail || `${userId}@lexinoai.in`;
-    try {
-      dbUser = await prisma.user.create({
-        data: {
-          id: userId,
-          email: fallbackEmail,
-          name: name || 'User',
-          avatarUrl: avatarUrl || '',
-          tier: 'FREE',
-          subscriptionStatus: 'inactive',
-        },
-      });
-      return dbUser;
-    } catch (createErr) {
-      // Safe fallback if email race condition occurs
-      console.warn('⚠️ [Canonical User] Create conflict fallback:', createErr);
-      const recovery = await prisma.user.findFirst({
-        where: { OR: [{ id: userId }, { email: fallbackEmail }] },
-      });
-      if (recovery) return recovery;
+    // 3. If still no record, create brand new user
+    if (!dbUser) {
+      const fallbackEmail = normalizedEmail || `${userId}@lexinoai.in`;
+      try {
+        dbUser = await prisma.user.create({
+          data: {
+            id: userId,
+            email: fallbackEmail,
+            name: name || 'User',
+            avatarUrl: avatarUrl || '',
+            tier: 'FREE',
+            subscriptionStatus: 'inactive',
+          },
+        });
+      } catch (createErr) {
+        console.warn('⚠️ [Canonical User] Create conflict fallback:', createErr);
+        dbUser = await prisma.user.findFirst({
+          where: { OR: [{ id: userId }, { email: fallbackEmail }] },
+        });
+      }
     }
+
+    // 4. AUTHORITATIVE PAYMENT RECOVERY & MULTI-DEVICE UNIFICATION
+    // If the user is currently evaluated as FREE, check the Payment table for any active paid order!
+    if (dbUser && dbUser.tier === 'FREE') {
+      try {
+        if ((prisma as any)?.payment) {
+          const paidPayment = await (prisma as any).payment.findFirst({
+            where: {
+              OR: [
+                { userId: dbUser.id },
+                ...(normalizedEmail ? [{ user: { email: normalizedEmail } }] : []),
+              ],
+              status: 'paid',
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          if (paidPayment) {
+            const now = new Date();
+            const calculatedExpiry = paidPayment.expiresAt
+              ? new Date(paidPayment.expiresAt)
+              : new Date(new Date(paidPayment.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000);
+
+            if (calculatedExpiry > now) {
+              console.log(`✨ [Payment Recovery] Restoring active ${paidPayment.tier} subscription from Payment record (${paidPayment.orderId}) for user ${dbUser.id}`);
+              dbUser = await prisma.user.update({
+                where: { id: dbUser.id },
+                data: {
+                  tier: paidPayment.tier,
+                  subscriptionStatus: 'active',
+                  subscriptionStartedAt: paidPayment.createdAt,
+                  subscriptionExpiresAt: calculatedExpiry,
+                  cooldownUntil: null,
+                  messageCountToday: 0,
+                },
+              });
+            }
+          }
+        }
+      } catch (payRecErr) {
+        console.warn('⚠️ [Payment Recovery Note]:', payRecErr);
+      }
+    }
+
+    return dbUser;
   }
 
   // Offline / in-memory fallback
@@ -259,8 +300,8 @@ export async function activateSubscriptionForUser(params: {
       console.log(`✅ [Subscription Engine] Created and activated ${targetTier} plan for ${userId}`);
     }
 
-    // Record Payment
-    if (user && (prisma as any)?.payment) {
+    // Always record or update Payment record
+    if ((prisma as any)?.payment) {
       try {
         await (prisma as any).payment.upsert({
           where: { orderId },
@@ -271,10 +312,10 @@ export async function activateSubscriptionForUser(params: {
             tier: targetTier,
             planId,
             expiresAt: expiryInfo.expiresAt,
-            userId: user.id,
+            ...(user?.id ? { userId: user.id } : {}),
           },
           create: {
-            userId: user.id,
+            userId: user?.id || userId || 'unknown',
             orderId,
             paymentId,
             signature,
