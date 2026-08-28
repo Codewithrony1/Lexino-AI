@@ -57,8 +57,8 @@ export async function applyAdminSubscription(params: CentralSubscriptionParams) 
 
   let newPlan = oldPlan;
   let newStatus = oldStatus;
-  let newExpiresAt = oldExpiresAt;
-  let newStartedAt = targetUser.subscriptionStartedAt || now;
+  let newExpiresAt: Date | null = oldExpiresAt;
+  let newStartedAt: Date | null = targetUser.subscriptionStartedAt || now;
 
   if (action === 'activateStudent') {
     newPlan = 'STUDENT';

@@ -1,0 +1,139 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum StorageState {
+  HOT
+  COMPRESSED
+}
+
+model User {
+  id                String        @id // Maps to Clerk User ID (e.g. user_...)
+  email             String        @unique
+  name              String?
+  avatarUrl         String?
+  tier                  String        @default("FREE") // "FREE" | "STUDENT" | "PRO"
+  subscriptionStatus    String        @default("inactive") // "active" | "expired" | "inactive"
+  subscriptionStartedAt DateTime?
+  subscriptionExpiresAt DateTime?
+  cooldownUntil         DateTime?
+  messageCountToday     Int           @default(0)
+  lastMessageAt         DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  sessions              ChatSession[]
+  preferences           Json?         // Stores wallpaper settings, model preference, etc.
+  messages              Message[]
+  logs                  ApiLog[]
+  payments              Payment[]
+  lastActiveAt      DateTime      @default(now())
+  warnedAt          DateTime?
+  finalWarnedAt     DateTime?
+  cleanupLogs       CleanupLog[]
+  storageUsedBytes  BigInt        @default(0)
+
+  @@index([lastActiveAt])
+  @@index([tier, subscriptionStatus])
+}
+
+model ChatSession {
+  id                String       @id @default(uuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String       @default("New chat")
+  pinned            Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  messages          Message[]
+  lastInteractionAt DateTime     @default(now())
+  storageState      StorageState @default(HOT)
+  compressedData    String?      @db.Text
+
+  @@index([userId, storageState])
+  @@index([lastInteractionAt])
+}
+
+model Message {
+  id         String      @id @default(uuid())
+  sessionId  String
+  session    ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String      // "user" | "assistant"
+  content    String      @db.Text
+  modelUsed  String?     // e.g. "gpt-4o", "claude-3-5-sonnet", etc.
+  createdAt  DateTime    @default(now())
+  fileUrls   String[]    // List of uploaded file URLs associated with this message
+}
+
+model ApiLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  modelUsed String
+  tokensUsed Int     @default(0)
+  action    String   // "chat" | "image"
+  createdAt DateTime @default(now())
+}
+
+model CleanupLog {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionTier     String
+  deletedConversations Int      @default(0)
+  deletedMessages      Int      @default(0)
+  deletedFiles         Int      @default(0)
+  deletedAt            DateTime @default(now())
+  reason               String
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId           String   @unique
+  paymentId         String?  @unique
+  signature         String?
+  planId            String   // "student" | "pro"
+  tier              String   // "STUDENT" | "PRO"
+  amount            Int      // in paise (e.g. 14900)
+  currency          String   @default("INR")
+  status            String   @default("created") // "created" | "paid" | "failed"
+  studentIdUploaded String?  // Optional student verification reference / metadata
+  receipt           String?
+  expiresAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  adminUserId   String
+  action        String   // "ACTIVATE_STUDENT" | "ACTIVATE_PRO" | "EXTEND_SUBSCRIPTION" | "DEACTIVATE_SUBSCRIPTION" | "CHANGE_PLAN" | "BAN_USER" | "UNBAN_USER" | "DELETE_USER"
+  targetUserId  String
+  targetEmail   String?
+  oldPlan       String?
+  newPlan       String?
+  oldStatus     String?
+  newStatus     String?
+  oldExpiresAt  DateTime?
+  newExpiresAt  DateTime?
+  reason        String?
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([adminUserId])
+  @@index([targetUserId])
+  @@index([createdAt])
+}

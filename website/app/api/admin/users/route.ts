@@ -11,50 +11,140 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search')?.toLowerCase() || '';
+  const search = (searchParams.get('search') || '').trim();
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)));
+  const offset = (page - 1) * limit;
 
   try {
-    let usersList: any[] = [];
+    const client = await clerkClient();
+    let clerkUsers: any[] = [];
+    let totalClerkCount = 0;
 
-    if (process.env.DATABASE_URL) {
-      const dbUsers = await prisma.user.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-      usersList = dbUsers.map((u) => ({
-        id: u.id,
-        name: u.name || 'User',
-        email: u.email,
-        tier: u.tier,
-        subscriptionStatus: u.subscriptionStatus || (u.tier !== 'FREE' ? 'active' : 'inactive'),
-        subscriptionExpiresAt: u.subscriptionExpiresAt ? u.subscriptionExpiresAt.toISOString() : null,
-        avatarUrl: u.avatarUrl || '',
-        cooldownUntil: u.cooldownUntil ? u.cooldownUntil.toISOString() : null,
-        createdAt: u.createdAt.toISOString(),
-      }));
-    } else {
-      // Mock Users for Offline Local Development
-      usersList = [
-        { id: 'user_1', name: 'Aarav Mehta', email: 'aarav@example.com', tier: 'PRO', subscriptionStatus: 'active', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString() },
-        { id: 'user_2', name: 'Rohan Sharma', email: 'rohan@example.com', tier: 'STUDENT', subscriptionStatus: 'active', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 24 * 10).toISOString() },
-        { id: 'user_3', name: 'Kavya Nair', email: 'kavya@example.com', tier: 'FREE', subscriptionStatus: 'inactive', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: new Date(Date.now() + 3600000 * 24 * 365).toISOString(), createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString() }, // Banned
-        { id: 'user_4', name: 'Neha Gupta', email: 'neha@example.com', tier: 'FREE', subscriptionStatus: 'inactive', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 12).toISOString() },
-        { id: 'user_5', name: 'Kabir Singh', email: 'kabir@example.com', tier: 'PRO', subscriptionStatus: 'active', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 48).toISOString() },
-      ];
-    }
-
+    // 1. Fetch Real Clerk Users
     if (search) {
-      usersList = usersList.filter(
-        (u) =>
-          u.name.toLowerCase().includes(search) ||
-          u.email.toLowerCase().includes(search) ||
-          u.id.toLowerCase().includes(search)
-      );
+      if (search.startsWith('user_')) {
+        try {
+          const singleUser = await client.users.getUser(search);
+          if (singleUser) clerkUsers = [singleUser];
+        } catch (_) {
+          clerkUsers = [];
+        }
+      }
+
+      if (clerkUsers.length === 0) {
+        const listRes = await client.users.getUserList({
+          query: search,
+          limit,
+          offset,
+        });
+        clerkUsers = (listRes as any).data || listRes;
+      }
+    } else {
+      const listRes = await client.users.getUserList({
+        limit,
+        offset,
+        orderBy: '-created_at',
+      });
+      clerkUsers = (listRes as any).data || listRes;
     }
 
-    return NextResponse.json({ users: usersList });
-  } catch (err) {
-    console.error('Admin users fetch error:', err);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    try {
+      totalClerkCount = await client.users.getCount();
+    } catch (_) {
+      totalClerkCount = clerkUsers.length;
+    }
+
+    const clerkIds = clerkUsers.map((u) => u.id);
+
+    // 2. Query Neon PostgreSQL User and Audit records
+    let dbUserMap = new Map<string, any>();
+    let auditMap = new Map<string, any[]>();
+
+    if (process.env.DATABASE_URL && clerkIds.length > 0) {
+      try {
+        const dbUsers = await prisma.user.findMany({
+          where: { id: { in: clerkIds } },
+          include: {
+            payments: {
+              take: 5,
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
+        dbUsers.forEach((u) => dbUserMap.set(u.id, u));
+
+        if ((prisma as any)?.adminAuditLog) {
+          const auditLogs = await (prisma as any).adminAuditLog.findMany({
+            where: { targetUserId: { in: clerkIds } },
+            orderBy: { createdAt: 'desc' },
+            take: 30,
+          });
+          auditLogs.forEach((log: any) => {
+            const list = auditMap.get(log.targetUserId) || [];
+            list.push(log);
+            auditMap.set(log.targetUserId, list);
+          });
+        }
+      } catch (dbErr: any) {
+        console.warn('⚠️ [Admin Users] Neon Database query warning:', dbErr.message);
+      }
+    }
+
+    // 3. Join Clerk + Neon Data
+    const combinedUsers = clerkUsers.map((cu) => {
+      const dbUser = dbUserMap.get(cu.id);
+      const userAudit = auditMap.get(cu.id) || [];
+      const primaryEmail =
+        cu.emailAddresses?.find((e: any) => e.id === cu.primaryEmailAddressId)?.emailAddress ||
+        cu.emailAddresses?.[0]?.emailAddress ||
+        'No email registered';
+
+      const firstName = cu.firstName || '';
+      const lastName = cu.lastName || '';
+      const fullName = `${firstName} ${lastName}`.trim() || dbUser?.name || 'Lexino User';
+
+      const tier = dbUser?.tier || (cu.publicMetadata?.tier as string) || 'FREE';
+      const subscriptionStatus =
+        dbUser?.subscriptionStatus || (cu.publicMetadata?.subscriptionStatus as string) || (tier !== 'FREE' ? 'active' : 'inactive');
+      const subscriptionExpiresAt = dbUser?.subscriptionExpiresAt
+        ? dbUser.subscriptionExpiresAt.toISOString()
+        : (cu.publicMetadata?.subscriptionExpiresAt as string) || null;
+      const subscriptionStartedAt = dbUser?.subscriptionStartedAt
+        ? dbUser.subscriptionStartedAt.toISOString()
+        : null;
+
+      const syncStatus = dbUser ? 'MATCHED' : 'NOT_SYNCED';
+
+      return {
+        id: cu.id,
+        name: fullName,
+        email: primaryEmail,
+        avatarUrl: cu.imageUrl || dbUser?.avatarUrl || '',
+        tier,
+        subscriptionStatus,
+        subscriptionStartedAt,
+        subscriptionExpiresAt,
+        cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
+        messageCountToday: dbUser?.messageCountToday || 0,
+        createdAt: cu.createdAt ? new Date(cu.createdAt).toISOString() : (dbUser?.createdAt ? dbUser.createdAt.toISOString() : new Date().toISOString()),
+        syncStatus,
+        payments: dbUser?.payments || [],
+        auditLogs: userAudit,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      users: combinedUsers,
+      totalClerkUsers: totalClerkCount,
+      page,
+      limit,
+      dbConnected: !!process.env.DATABASE_URL,
+    });
+  } catch (err: any) {
+    console.error('❌ [Admin Users] fetch error:', err);
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 

@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getClerkServerClient } from '@/lib/clerk';
+import { verifyAdminAuth } from '../../../../lib/adminAuth';
+import { prisma } from '../../../../lib/prisma';
+import { clerkClient } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const authCheck = await verifyAdminAuth();
+  if (!authCheck.authorized) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+
   try {
     let totalClerkUsers = 0;
     let clerkConnected = false;
 
     // 1. Fetch Real User Count from Clerk
     try {
-      const clerk = getClerkServerClient();
-      totalClerkUsers = await clerk.users.getCount();
+      const client = await clerkClient();
+      totalClerkUsers = await client.users.getCount();
       clerkConnected = true;
     } catch (clerkErr: any) {
       console.warn('⚠️ [Admin Stats] Clerk getCount warning:', clerkErr.message);
@@ -81,7 +87,7 @@ export async function GET() {
       clerkConnected,
     });
   } catch (error: any) {
-    console.error('❌ [Admin Stats] Unexpected failure in /api/stats:', error);
+    console.error('❌ [Admin Stats] Route failure:', error);
     return NextResponse.json({
       success: false,
       totalUsers: 0,
