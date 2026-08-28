@@ -63,11 +63,26 @@ export default function AdminDashboardPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  const safeParseResponse = async (res: Response) => {
+    try {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        return await res.json();
+      }
+      const text = await res.text();
+      return { error: `Server returned non-JSON response (${res.status}): ${text.slice(0, 100)}` };
+    } catch (e: any) {
+      return { error: e.message || 'Failed to parse server response' };
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/stats');
-      const data = await res.json();
-      setStats(data);
+      const data = await safeParseResponse(res);
+      if (data && !data.error) {
+        setStats(data);
+      }
     } catch (e) {
       console.error('Failed to fetch stats:', e);
     }
@@ -77,8 +92,8 @@ export default function AdminDashboardPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/users?search=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      setUsers(data.users || []);
+      const data = await safeParseResponse(res);
+      setUsers(data?.users || []);
     } catch (e) {
       console.error('Failed to fetch users:', e);
     } finally {
@@ -111,8 +126,8 @@ export default function AdminDashboardPage() {
           reason: 'Manual activation via Local Admin Dashboard',
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await safeParseResponse(res);
+      if (res.ok && data?.success) {
         setStatusMessage({ text: `Successfully executed ${action} for ${targetUserId}! 🎉`, type: 'success' });
         await fetchStats();
         await fetchUsers(searchQuery);
@@ -120,7 +135,7 @@ export default function AdminDashboardPage() {
           setSelectedUser((prev) => (prev ? { ...prev, tier: data.user.tier, subscriptionStatus: data.user.subscriptionStatus, subscriptionExpiresAt: data.user.subscriptionExpiresAt } : null));
         }
       } else {
-        setStatusMessage({ text: data.error || 'Action execution failed', type: 'error' });
+        setStatusMessage({ text: data?.error || 'Action execution failed', type: 'error' });
       }
     } catch (err: any) {
       setStatusMessage({ text: err.message || 'Action failed', type: 'error' });
