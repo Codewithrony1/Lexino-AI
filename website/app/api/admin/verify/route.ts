@@ -38,7 +38,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Admin security not configured' }, { status: 500 });
     }
 
-    if (passphrase !== secret) {
+    let isPassphraseValid = false;
+    if (typeof passphrase === 'string') {
+      try {
+        const a = Buffer.from(passphrase, 'utf8');
+        const b = Buffer.from(secret, 'utf8');
+        if (a.length === b.length) {
+          isPassphraseValid = crypto.timingSafeEqual(a, b);
+        }
+      } catch (_) {
+        isPassphraseValid = false;
+      }
+    }
+
+    if (!isPassphraseValid) {
       const lockState = await recordFailedAttempt(userId, request);
       const remainingAttempts = Math.max(0, 5 - lockState.count);
       

@@ -104,7 +104,17 @@ export function verifyPaymentSignature(
     .update(`${orderId}|${paymentId}`)
     .digest('hex');
 
-  const matches = generatedSignature.toLowerCase() === signature.toLowerCase();
+  let matches = false;
+  try {
+    const a = Buffer.from(generatedSignature.toLowerCase(), 'utf8');
+    const b = Buffer.from(signature.toLowerCase(), 'utf8');
+    if (a.length === b.length) {
+      matches = crypto.timingSafeEqual(a, b);
+    }
+  } catch (_) {
+    matches = false;
+  }
+
   if (!matches) {
     console.error(`❌ [Razorpay] Signature mismatch! Generated: ${generatedSignature}, Received: ${signature}`);
   } else {
@@ -129,7 +139,17 @@ export function verifyWebhookSignature(
     .update(rawBody)
     .digest('hex');
 
-  const matches = expectedSignature.toLowerCase() === signatureHeader.toLowerCase();
+  let matches = false;
+  try {
+    const a = Buffer.from(expectedSignature.toLowerCase(), 'utf8');
+    const b = Buffer.from(signatureHeader.toLowerCase(), 'utf8');
+    if (a.length === b.length) {
+      matches = crypto.timingSafeEqual(a, b);
+    }
+  } catch (_) {
+    matches = false;
+  }
+
   if (!matches) {
     console.error(`❌ [Razorpay Webhook] Signature mismatch! Expected: ${expectedSignature}, Received: ${signatureHeader}`);
   }

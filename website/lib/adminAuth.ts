@@ -40,7 +40,18 @@ export async function verifyAdminAuth(): Promise<AdminAuthResult> {
 
     const expectedToken = crypto.createHmac('sha256', secret).update(userId).digest('hex');
 
-    if (sessionCookie !== expectedToken) {
+    let isValidToken = false;
+    try {
+      const a = Buffer.from(sessionCookie, 'utf8');
+      const b = Buffer.from(expectedToken, 'utf8');
+      if (a.length === b.length) {
+        isValidToken = crypto.timingSafeEqual(a, b);
+      }
+    } catch (_) {
+      isValidToken = false;
+    }
+
+    if (!isValidToken) {
       return { authorized: false, error: 'Session invalid or expired', status: 401 };
     }
 
