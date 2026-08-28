@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     let dbUserMap = new Map<string, any>();
     let auditMap = new Map<string, any[]>();
 
-    if (process.env.DATABASE_URL && clerkIds.length > 0) {
+    if (process.env.DATABASE_URL && prisma && clerkIds.length > 0) {
       try {
         const dbUsers = await prisma.user.findMany({
           where: { id: { in: clerkIds } },
@@ -142,7 +142,7 @@ export async function GET(request: Request) {
     });
 
     // 4. Handle Edge Case: If searching and zero Clerk users found, check if query matches an orphaned Neon user
-    if (search && combinedUsers.length === 0 && process.env.DATABASE_URL) {
+    if (search && combinedUsers.length === 0 && process.env.DATABASE_URL && prisma) {
       try {
         const orphanDbUsers = await prisma.user.findMany({
           where: {

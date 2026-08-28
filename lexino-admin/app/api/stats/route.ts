@@ -27,7 +27,7 @@ export async function GET() {
     let dbConnected = false;
 
     // 2. Fetch Aggregated Metrics from Neon PostgreSQL
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && prisma) {
       try {
         const [
           activeCount,

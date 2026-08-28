@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { getClerkServerClient } from './clerk';
 
 export type SubscriptionTier = 'FREE' | 'STUDENT' | 'PRO';
 
@@ -42,23 +43,39 @@ export interface CentralSubscriptionParams {
 export async function applyAdminSubscription(params: CentralSubscriptionParams) {
   const { targetUserId, action, tier, months = 1, reason = 'Local Admin Action', adminUserId = 'local-admin' } = params;
 
-  const targetUser = await prisma.user.findUnique({
-    where: { id: targetUserId },
-  });
+  // 1. Fetch authentic Clerk user
+  const clerk = getClerkServerClient();
+  let clerkUser: any = null;
+  try {
+    clerkUser = await clerk.users.getUser(targetUserId);
+  } catch (err: any) {
+    throw new Error(`Clerk user lookup failed: ${err.message || 'User not found in Clerk directory'}`);
+  }
 
-  if (!targetUser) {
-    throw new Error('User not found in database');
+  const primaryEmail =
+    clerkUser.emailAddresses?.find((e: any) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ||
+    clerkUser.emailAddresses?.[0]?.emailAddress ||
+    '';
+
+  // 2. Fetch existing DB user if database is online
+  let dbUser: any = null;
+  if (process.env.DATABASE_URL && prisma) {
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+      });
+    } catch (_) {}
   }
 
   const now = new Date();
-  const oldPlan = targetUser.tier;
-  const oldStatus = targetUser.subscriptionStatus || 'inactive';
-  const oldExpiresAt = targetUser.subscriptionExpiresAt;
+  const oldPlan = dbUser?.tier || (clerkUser.publicMetadata?.tier as string) || 'FREE';
+  const oldStatus = dbUser?.subscriptionStatus || (clerkUser.publicMetadata?.subscriptionStatus as string) || 'inactive';
+  const oldExpiresAt = dbUser?.subscriptionExpiresAt || (clerkUser.publicMetadata?.subscriptionExpiresAt ? new Date(clerkUser.publicMetadata.subscriptionExpiresAt as string) : null);
 
   let newPlan = oldPlan;
   let newStatus = oldStatus;
   let newExpiresAt: Date | null = oldExpiresAt;
-  let newStartedAt: Date | null = targetUser.subscriptionStartedAt || now;
+  let newStartedAt: Date | null = dbUser?.subscriptionStartedAt || now;
 
   if (action === 'activateStudent') {
     newPlan = 'STUDENT';
@@ -89,49 +106,77 @@ export async function applyAdminSubscription(params: CentralSubscriptionParams) 
     newStartedAt = null;
   }
 
-  // 1. Update in Database
-  const updatedUser = await prisma.user.update({
-    where: { id: targetUserId },
-    data: {
-      tier: newPlan,
-      subscriptionStatus: newStatus,
-      subscriptionStartedAt: newStatus === 'active' ? newStartedAt : null,
-      subscriptionExpiresAt: newExpiresAt,
-      cooldownUntil: null,
-      messageCountToday: 0,
-    },
-  });
+  // 3. Update or Upsert in PostgreSQL Database (if DATABASE_URL is present)
+  if (process.env.DATABASE_URL && prisma) {
+    try {
+      await prisma.user.upsert({
+        where: { id: targetUserId },
+        update: {
+          tier: newPlan,
+          subscriptionStatus: newStatus,
+          subscriptionStartedAt: newStatus === 'active' ? newStartedAt : null,
+          subscriptionExpiresAt: newExpiresAt,
+          cooldownUntil: null,
+          messageCountToday: 0,
+        },
+        create: {
+          id: targetUserId,
+          email: primaryEmail || `${targetUserId}@lexinoai.in`,
+          name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User',
+          tier: newPlan,
+          subscriptionStatus: newStatus,
+          subscriptionStartedAt: newStatus === 'active' ? newStartedAt : null,
+          subscriptionExpiresAt: newExpiresAt,
+        },
+      });
 
-  // 2. Record Admin Audit Log (No fake payments created)
-  if ((prisma as any)?.adminAuditLog) {
-    await (prisma as any).adminAuditLog.create({
-      data: {
-        adminUserId,
-        action: action.toUpperCase(),
-        targetUserId,
-        targetEmail: targetUser.email,
-        oldPlan,
-        newPlan,
-        oldStatus,
-        newStatus,
-        oldExpiresAt,
-        newExpiresAt,
-        reason,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Lexino Standalone Local Admin',
+      // Record Admin Audit Log (No fake payments created)
+      if ((prisma as any)?.adminAuditLog) {
+        await (prisma as any).adminAuditLog.create({
+          data: {
+            adminUserId,
+            action: action.toUpperCase(),
+            targetUserId,
+            targetEmail: primaryEmail,
+            oldPlan,
+            newPlan,
+            oldStatus,
+            newStatus,
+            oldExpiresAt,
+            newExpiresAt,
+            reason,
+            ipAddress: '127.0.0.1',
+            userAgent: 'Lexino Standalone Local Admin',
+          },
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn('⚠️ [Admin Subscription] Note on Neon DB sync:', dbErr.message);
+    }
+  }
+
+  // 4. Update in Clerk publicMetadata for instant cross-device JWT session propagation
+  try {
+    await clerk.users.updateUserMetadata(targetUserId, {
+      publicMetadata: {
+        tier: newPlan,
+        subscriptionStatus: newStatus,
+        subscriptionExpiresAt: newExpiresAt ? newExpiresAt.toISOString() : null,
       },
     });
+  } catch (clerkErr: any) {
+    console.warn('⚠️ [Admin Subscription] Clerk metadata update note:', clerkErr.message);
   }
 
   return {
     success: true,
     user: {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      tier: updatedUser.tier,
-      subscriptionStatus: updatedUser.subscriptionStatus,
-      subscriptionStartedAt: updatedUser.subscriptionStartedAt ? updatedUser.subscriptionStartedAt.toISOString() : null,
-      subscriptionExpiresAt: updatedUser.subscriptionExpiresAt ? updatedUser.subscriptionExpiresAt.toISOString() : null,
+      id: targetUserId,
+      email: primaryEmail,
+      tier: newPlan,
+      subscriptionStatus: newStatus,
+      subscriptionStartedAt: newStartedAt ? newStartedAt.toISOString() : null,
+      subscriptionExpiresAt: newExpiresAt ? newExpiresAt.toISOString() : null,
     },
   };
 }
