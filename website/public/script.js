@@ -3184,8 +3184,13 @@
             try {
                 const modelSelect = document.getElementById('modelSelect');
                 const maxTokensSelect = document.getElementById('maxTokens');
+                const activeSession = activeChatId ? chatSessions.find((s) => s.id === activeChatId) : null;
+                const activeAssistantMode = (activeSession && typeof activeSession.assistant === 'string')
+                    ? activeSession.assistant
+                    : (window.currentAssistant || 'default');
+
                 let selectedModelValue = modelSelect ? modelSelect.value : 'llama-3.1-8b-instant';
-                if (window.currentAssistant === 'timetable-lai') {
+                if (activeAssistantMode === 'timetable-lai') {
                     selectedModelValue = 'timetable-ai';
                 }
                 const selectedMaxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 512;
@@ -3195,6 +3200,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         selectedModel: selectedModelValue,
+                        activeAssistant: activeAssistantMode,
                         maxTokens: selectedMaxTokens,
                         content: memoryUserText,
                         history: historyForApi,
