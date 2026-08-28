@@ -233,6 +233,8 @@ async function mergeUserAccounts(
   return newUser;
 }
 
+export { applyCentralSubscription } from './subscriptionService';
+
 /**
  * Authoritative subscription activator: upgrades user by userId OR verified email.
  * This guarantees payments completed on mobile/webviews activate for the user on ALL devices.
@@ -247,96 +249,22 @@ export async function activateSubscriptionForUser(params: {
   signature?: string | null;
   amount?: number;
 }) {
-  const { userId, email, targetTier, planId, orderId, paymentId, signature, amount } = params;
-  const normalizedEmail = (email || '').toLowerCase().trim();
-
-  if (process.env.DATABASE_URL) {
-    try {
-      await ensureDbTables();
-    } catch (_) {}
-
-    // Find canonical user by ID or email
-    let user: any = null;
-    if (userId && userId !== 'unknown') {
-      user = await prisma.user.findUnique({ where: { id: userId } });
-    }
-    if (!user && normalizedEmail) {
-      user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    }
-
-    const expiryInfo = calculateSubscriptionExpiry(
-      user?.subscriptionExpiresAt,
-      targetTier,
-      user?.tier
-    );
-
-    if (user) {
-      // Update existing user with active 1-month subscription
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          tier: targetTier,
-          subscriptionStatus: 'active',
-          subscriptionStartedAt: expiryInfo.startedAt,
-          subscriptionExpiresAt: expiryInfo.expiresAt,
-          cooldownUntil: null,
-          messageCountToday: 0,
-        },
-      });
-      console.log(`✅ [Subscription Engine] Activated ${targetTier} plan for ${user.id} (${user.email}) until ${expiryInfo.expiresAt.toISOString()}`);
-    } else if (userId && userId !== 'unknown') {
-      // Create user record if not yet registered
-      user = await prisma.user.create({
-        data: {
-          id: userId,
-          email: normalizedEmail || `${userId}@lexinoai.in`,
-          name: 'User',
-          tier: targetTier,
-          subscriptionStatus: 'active',
-          subscriptionStartedAt: expiryInfo.startedAt,
-          subscriptionExpiresAt: expiryInfo.expiresAt,
-        },
-      });
-      console.log(`✅ [Subscription Engine] Created and activated ${targetTier} plan for ${userId}`);
-    }
-
-    // Always record or update Payment record
-    if ((prisma as any)?.payment) {
-      try {
-        await (prisma as any).payment.upsert({
-          where: { orderId },
-          update: {
-            paymentId: paymentId || undefined,
-            signature: signature || undefined,
-            status: 'paid',
-            tier: targetTier,
-            planId,
-            expiresAt: expiryInfo.expiresAt,
-            ...(user?.id ? { userId: user.id } : {}),
-          },
-          create: {
-            userId: user?.id || userId || 'unknown',
-            orderId,
-            paymentId,
-            signature,
-            status: 'paid',
-            tier: targetTier,
-            planId,
-            amount: amount || (targetTier === 'PRO' ? 29900 : 4900),
-            currency: 'INR',
-            expiresAt: expiryInfo.expiresAt,
-          },
-        });
-      } catch (payDbErr) {
-        console.warn('⚠️ [Subscription Engine] Note on recording Payment row:', payDbErr);
-      }
-    }
-
-    return { user, expiryInfo };
-  }
+  const { applyCentralSubscription } = await import('./subscriptionService');
+  const result = await applyCentralSubscription({
+    userId: params.userId,
+    email: params.email,
+    targetTier: params.targetTier,
+    planId: params.planId,
+    orderId: params.orderId,
+    paymentId: params.paymentId,
+    signature: params.signature,
+    amount: params.amount,
+    source: 'razorpay',
+    action: 'ACTIVATE',
+  });
 
   return {
-    user: null,
-    expiryInfo: calculateSubscriptionExpiry(null, targetTier),
+    user: result.user,
+    expiryInfo: result.expiryInfo,
   };
 }

@@ -72,132 +72,86 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing targetUserId or action' }, { status: 400 });
     }
 
-    let targetUser: any = null;
-    if (process.env.DATABASE_URL) {
-      targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    const client = await clerkClient();
+
+    // Ban / Unban actions
+    if (action === 'banUser') {
+      const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));
+      if (process.env.DATABASE_URL) {
+        await prisma.user.update({
+          where: { id: targetUserId },
+          data: { cooldownUntil: banUntil },
+        });
+      }
+      try {
+        await client.users.updateUserMetadata(targetUserId, {
+          publicMetadata: { cooldownUntil: banUntil.toISOString() },
+        });
+      } catch (_) {}
+      await logAdminAction(authCheck.userId!, 'BAN_USER', { targetUserId, banDays, banUntil: banUntil.toISOString() }, request);
+      return NextResponse.json({ success: true });
     }
 
-    const client = await clerkClient();
-    const now = new Date();
-    const oldPlan = targetUser?.tier || 'FREE';
-    const oldStatus = targetUser?.subscriptionStatus || 'inactive';
-    const oldExpiresAt = targetUser?.subscriptionExpiresAt || null;
+    if (action === 'unbanUser') {
+      if (process.env.DATABASE_URL) {
+        await prisma.user.update({
+          where: { id: targetUserId },
+          data: { cooldownUntil: null },
+        });
+      }
+      try {
+        await client.users.updateUserMetadata(targetUserId, {
+          publicMetadata: { cooldownUntil: null },
+        });
+      } catch (_) {}
+      await logAdminAction(authCheck.userId!, 'UNBAN_USER', { targetUserId }, request);
+      return NextResponse.json({ success: true });
+    }
 
-    let newPlan = oldPlan;
-    let newStatus = oldStatus;
-    let newExpiresAt = oldExpiresAt;
-    let newStartedAt = targetUser?.subscriptionStartedAt || now;
+    // Central Subscription Action Resolution
+    let centralAction: 'ACTIVATE' | 'EXTEND' | 'CHANGE_PLAN' | 'DEACTIVATE' = 'ACTIVATE';
+    let targetTier: 'FREE' | 'STUDENT' | 'PRO' = 'STUDENT';
 
     if (action === 'activateStudent' || (action === 'setTier' && (tier || '').toUpperCase() === 'STUDENT')) {
-      newPlan = 'STUDENT';
-      newStatus = 'active';
-      newStartedAt = now;
-      newExpiresAt = new Date(now.getTime() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000);
+      centralAction = 'ACTIVATE';
+      targetTier = 'STUDENT';
     } else if (
       action === 'activateUnlimited' ||
       action === 'activatePro' ||
       (action === 'setTier' && ((tier || '').toUpperCase() === 'PRO' || (tier || '').toUpperCase() === 'UNLIMITED'))
     ) {
-      newPlan = 'PRO';
-      newStatus = 'active';
-      newStartedAt = now;
-      newExpiresAt = new Date(now.getTime() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000);
+      centralAction = 'ACTIVATE';
+      targetTier = 'PRO';
     } else if (action === 'extendSubscription') {
-      const activeExpiry = oldExpiresAt && new Date(oldExpiresAt) > now ? new Date(oldExpiresAt) : now;
-      newExpiresAt = new Date(activeExpiry.getTime() + (Number(months) || 1) * 30 * 24 * 60 * 60 * 1000);
-      newStatus = 'active';
-      if (newPlan === 'FREE') newPlan = 'STUDENT';
+      centralAction = 'EXTEND';
+      targetTier = (tier || 'STUDENT').toUpperCase() === 'PRO' ? 'PRO' : 'STUDENT';
     } else if (action === 'changePlan') {
-      const targetTier = (tier || 'STUDENT').toUpperCase();
-      newPlan = targetTier === 'PRO' || targetTier === 'UNLIMITED' ? 'PRO' : 'STUDENT';
-      newStatus = 'active';
-      if (!newExpiresAt || new Date(newExpiresAt) <= now) {
-        newExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      }
+      centralAction = 'CHANGE_PLAN';
+      targetTier = (tier || 'STUDENT').toUpperCase() === 'PRO' || (tier || '').toUpperCase() === 'UNLIMITED' ? 'PRO' : 'STUDENT';
     } else if (action === 'deactivateSubscription' || (action === 'setTier' && (tier || '').toUpperCase() === 'FREE')) {
-      newPlan = 'FREE';
-      newStatus = 'inactive';
-      newExpiresAt = null;
+      centralAction = 'DEACTIVATE';
+      targetTier = 'FREE';
     }
 
-    // 1. Sync in Database
-    if (process.env.DATABASE_URL) {
-      if (action.includes('banUser') || action === 'banUser') {
-        const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));
-        await prisma.user.update({
-          where: { id: targetUserId },
-          data: { cooldownUntil: banUntil },
-        });
-      } else if (action === 'unbanUser') {
-        await prisma.user.update({
-          where: { id: targetUserId },
-          data: { cooldownUntil: null },
-        });
-      } else {
-        await prisma.user.update({
-          where: { id: targetUserId },
-          data: {
-            tier: newPlan,
-            subscriptionStatus: newStatus,
-            subscriptionStartedAt: newStatus === 'active' ? newStartedAt : null,
-            subscriptionExpiresAt: newExpiresAt,
-            cooldownUntil: null,
-            messageCountToday: 0,
-          },
-        });
-      }
-    }
+    const { applyCentralSubscription } = await import('../../../../lib/subscriptionService');
+    const result = await applyCentralSubscription({
+      userId: targetUserId,
+      email: body.email || null,
+      targetTier,
+      action: centralAction,
+      months: Number(months) || 1,
+      source: 'admin',
+      adminUserId: authCheck.userId || 'admin',
+      reason: reason || `Admin manual ${action}`,
+    });
 
-    // 2. Sync in Clerk publicMetadata for fast JWT validation
-    try {
-      if (action === 'banUser') {
-        const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));
-        await client.users.updateUserMetadata(targetUserId, {
-          publicMetadata: { cooldownUntil: banUntil.toISOString() },
-        });
-      } else if (action === 'unbanUser') {
-        await client.users.updateUserMetadata(targetUserId, {
-          publicMetadata: { cooldownUntil: null },
-        });
-      } else {
-        await client.users.updateUserMetadata(targetUserId, {
-          publicMetadata: {
-            tier: newPlan,
-            subscriptionStatus: newStatus,
-            subscriptionExpiresAt: newExpiresAt ? newExpiresAt.toISOString() : null,
-          },
-        });
-      }
-    } catch (clerkMetaErr) {
-      console.warn('⚠️ [Admin Action] Note on updating Clerk metadata:', clerkMetaErr);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || 'Subscription update failed' }, { status: 500 });
     }
-
-    // 3. Log into AdminAuditLog in Neon DB and file
-    await logAdminAction(
-      authCheck.userId!,
-      action.toUpperCase(),
-      {
-        targetUserId,
-        targetEmail: targetUser?.email,
-        oldPlan,
-        newPlan,
-        oldStatus,
-        newStatus,
-        oldExpiresAt,
-        newExpiresAt,
-        reason: reason || `Admin manual ${action}`,
-      },
-      request
-    );
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: targetUserId,
-        tier: newPlan,
-        subscriptionStatus: newStatus,
-        subscriptionExpiresAt: newExpiresAt ? newExpiresAt.toISOString() : null,
-      },
+      user: result.user,
     });
   } catch (err) {
     console.error('Admin user action error:', err);

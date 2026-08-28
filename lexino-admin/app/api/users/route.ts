@@ -59,104 +59,28 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { targetUserId, action, tier, months = 1, reason = 'Admin Action' } = body;
+    const { targetUserId, action, tier, months = 1, reason = 'Local Admin Action' } = body;
 
     if (!targetUserId || !action) {
       return NextResponse.json({ error: 'Missing targetUserId or action' }, { status: 400 });
     }
 
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+    const { applyAdminSubscription } = await import('@/lib/subscriptionService');
+    const result = await applyAdminSubscription({
+      targetUserId,
+      action,
+      tier,
+      months: Number(months) || 1,
+      reason,
+      adminUserId: 'local-admin',
     });
-
-    if (!targetUser) {
-      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
-    }
-
-    const now = new Date();
-    const oldPlan = targetUser.tier;
-    const oldStatus = targetUser.subscriptionStatus || 'inactive';
-    const oldExpiresAt = targetUser.subscriptionExpiresAt;
-
-    let newPlan = oldPlan;
-    let newStatus = oldStatus;
-    let newExpiresAt = oldExpiresAt;
-    let newStartedAt = targetUser.subscriptionStartedAt || now;
-
-    if (action === 'activateStudent') {
-      newPlan = 'STUDENT';
-      newStatus = 'active';
-      newStartedAt = now;
-      newExpiresAt = new Date(now.getTime() + Number(months) * 30 * 24 * 60 * 60 * 1000);
-    } else if (action === 'activateUnlimited' || action === 'activatePro') {
-      newPlan = 'PRO';
-      newStatus = 'active';
-      newStartedAt = now;
-      newExpiresAt = new Date(now.getTime() + Number(months) * 30 * 24 * 60 * 60 * 1000);
-    } else if (action === 'extendSubscription') {
-      const activeExpiry = oldExpiresAt && new Date(oldExpiresAt) > now ? new Date(oldExpiresAt) : now;
-      newExpiresAt = new Date(activeExpiry.getTime() + Number(months) * 30 * 24 * 60 * 60 * 1000);
-      newStatus = 'active';
-      if (newPlan === 'FREE') newPlan = 'STUDENT';
-    } else if (action === 'changePlan') {
-      const targetTier = (tier || 'STUDENT').toUpperCase();
-      newPlan = targetTier === 'PRO' || targetTier === 'UNLIMITED' ? 'PRO' : 'STUDENT';
-      newStatus = 'active';
-      if (!newExpiresAt || new Date(newExpiresAt) <= now) {
-        newExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      }
-    } else if (action === 'deactivateSubscription') {
-      newPlan = 'FREE';
-      newStatus = 'inactive';
-      newExpiresAt = null;
-    }
-
-    // 1. Update in Database
-    const updatedUser = await prisma.user.update({
-      where: { id: targetUserId },
-      data: {
-        tier: newPlan,
-        subscriptionStatus: newStatus,
-        subscriptionStartedAt: newStatus === 'active' ? newStartedAt : null,
-        subscriptionExpiresAt: newExpiresAt,
-        cooldownUntil: null,
-        messageCountToday: 0,
-      },
-    });
-
-    // 2. Record Admin Audit Log
-    if ((prisma as any)?.adminAuditLog) {
-      await (prisma as any).adminAuditLog.create({
-        data: {
-          adminUserId: 'local-admin',
-          action: action.toUpperCase(),
-          targetUserId,
-          targetEmail: targetUser.email,
-          oldPlan,
-          newPlan,
-          oldStatus,
-          newStatus,
-          oldExpiresAt,
-          newExpiresAt,
-          reason,
-          ipAddress: '127.0.0.1',
-          userAgent: 'Lexino Standalone Local Admin',
-        },
-      });
-    }
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        tier: updatedUser.tier,
-        subscriptionStatus: updatedUser.subscriptionStatus,
-        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt ? updatedUser.subscriptionExpiresAt.toISOString() : null,
-      },
+      user: result.user,
     });
   } catch (error: any) {
     console.error('Error modifying user subscription in local admin:', error);
-    return NextResponse.json({ error: 'Failed to apply subscription action' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to apply subscription action' }, { status: 500 });
   }
 }
