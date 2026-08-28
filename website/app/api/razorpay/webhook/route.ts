@@ -83,80 +83,16 @@ export async function POST(request: Request) {
           const targetPlan = PLANS[planId] || PLANS['pro'];
           const targetTier = targetPlan.tier;
 
-          // Strict 1-Month Subscription Expiry & Renewal Calculation
-          const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
-          let existingUser: any = null;
-          if (userId && userId !== 'unknown') {
-            try {
-              existingUser = await prisma.user.findUnique({ where: { id: userId } });
-            } catch (_) {}
-          }
-
-          const expiryInfo = calculateSubscriptionExpiry(
-            existingUser?.subscriptionExpiresAt,
+          const { activateSubscriptionForUser } = await import('@/lib/userAccount');
+          await activateSubscriptionForUser({
+            userId,
+            email: notes.email || null,
             targetTier,
-            existingUser?.tier
-          );
-
-          // 1. Upgrade User tier in PostgreSQL
-          if (userId && userId !== 'unknown') {
-            try {
-              await prisma.user.upsert({
-                where: { id: userId },
-                update: {
-                  tier: targetTier,
-                  subscriptionStatus: 'active',
-                  subscriptionStartedAt: expiryInfo.startedAt,
-                  subscriptionExpiresAt: expiryInfo.expiresAt,
-                  cooldownUntil: null,
-                  messageCountToday: 0,
-                },
-                create: {
-                  id: userId,
-                  email: `${userId}@placeholder.clerk.accounts`,
-                  name: 'User',
-                  tier: targetTier,
-                  subscriptionStatus: 'active',
-                  subscriptionStartedAt: expiryInfo.startedAt,
-                  subscriptionExpiresAt: expiryInfo.expiresAt,
-                },
-              });
-              console.log(`✅ [Razorpay Webhook] Upgraded user ${userId} to ${targetTier} tier until ${expiryInfo.expiresAt.toISOString()}`);
-            } catch (userDbErr) {
-              console.error('❌ [Razorpay Webhook] Failed to update User table in DB:', userDbErr);
-            }
-          } else {
-            console.warn(`⚠️ [Razorpay Webhook] Payment captured for order ${orderId} but no userId could be identified.`);
-          }
-
-          // 2. Record Payment record in PostgreSQL
-          if ((prisma as any)?.payment) {
-            try {
-              await (prisma as any).payment.upsert({
-                where: { orderId },
-                update: {
-                  paymentId: paymentId || undefined,
-                  status: 'paid',
-                  tier: targetTier,
-                  planId: targetPlan.id,
-                  expiresAt: expiryInfo.expiresAt,
-                },
-                create: {
-                  userId: userId || 'unknown',
-                  orderId,
-                  paymentId,
-                  status: 'paid',
-                  tier: targetTier,
-                  planId: targetPlan.id,
-                  amount: paymentEntity.amount || targetPlan.amountInPaise,
-                  currency: paymentEntity.currency || 'INR',
-                  expiresAt: expiryInfo.expiresAt,
-                },
-              });
-            } catch (payDbErr) {
-              console.warn('⚠️ [Razorpay Webhook] Note on recording Payment row:', payDbErr);
-            }
-          }
+            planId: targetPlan.id,
+            orderId,
+            paymentId,
+            amount: paymentEntity.amount || targetPlan.amountInPaise,
+          });
         } catch (dbErr) {
           console.error('❌ [Razorpay Webhook] Database update failed:', dbErr);
         }

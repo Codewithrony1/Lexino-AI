@@ -23,24 +23,16 @@ export async function POST() {
 
     if (process.env.DATABASE_URL) {
       try {
-        const { ensureDbTables } = await import('@/lib/ensureDbTables');
-        await ensureDbTables();
-      } catch (_) {}
-
-      dbUser = await prisma.user.upsert({
-        where: { id: userId },
-        update: {
-          email,
-          name,
-          avatarUrl,
-        },
-        create: {
+        const { syncCanonicalUser } = await import('@/lib/userAccount');
+        dbUser = await syncCanonicalUser({
           id: userId,
           email,
           name,
           avatarUrl,
-        },
-      });
+        });
+      } catch (syncErr) {
+        console.error('Error in syncCanonicalUser within auth/sync:', syncErr);
+      }
 
       if (dbUser) {
         const { evaluateSubscription } = await import('@/lib/subscription');

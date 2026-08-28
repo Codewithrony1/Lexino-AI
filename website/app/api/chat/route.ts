@@ -168,9 +168,25 @@ export async function POST(request: Request) {
 
     if (process.env.DATABASE_URL) {
       try {
-        const dbUser = await prisma.user.findUnique({
+        let dbUser: any = await prisma.user.findUnique({
           where: { id: userId },
         });
+
+        if (!dbUser) {
+          try {
+            const { currentUser } = await import('@clerk/nextjs/server');
+            const curUser = await currentUser();
+            if (curUser) {
+              const { syncCanonicalUser } = await import('@/lib/userAccount');
+              dbUser = await syncCanonicalUser({
+                id: userId,
+                email: curUser.emailAddresses[0]?.emailAddress || '',
+                name: `${curUser.firstName || ''} ${curUser.lastName || ''}`.trim() || curUser.username,
+                avatarUrl: curUser.imageUrl,
+              });
+            }
+          } catch (_) {}
+        }
 
         if (dbUser) {
           const { evaluateSubscription } = await import('@/lib/subscription');

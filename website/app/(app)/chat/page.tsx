@@ -61,13 +61,12 @@ export default async function ChatPage() {
 
       if (process.env.DATABASE_URL) {
         try {
-          const { ensureDbTables } = await import('@/lib/ensureDbTables');
-          await ensureDbTables();
-
-          dbUser = await prisma.user.upsert({
-            where: { id: user.id },
-            update: { email, name, avatarUrl },
-            create: { id: user.id, email, name, avatarUrl },
+          const { syncCanonicalUser } = await import('@/lib/userAccount');
+          dbUser = await syncCanonicalUser({
+            id: user.id,
+            email,
+            name,
+            avatarUrl,
           });
 
           if (dbUser) {
@@ -90,7 +89,7 @@ export default async function ChatPage() {
             }
           }
         } catch (err) {
-          console.error('Error auto-syncing user on page load:', err);
+          console.error('Error auto-syncing canonical user on page load:', err);
         }
       }
       

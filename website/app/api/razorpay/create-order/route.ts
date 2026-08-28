@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '../../../../lib/prisma';
 import { PLANS } from '../../../../lib/plans';
 import { createRazorpayOrder, getRazorpayKeyId } from '../../../../lib/razorpay';
@@ -15,6 +15,10 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    const user = await currentUser();
+    const userEmail = user?.emailAddresses[0]?.emailAddress || '';
+    const userName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.username || 'User';
 
     const body = (await request.json().catch(() => ({}))) as Record<string, any>;
     const planId = (body.planId || '').toLowerCase().trim();
@@ -51,6 +55,8 @@ export async function POST(request: Request) {
       receipt,
       notes: {
         userId,
+        email: userEmail,
+        userName,
         planId: plan.id,
         tier: plan.tier,
         studentIdNote: studentIdNote.slice(0, 200),

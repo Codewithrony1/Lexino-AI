@@ -65,78 +65,16 @@ export async function GET(request: Request) {
       const targetPlan = PLANS[planId] || PLANS['student'];
       const targetTier = targetPlan.tier;
 
-      // Strict 1-Month Subscription Expiry & Renewal Calculation
-      const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
-      let existingUser: any = null;
-      if (userId && userId !== 'unknown') {
-        try {
-          existingUser = await prisma.user.findUnique({ where: { id: userId } });
-        } catch (_) {}
-      }
-
-      const expiryInfo = calculateSubscriptionExpiry(
-        existingUser?.subscriptionExpiresAt,
+      const { activateSubscriptionForUser } = await import('@/lib/userAccount');
+      await activateSubscriptionForUser({
+        userId,
+        email: notes.email || null,
         targetTier,
-        existingUser?.tier
-      );
-
-      if (process.env.DATABASE_URL) {
-        if (userId && userId !== 'unknown') {
-          try {
-            await prisma.user.upsert({
-              where: { id: userId },
-              update: {
-                tier: targetTier,
-                subscriptionStatus: 'active',
-                subscriptionStartedAt: expiryInfo.startedAt,
-                subscriptionExpiresAt: expiryInfo.expiresAt,
-                cooldownUntil: null,
-                messageCountToday: 0,
-              },
-              create: {
-                id: userId,
-                email: `${userId}@placeholder.clerk.accounts`,
-                name: 'User',
-                tier: targetTier,
-                subscriptionStatus: 'active',
-                subscriptionStartedAt: expiryInfo.startedAt,
-                subscriptionExpiresAt: expiryInfo.expiresAt,
-              },
-            });
-            console.log(`✅ [Polling Detection] Activated ${targetTier} plan for user ${userId} until ${expiryInfo.expiresAt.toISOString()}`);
-          } catch (userDbErr) {
-            console.error('❌ [Check Payment Status] Failed to update User table:', userDbErr);
-          }
-        }
-
-        if ((prisma as any)?.payment) {
-          try {
-            await (prisma as any).payment.upsert({
-              where: { orderId },
-              update: {
-                paymentId: paymentId || undefined,
-                status: 'paid',
-                tier: targetTier,
-                planId: targetPlan.id,
-                expiresAt: expiryInfo.expiresAt,
-              },
-              create: {
-                userId: userId || 'unknown',
-                orderId,
-                paymentId,
-                status: 'paid',
-                tier: targetTier,
-                planId: targetPlan.id,
-                amount: targetPlan.amountInPaise,
-                currency: 'INR',
-                expiresAt: expiryInfo.expiresAt,
-              },
-            });
-          } catch (payDbErr) {
-            console.warn('⚠️ [Check Payment Status] Note on recording Payment row:', payDbErr);
-          }
-        }
-      }
+        planId: targetPlan.id,
+        orderId,
+        paymentId,
+        amount: targetPlan.amountInPaise,
+      });
 
       return NextResponse.json({
         success: true,

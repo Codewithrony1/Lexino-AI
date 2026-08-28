@@ -105,84 +105,24 @@ export async function POST(request: Request) {
     const targetPlan = PLANS[trustedPlanId] || PLANS['student'];
     const updatedTier = targetPlan.tier;
 
-    // Strict 1-Month Subscription Expiry & Renewal Calculation
-    const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
-    let existingUser: any = null;
-    if (process.env.DATABASE_URL) {
-      try {
-        existingUser = await prisma.user.findUnique({ where: { id: targetUserId } });
-      } catch (_) {}
-    }
+    let authUserEmail: string | null = null;
+    try {
+      const { currentUser } = await import('@clerk/nextjs/server');
+      const curUser = await currentUser();
+      authUserEmail = curUser?.emailAddresses[0]?.emailAddress || null;
+    } catch (_) {}
 
-    const expiryInfo = calculateSubscriptionExpiry(
-      existingUser?.subscriptionExpiresAt,
-      updatedTier,
-      existingUser?.tier
-    );
-
-    if (process.env.DATABASE_URL) {
-      try {
-        // 1. Upgrade User tier and set 1-month subscription lifecycle in PostgreSQL
-        try {
-          await prisma.user.upsert({
-            where: { id: targetUserId },
-            update: {
-              tier: updatedTier,
-              subscriptionStatus: 'active',
-              subscriptionStartedAt: expiryInfo.startedAt,
-              subscriptionExpiresAt: expiryInfo.expiresAt,
-              cooldownUntil: null,
-              messageCountToday: 0,
-            },
-            create: {
-              id: targetUserId,
-              email: `${targetUserId}@placeholder.clerk.accounts`,
-              name: 'User',
-              tier: updatedTier,
-              subscriptionStatus: 'active',
-              subscriptionStartedAt: expiryInfo.startedAt,
-              subscriptionExpiresAt: expiryInfo.expiresAt,
-            },
-          });
-          console.log(`✅ [Razorpay Verify] User ${targetUserId} upgraded to ${updatedTier} tier until ${expiryInfo.expiresAt.toISOString()}`);
-        } catch (userDbErr) {
-          console.error('❌ [Razorpay Verify] Failed to update User table in DB:', userDbErr);
-        }
-
-        // 2. Record Payment record in PostgreSQL
-        if ((prisma as any)?.payment) {
-          try {
-            await (prisma as any).payment.upsert({
-              where: { orderId: razorpay_order_id },
-              update: {
-                paymentId: razorpay_payment_id,
-                signature: razorpay_signature,
-                status: 'paid',
-                tier: updatedTier,
-                planId: targetPlan.id,
-                expiresAt: expiryInfo.expiresAt,
-              },
-              create: {
-                userId: targetUserId,
-                orderId: razorpay_order_id,
-                paymentId: razorpay_payment_id,
-                signature: razorpay_signature,
-                status: 'paid',
-                tier: updatedTier,
-                planId: targetPlan.id,
-                amount: targetPlan.amountInPaise,
-                currency: 'INR',
-                expiresAt: expiryInfo.expiresAt,
-              },
-            });
-          } catch (payDbErr) {
-            console.warn('⚠️ [Razorpay Verify] Note on recording Payment row:', payDbErr);
-          }
-        }
-      } catch (dbErr) {
-        console.error('❌ [Razorpay Verify] Database update error:', dbErr);
-      }
-    }
+    const { activateSubscriptionForUser } = await import('@/lib/userAccount');
+    const { expiryInfo } = await activateSubscriptionForUser({
+      userId: targetUserId,
+      email: authUserEmail,
+      targetTier: updatedTier,
+      planId: targetPlan.id,
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+      amount: targetPlan.amountInPaise,
+    });
 
     return NextResponse.json({
       success: true,
