@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Lexino AI — Private Local Admin Suite',
+  title: 'Lexino Admin - Private Local Console',
   description: 'Standalone management console for Lexino AI accounts, subscriptions, and payments.',
   robots: {
     index: false,
@@ -25,9 +25,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#08080c] text-white min-h-screen font-['Plus_Jakarta_Sans',sans-serif] antialiased">
-        {children}
-      </body>
+      <body className="font-['Plus_Jakarta_Sans',sans-serif] antialiased">{children}</body>
     </html>
   );
 }
