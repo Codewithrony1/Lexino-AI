@@ -1565,7 +1565,12 @@
                         </span>
                     `;
                     item.title = session.title || "New chat";
-                    item.onclick = () => openChatSession(session.id);
+                    item.onclick = (event) => {
+                        if (event && event.target && event.target.closest('.chat-item-options')) {
+                            return;
+                        }
+                        openChatSession(session.id);
+                    };
                     item.oncontextmenu = (event) => openChatContextMenu(event, session.id);
                     item.ontouchstart = primeChatOptionsForTouch;
                     groupEl.appendChild(item);
@@ -1901,7 +1906,7 @@
             modal.classList.add("active");
         }
 
-        window.setAssistantMode = function(mode) {
+        window.setAssistantMode = function(mode, options = {}) {
             window.currentAssistant = mode;
 
             const headerLogo = document.getElementById("headerLogo");
@@ -1944,14 +1949,11 @@
                 applyModelAccent(savedModel);
             }
 
-            const messagesDiv = document.getElementById('chatMessages');
-            if (messagesDiv && (messagesDiv.querySelector(".empty-state") || messagesDiv.innerHTML.trim() === "" || currentConversation.length === 0)) {
-                messagesDiv.style.transition = "opacity 0.15s ease-in-out";
-                messagesDiv.style.opacity = "0";
-                setTimeout(() => {
+            if (options && options.updateEmptyState) {
+                const messagesDiv = document.getElementById('chatMessages');
+                if (messagesDiv && (messagesDiv.querySelector(".empty-state") || messagesDiv.innerHTML.trim() === "" || currentConversation.length === 0)) {
                     messagesDiv.innerHTML = getEmptyStateMarkup();
-                    messagesDiv.style.opacity = "1";
-                }, 150);
+                }
             }
         }
 
@@ -2302,6 +2304,74 @@
             scheduleSearchResultsRender();
         }
 
+        function renderThreadToHtml(thread) {
+            if (!Array.isArray(thread) || thread.length === 0) {
+                return getEmptyStateMarkup();
+            }
+            let html = '<div class="messages-wrapper">';
+            thread.forEach((msg) => {
+                if (msg.role === 'user') {
+                    html += `
+                        <div class="message user">
+                            <div class="message-avatar">${getUserAvatarMarkup()}</div>
+                            <div class="message-content">${escapeHtml(msg.content)}</div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="message ai">
+                            <div class="message-avatar">AI</div>
+                            <div class="message-content">
+                                <div class="streaming-text-container">
+                                    <div>${renderMarkdown(msg.content)}</div>
+                                </div>
+                                <div class="message-actions" style="display: flex;">
+                                    <button class="action-btn" onclick="copyMessage(this)" title="Copy">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="likeMessage(this)" title="Like">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="dislikeMessage(this)" title="Dislike">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="shareMessage(this)" title="Share">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                            <polyline points="16 6 12 2 8 6"></polyline>
+                                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="regenerateMessage(this)" title="Regenerate">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="23 4 23 10 17 10"></polyline>
+                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn read-aloud-toggle" onclick="toggleReadAloudDirect(this)" title="Read aloud" aria-label="Read aloud" aria-pressed="false">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+            return html;
+        }
+
         function openChatSession(chatId) {
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
@@ -2313,16 +2383,22 @@
 
             // Restore the assistant mode associated with this session (or 'default')
             const sessionAssistant = target.assistant || 'default';
-            window.setAssistantMode(sessionAssistant);
+            window.setAssistantMode(sessionAssistant, { updateEmptyState: false });
 
-            const messagesDiv = getMessagesDiv();
-            if (messagesDiv) {
-                messagesDiv.innerHTML = target.html || getEmptyStateMarkup();
-                ensureMessageMoreMenus(messagesDiv);
-            }
             currentConversation = Array.isArray(target.thread)
                 ? target.thread.map((m) => ({ role: m.role, content: m.content }))
                 : [];
+
+            const messagesDiv = getMessagesDiv();
+            if (messagesDiv) {
+                let sessionHtml = target.html;
+                if ((!sessionHtml || sessionHtml.includes('class="empty-state"') || sessionHtml.trim() === "") && currentConversation.length > 0) {
+                    sessionHtml = renderThreadToHtml(currentConversation);
+                    target.html = sessionHtml;
+                }
+                messagesDiv.innerHTML = sessionHtml || getEmptyStateMarkup();
+                ensureMessageMoreMenus(messagesDiv);
+            }
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
@@ -2491,13 +2567,18 @@
             const mostRecent = chatSessions.find((session) => session.id === (importedChatId || hashChatId)) || getOrderedChatSessions()[0];
             if (mostRecent) {
                 const sessionAssistant = mostRecent.assistant || 'default';
-                window.setAssistantMode(sessionAssistant);
+                window.setAssistantMode(sessionAssistant, { updateEmptyState: false });
                 activeChatId = mostRecent.id;
                 previousNormalChatId = mostRecent.id;
                 currentConversation = Array.isArray(mostRecent.thread)
                     ? mostRecent.thread.map((m) => ({ role: m.role, content: m.content }))
                     : [];
-                messagesDiv.innerHTML = mostRecent.html || getEmptyStateMarkup();
+                let sessionHtml = mostRecent.html;
+                if ((!sessionHtml || sessionHtml.includes('class="empty-state"') || sessionHtml.trim() === "") && currentConversation.length > 0) {
+                    sessionHtml = renderThreadToHtml(currentConversation);
+                    mostRecent.html = sessionHtml;
+                }
+                messagesDiv.innerHTML = sessionHtml || getEmptyStateMarkup();
                 ensureMessageMoreMenus(messagesDiv);
             }
             renderChatHistory();
