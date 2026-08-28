@@ -1414,10 +1414,13 @@
             if (window.currentAssistant === "timetable-lai") {
                 return `
                     <div class="empty-state timetable-lai-empty" id="emptyState">
-                        <div class="lai-badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px; letter-spacing: 0.5px; text-transform: uppercase;">
-                            <span>✨</span> Specialized Mentor Mode
+                        <div class="lai-badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 18px; letter-spacing: 0.5px; text-transform: uppercase;">
+                            <img src="/assets/logos/timetable-lai-logo.svg" alt="Timetable LAI" width="16" height="16" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle; border-radius: 4px;" /> Specialized Mentor Mode
                         </div>
-                        <h2 style="color: #fbbf24; text-shadow: 0 0 15px rgba(251, 191, 36, 0.35); font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px;">✨ Timetable LAI</h2>
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 12px;">
+                            <img src="/assets/logos/timetable-lai-logo.svg" alt="Timetable LAI logo" width="56" height="56" style="width: 56px; height: 56px; object-fit: contain; border-radius: 14px; filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.4)); flex-shrink: 0;" />
+                            <h2 style="color: #fbbf24; text-shadow: 0 0 15px rgba(251, 191, 36, 0.35); font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin: 0;">Timetable LAI</h2>
+                        </div>
                         <p style="color: #94a3b8; font-size: 1rem; max-width: 500px; margin: 0 auto 25px; line-height: 1.5; font-weight: 500;">Your AI Academic Strategist & Disciplined Life Architect. Powered by Llama 3.3 (70B) with 45+ years of strategic mentoring experience.</p>
                         <div class="suggestion-chips">
                             <div class="chip" onclick="useSuggestion('Build SSC CGL strategy')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
@@ -1909,11 +1912,9 @@
 
             if (mode === 'timetable-lai') {
                 if (headerLogo) {
-                    headerLogo.innerHTML = "✨ Timetable LAI";
-                    headerLogo.style.background = "linear-gradient(110deg, #fbbf24 0%, #f59e0b 28%, #fef3c7 43%, #ffffff 50%, #fde047 57%, #fbbf24 78%, #d97706 100%)";
-                    headerLogo.style.backgroundSize = "260% 100%";
-                    headerLogo.style.webkitBackgroundClip = "text";
-                    headerLogo.style.webkitTextFillColor = "transparent";
+                    headerLogo.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 8px;"><img src="/assets/logos/timetable-lai-logo.svg" alt="Timetable LAI logo" width="24" height="24" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle; border-radius: 6px; flex-shrink: 0;" /><span style="background: linear-gradient(110deg, #fbbf24 0%, #f59e0b 28%, #fef3c7 43%, #ffffff 50%, #fde047 57%, #fbbf24 78%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: inherit;">Timetable LAI</span></span>`;
+                    headerLogo.style.background = "none";
+                    headerLogo.style.webkitTextFillColor = "initial";
                     headerLogo.style.filter = "drop-shadow(0 0 14px rgba(251, 191, 36, 0.25))";
                 }
                 if (headerSubtitle) {
