@@ -17,17 +17,20 @@ model User {
   email             String        @unique
   name              String?
   avatarUrl         String?
-  tier              String        @default("FREE") // "FREE" | "STUDENT" | "PRO"
-  cooldownUntil     DateTime?
-  messageCountToday Int           @default(0)
-  lastMessageAt     DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  sessions          ChatSession[]
-  preferences       Json?         // Stores wallpaper settings, model preference, etc.
-  messages          Message[]
-  logs              ApiLog[]
-  payments          Payment[]
+  tier                  String        @default("FREE") // "FREE" | "STUDENT" | "PRO"
+  subscriptionStatus    String        @default("inactive") // "active" | "expired" | "inactive"
+  subscriptionStartedAt DateTime?
+  subscriptionExpiresAt DateTime?
+  cooldownUntil         DateTime?
+  messageCountToday     Int           @default(0)
+  lastMessageAt         DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  sessions              ChatSession[]
+  preferences           Json?         // Stores wallpaper settings, model preference, etc.
+  messages              Message[]
+  logs                  ApiLog[]
+  payments              Payment[]
   lastActiveAt      DateTime      @default(now())
   warnedAt          DateTime?
   finalWarnedAt     DateTime?
@@ -103,6 +106,7 @@ model Payment {
   status            String   @default("created") // "created" | "paid" | "failed"
   studentIdUploaded String?  // Optional student verification reference / metadata
   receipt           String?
+  expiresAt         DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

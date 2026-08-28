@@ -65,6 +65,12 @@ export async function POST(request: Request) {
             } catch (_) {}
           }
 
+          // Idempotency: Skip duplicate webhook processing if this payment was already recorded as paid
+          if (existingPayment?.status === 'paid' && existingPayment?.paymentId === paymentId) {
+            console.log(`ℹ️ [Razorpay Webhook] Order ${orderId} already processed (idempotent duplicate event). Returning 200 OK.`);
+            return NextResponse.json({ status: 'ok', duplicate: true });
+          }
+
           if (!userId && existingPayment?.userId) {
             userId = existingPayment.userId;
             console.log(`ℹ️ [Razorpay Webhook] Recovered userId (${userId}) from database record`);
@@ -77,6 +83,21 @@ export async function POST(request: Request) {
           const targetPlan = PLANS[planId] || PLANS['pro'];
           const targetTier = targetPlan.tier;
 
+          // Strict 1-Month Subscription Expiry & Renewal Calculation
+          const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
+          let existingUser: any = null;
+          if (userId && userId !== 'unknown') {
+            try {
+              existingUser = await prisma.user.findUnique({ where: { id: userId } });
+            } catch (_) {}
+          }
+
+          const expiryInfo = calculateSubscriptionExpiry(
+            existingUser?.subscriptionExpiresAt,
+            targetTier,
+            existingUser?.tier
+          );
+
           // 1. Upgrade User tier in PostgreSQL
           if (userId && userId !== 'unknown') {
             try {
@@ -84,6 +105,9 @@ export async function POST(request: Request) {
                 where: { id: userId },
                 update: {
                   tier: targetTier,
+                  subscriptionStatus: 'active',
+                  subscriptionStartedAt: expiryInfo.startedAt,
+                  subscriptionExpiresAt: expiryInfo.expiresAt,
                   cooldownUntil: null,
                   messageCountToday: 0,
                 },
@@ -92,9 +116,12 @@ export async function POST(request: Request) {
                   email: `${userId}@placeholder.clerk.accounts`,
                   name: 'User',
                   tier: targetTier,
+                  subscriptionStatus: 'active',
+                  subscriptionStartedAt: expiryInfo.startedAt,
+                  subscriptionExpiresAt: expiryInfo.expiresAt,
                 },
               });
-              console.log(`✅ [Razorpay Webhook] Successfully upgraded user ${userId} to ${targetTier} tier`);
+              console.log(`✅ [Razorpay Webhook] Upgraded user ${userId} to ${targetTier} tier until ${expiryInfo.expiresAt.toISOString()}`);
             } catch (userDbErr) {
               console.error('❌ [Razorpay Webhook] Failed to update User table in DB:', userDbErr);
             }
@@ -112,6 +139,7 @@ export async function POST(request: Request) {
                   status: 'paid',
                   tier: targetTier,
                   planId: targetPlan.id,
+                  expiresAt: expiryInfo.expiresAt,
                 },
                 create: {
                   userId: userId || 'unknown',
@@ -122,6 +150,7 @@ export async function POST(request: Request) {
                   planId: targetPlan.id,
                   amount: paymentEntity.amount || targetPlan.amountInPaise,
                   currency: paymentEntity.currency || 'INR',
+                  expiresAt: expiryInfo.expiresAt,
                 },
               });
             } catch (payDbErr) {

@@ -173,7 +173,24 @@ export async function POST(request: Request) {
         });
 
         if (dbUser) {
-          userTier = dbUser.tier || 'FREE';
+          const { evaluateSubscription } = await import('@/lib/subscription');
+          const subInfo = evaluateSubscription(dbUser);
+          userTier = subInfo.tier; // Automatically evaluated to 'FREE' if 1-month window has elapsed
+
+          // If expired, auto-update database user record
+          if (subInfo.isExpired && dbUser.tier !== 'FREE') {
+            try {
+              await prisma.user.update({
+                where: { id: userId },
+                data: {
+                  tier: 'FREE',
+                  subscriptionStatus: 'expired',
+                },
+              });
+              console.log(`ℹ️ [Chat API] User ${userId} subscription expired on ${dbUser.subscriptionExpiresAt}. Auto-downgraded to FREE.`);
+            } catch (_) {}
+          }
+
           userCooldownUntil = dbUser.cooldownUntil;
           messageCount = dbUser.messageCountToday;
 

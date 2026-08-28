@@ -29,16 +29,34 @@ async function handleRazorpayCallback(
         });
       }
 
-      const planId = (existingPayment?.planId || 'pro').toLowerCase();
-      const targetPlan = PLANS[planId] || PLANS['pro'];
+      const planId = (existingPayment?.planId || 'student').toLowerCase();
+      const targetPlan = PLANS[planId] || PLANS['student'];
       const targetTier = targetPlan.tier;
       const targetUserId = existingPayment?.userId;
+
+      // Strict 1-Month Subscription Expiry & Renewal Calculation
+      const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
+      let existingUser: any = null;
+      if (targetUserId && targetUserId !== 'unknown') {
+        try {
+          existingUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+        } catch (_) {}
+      }
+
+      const expiryInfo = calculateSubscriptionExpiry(
+        existingUser?.subscriptionExpiresAt,
+        targetTier,
+        existingUser?.tier
+      );
 
       if (targetUserId && targetUserId !== 'unknown') {
         await prisma.user.upsert({
           where: { id: targetUserId },
           update: {
             tier: targetTier,
+            subscriptionStatus: 'active',
+            subscriptionStartedAt: expiryInfo.startedAt,
+            subscriptionExpiresAt: expiryInfo.expiresAt,
             cooldownUntil: null,
             messageCountToday: 0,
           },
@@ -47,9 +65,12 @@ async function handleRazorpayCallback(
             email: `${targetUserId}@placeholder.clerk.accounts`,
             name: 'User',
             tier: targetTier,
+            subscriptionStatus: 'active',
+            subscriptionStartedAt: expiryInfo.startedAt,
+            subscriptionExpiresAt: expiryInfo.expiresAt,
           },
         });
-        console.log(`✅ [Razorpay Callback] Upgraded user ${targetUserId} to ${targetTier}`);
+        console.log(`✅ [Razorpay Callback] Upgraded user ${targetUserId} to ${targetTier} until ${expiryInfo.expiresAt.toISOString()}`);
       }
 
       if ((prisma as any)?.payment) {
@@ -61,6 +82,7 @@ async function handleRazorpayCallback(
             status: 'paid',
             tier: targetTier,
             planId: targetPlan.id,
+            expiresAt: expiryInfo.expiresAt,
           },
           create: {
             userId: targetUserId || 'unknown',
@@ -72,6 +94,7 @@ async function handleRazorpayCallback(
             planId: targetPlan.id,
             amount: targetPlan.amountInPaise,
             currency: 'INR',
+            expiresAt: expiryInfo.expiresAt,
           },
         });
       }

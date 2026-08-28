@@ -25,6 +25,8 @@ export async function GET(request: Request) {
         name: u.name || 'User',
         email: u.email,
         tier: u.tier,
+        subscriptionStatus: u.subscriptionStatus || (u.tier !== 'FREE' ? 'active' : 'inactive'),
+        subscriptionExpiresAt: u.subscriptionExpiresAt ? u.subscriptionExpiresAt.toISOString() : null,
         avatarUrl: u.avatarUrl || '',
         cooldownUntil: u.cooldownUntil ? u.cooldownUntil.toISOString() : null,
         createdAt: u.createdAt.toISOString(),
@@ -32,11 +34,11 @@ export async function GET(request: Request) {
     } else {
       // Mock Users for Offline Local Development
       usersList = [
-        { id: 'user_1', name: 'Aarav Mehta', email: 'aarav@example.com', tier: 'PRO', avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString() },
-        { id: 'user_2', name: 'Rohan Sharma', email: 'rohan@example.com', tier: 'STUDENT', avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 24 * 10).toISOString() },
-        { id: 'user_3', name: 'Kavya Nair', email: 'kavya@example.com', tier: 'FREE', avatarUrl: '', cooldownUntil: new Date(Date.now() + 3600000 * 24 * 365).toISOString(), createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString() }, // Banned
-        { id: 'user_4', name: 'Neha Gupta', email: 'neha@example.com', tier: 'FREE', avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 12).toISOString() },
-        { id: 'user_5', name: 'Kabir Singh', email: 'kabir@example.com', tier: 'PRO', avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 48).toISOString() },
+        { id: 'user_1', name: 'Aarav Mehta', email: 'aarav@example.com', tier: 'PRO', subscriptionStatus: 'active', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString() },
+        { id: 'user_2', name: 'Rohan Sharma', email: 'rohan@example.com', tier: 'STUDENT', subscriptionStatus: 'active', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 24 * 10).toISOString() },
+        { id: 'user_3', name: 'Kavya Nair', email: 'kavya@example.com', tier: 'FREE', subscriptionStatus: 'inactive', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: new Date(Date.now() + 3600000 * 24 * 365).toISOString(), createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString() }, // Banned
+        { id: 'user_4', name: 'Neha Gupta', email: 'neha@example.com', tier: 'FREE', subscriptionStatus: 'inactive', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 12).toISOString() },
+        { id: 'user_5', name: 'Kabir Singh', email: 'kabir@example.com', tier: 'PRO', subscriptionStatus: 'active', subscriptionExpiresAt: null, avatarUrl: '', cooldownUntil: null, createdAt: new Date(Date.now() - 3600000 * 48).toISOString() },
       ];
     }
 
@@ -73,10 +75,17 @@ export async function POST(request: Request) {
     const client = await clerkClient();
 
     if (action === 'setTier') {
+      const targetTier = (tier || 'FREE').toUpperCase();
+      const isPaid = targetTier === 'STUDENT' || targetTier === 'PRO';
+      const now = new Date();
+      const oneMonthLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
       // 1. Sync in Clerk publicMetadata
       await client.users.updateUserMetadata(targetUserId, {
         publicMetadata: {
-          tier: tier // "FREE" | "STUDENT" | "PRO"
+          tier: targetTier,
+          subscriptionStatus: isPaid ? 'active' : 'inactive',
+          subscriptionExpiresAt: isPaid ? oneMonthLater.toISOString() : null,
         }
       });
 
@@ -84,11 +93,16 @@ export async function POST(request: Request) {
       if (process.env.DATABASE_URL) {
         await prisma.user.update({
           where: { id: targetUserId },
-          data: { tier },
+          data: {
+            tier: targetTier,
+            subscriptionStatus: isPaid ? 'active' : 'inactive',
+            subscriptionStartedAt: isPaid ? now : null,
+            subscriptionExpiresAt: isPaid ? oneMonthLater : null,
+          },
         });
       }
 
-      await logAdminAction(authCheck.userId!, 'SET_TIER', { targetUserId, tier }, request);
+      await logAdminAction(authCheck.userId!, 'SET_TIER', { targetUserId, tier: targetTier }, request);
     } 
     else if (action === 'banUser') {
       const banUntil = new Date(Date.now() + 3600000 * 24 * (Number(banDays) || 365));

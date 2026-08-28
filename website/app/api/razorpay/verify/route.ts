@@ -67,10 +67,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Determine target plan
-    const targetPlan = PLANS[planId] || PLANS['pro'];
-    const updatedTier = targetPlan.tier;
-
+    let existingPayment: any = null;
     let targetUserId = authUserId;
 
     if (process.env.DATABASE_URL) {
@@ -80,7 +77,6 @@ export async function POST(request: Request) {
       } catch (_) {}
 
       try {
-        let existingPayment: any = null;
         if ((prisma as any)?.payment) {
           try {
             existingPayment = await (prisma as any).payment.findUnique({
@@ -88,26 +84,53 @@ export async function POST(request: Request) {
             });
           } catch (_) {}
         }
+      } catch (_) {}
+    }
 
-        if (!targetUserId && existingPayment?.userId) {
-          targetUserId = existingPayment.userId;
-          console.log(`ℹ️ [Razorpay Verify] Recovered userId (${targetUserId}) from database payment record for order: ${razorpay_order_id}`);
-        }
+    if (!targetUserId && existingPayment?.userId) {
+      targetUserId = existingPayment.userId;
+      console.log(`ℹ️ [Razorpay Verify] Recovered userId (${targetUserId}) from database payment record for order: ${razorpay_order_id}`);
+    }
 
-        if (!targetUserId) {
-          console.error('❌ [Razorpay Verify] Unable to associate payment with a user ID (no session & no order record)');
-          return NextResponse.json(
-            { error: 'unauthorized', message: 'User session not found. Please log in.' },
-            { status: 401 }
-          );
-        }
+    if (!targetUserId) {
+      console.error('❌ [Razorpay Verify] Unable to associate payment with a user ID (no session & no order record)');
+      return NextResponse.json(
+        { error: 'unauthorized', message: 'User session not found. Please log in.' },
+        { status: 401 }
+      );
+    }
 
-        // 1. Upgrade User tier in PostgreSQL
+    // Security: Determine target plan from server-side order record (prevent client planId tampering)
+    const trustedPlanId = (existingPayment?.planId || planId || 'student').toLowerCase();
+    const targetPlan = PLANS[trustedPlanId] || PLANS['student'];
+    const updatedTier = targetPlan.tier;
+
+    // Strict 1-Month Subscription Expiry & Renewal Calculation
+    const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
+    let existingUser: any = null;
+    if (process.env.DATABASE_URL) {
+      try {
+        existingUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+      } catch (_) {}
+    }
+
+    const expiryInfo = calculateSubscriptionExpiry(
+      existingUser?.subscriptionExpiresAt,
+      updatedTier,
+      existingUser?.tier
+    );
+
+    if (process.env.DATABASE_URL) {
+      try {
+        // 1. Upgrade User tier and set 1-month subscription lifecycle in PostgreSQL
         try {
           await prisma.user.upsert({
             where: { id: targetUserId },
             update: {
               tier: updatedTier,
+              subscriptionStatus: 'active',
+              subscriptionStartedAt: expiryInfo.startedAt,
+              subscriptionExpiresAt: expiryInfo.expiresAt,
               cooldownUntil: null,
               messageCountToday: 0,
             },
@@ -116,9 +139,12 @@ export async function POST(request: Request) {
               email: `${targetUserId}@placeholder.clerk.accounts`,
               name: 'User',
               tier: updatedTier,
+              subscriptionStatus: 'active',
+              subscriptionStartedAt: expiryInfo.startedAt,
+              subscriptionExpiresAt: expiryInfo.expiresAt,
             },
           });
-          console.log(`✅ [Razorpay Verify] User ${targetUserId} successfully upgraded to ${updatedTier} tier for order ${razorpay_order_id}`);
+          console.log(`✅ [Razorpay Verify] User ${targetUserId} upgraded to ${updatedTier} tier until ${expiryInfo.expiresAt.toISOString()}`);
         } catch (userDbErr) {
           console.error('❌ [Razorpay Verify] Failed to update User table in DB:', userDbErr);
         }
@@ -134,6 +160,7 @@ export async function POST(request: Request) {
                 status: 'paid',
                 tier: updatedTier,
                 planId: targetPlan.id,
+                expiresAt: expiryInfo.expiresAt,
               },
               create: {
                 userId: targetUserId,
@@ -145,6 +172,7 @@ export async function POST(request: Request) {
                 planId: targetPlan.id,
                 amount: targetPlan.amountInPaise,
                 currency: 'INR',
+                expiresAt: expiryInfo.expiresAt,
               },
             });
           } catch (payDbErr) {
@@ -160,7 +188,8 @@ export async function POST(request: Request) {
       success: true,
       tier: updatedTier,
       planName: targetPlan.name,
-      message: `Your account has been upgraded to ${targetPlan.name} Plan! 🎉`,
+      expiresAt: expiryInfo.expiresAt.toISOString(),
+      message: `Your account has been upgraded to ${targetPlan.name} Plan for 1 month! 🎉`,
     });
   } catch (error: any) {
     console.error('❌ [Razorpay Verify] Unhandled error in /api/razorpay/verify:', error);

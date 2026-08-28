@@ -19,7 +19,14 @@ export async function POST() {
     const avatarUrl = user.imageUrl;
 
     let dbUser: any = null;
+    let effectiveSub: any = { tier: 'FREE', isActive: false, isExpired: false, status: 'inactive' };
+
     if (process.env.DATABASE_URL) {
+      try {
+        const { ensureDbTables } = await import('@/lib/ensureDbTables');
+        await ensureDbTables();
+      } catch (_) {}
+
       dbUser = await prisma.user.upsert({
         where: { id: userId },
         update: {
@@ -34,6 +41,25 @@ export async function POST() {
           avatarUrl,
         },
       });
+
+      if (dbUser) {
+        const { evaluateSubscription } = await import('@/lib/subscription');
+        effectiveSub = evaluateSubscription(dbUser);
+
+        if (effectiveSub.isExpired && dbUser.tier !== 'FREE') {
+          try {
+            await prisma.user.update({
+              where: { id: userId },
+              data: {
+                tier: 'FREE',
+                subscriptionStatus: 'expired',
+              },
+            });
+            dbUser.tier = 'FREE';
+            dbUser.subscriptionStatus = 'expired';
+          } catch (_) {}
+        }
+      }
     } else {
       console.warn('DATABASE_URL is not set. Running in database-offline mode.');
       dbUser = {
@@ -42,13 +68,22 @@ export async function POST() {
         name,
         avatarUrl,
         tier: 'FREE',
+        subscriptionStatus: 'inactive',
         cooldownUntil: null,
         messageCountToday: 0,
         lastMessageAt: null,
       };
     }
 
-    return NextResponse.json({ success: true, user: dbUser });
+    return NextResponse.json({
+      success: true,
+      user: {
+        ...dbUser,
+        tier: effectiveSub.tier,
+        subscriptionStatus: effectiveSub.status,
+        subscriptionExpiresAt: effectiveSub.expiresAt ? effectiveSub.expiresAt.toISOString() : null,
+      },
+    });
   } catch (error) {
     console.error('Error syncing user:', error);
     return NextResponse.json({ error: 'Failed to sync user database-side' }, { status: 500 });

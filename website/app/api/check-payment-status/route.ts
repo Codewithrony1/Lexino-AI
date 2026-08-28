@@ -62,26 +62,51 @@ export async function GET(request: Request) {
       const notes = capturedPayment?.notes || {};
       let userId = notes.userId || dbPayment?.userId || null;
       let planId = (notes.planId || dbPayment?.planId || 'pro').toLowerCase();
-      const targetPlan = PLANS[planId] || PLANS['pro'];
+      const targetPlan = PLANS[planId] || PLANS['student'];
       const targetTier = targetPlan.tier;
+
+      // Strict 1-Month Subscription Expiry & Renewal Calculation
+      const { calculateSubscriptionExpiry } = await import('@/lib/subscription');
+      let existingUser: any = null;
+      if (userId && userId !== 'unknown') {
+        try {
+          existingUser = await prisma.user.findUnique({ where: { id: userId } });
+        } catch (_) {}
+      }
+
+      const expiryInfo = calculateSubscriptionExpiry(
+        existingUser?.subscriptionExpiresAt,
+        targetTier,
+        existingUser?.tier
+      );
 
       if (process.env.DATABASE_URL) {
         if (userId && userId !== 'unknown') {
-          await prisma.user.upsert({
-            where: { id: userId },
-            update: {
-              tier: targetTier,
-              cooldownUntil: null,
-              messageCountToday: 0,
-            },
-            create: {
-              id: userId,
-              email: `${userId}@placeholder.clerk.accounts`,
-              name: 'User',
-              tier: targetTier,
-            },
-          });
-          console.log(`✅ [Polling Detection] Activated ${targetTier} plan for user ${userId} on order ${orderId}`);
+          try {
+            await prisma.user.upsert({
+              where: { id: userId },
+              update: {
+                tier: targetTier,
+                subscriptionStatus: 'active',
+                subscriptionStartedAt: expiryInfo.startedAt,
+                subscriptionExpiresAt: expiryInfo.expiresAt,
+                cooldownUntil: null,
+                messageCountToday: 0,
+              },
+              create: {
+                id: userId,
+                email: `${userId}@placeholder.clerk.accounts`,
+                name: 'User',
+                tier: targetTier,
+                subscriptionStatus: 'active',
+                subscriptionStartedAt: expiryInfo.startedAt,
+                subscriptionExpiresAt: expiryInfo.expiresAt,
+              },
+            });
+            console.log(`✅ [Polling Detection] Activated ${targetTier} plan for user ${userId} until ${expiryInfo.expiresAt.toISOString()}`);
+          } catch (userDbErr) {
+            console.error('❌ [Check Payment Status] Failed to update User table:', userDbErr);
+          }
         }
 
         if ((prisma as any)?.payment) {
@@ -93,6 +118,7 @@ export async function GET(request: Request) {
                 status: 'paid',
                 tier: targetTier,
                 planId: targetPlan.id,
+                expiresAt: expiryInfo.expiresAt,
               },
               create: {
                 userId: userId || 'unknown',
@@ -103,6 +129,7 @@ export async function GET(request: Request) {
                 planId: targetPlan.id,
                 amount: targetPlan.amountInPaise,
                 currency: 'INR',
+                expiresAt: expiryInfo.expiresAt,
               },
             });
           } catch (payDbErr) {

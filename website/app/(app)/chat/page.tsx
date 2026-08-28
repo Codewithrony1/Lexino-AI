@@ -33,7 +33,17 @@ export default async function ChatPage() {
     redirect('/login?redirect_url=/chat');
   }
   
-  let userData = { id: '', name: 'User', email: '', imageUrl: '', tier: 'FREE', cooldownUntil: null as string | null, messageCountToday: 0 };
+  let userData = {
+    id: '',
+    name: 'User',
+    email: '',
+    imageUrl: '',
+    tier: 'FREE',
+    subscriptionStatus: 'inactive' as string,
+    subscriptionExpiresAt: null as string | null,
+    cooldownUntil: null as string | null,
+    messageCountToday: 0
+  };
   
   try {
     const user = await currentUser();
@@ -43,13 +53,40 @@ export default async function ChatPage() {
       const avatarUrl = user.imageUrl;
       
       let dbUser: any = null;
+      let effectiveTier = 'FREE';
+      let subscriptionExpiresAtStr: string | null = null;
+      let subscriptionStatus = 'inactive';
+
       if (process.env.DATABASE_URL) {
         try {
+          const { ensureDbTables } = await import('@/lib/ensureDbTables');
+          await ensureDbTables();
+
           dbUser = await prisma.user.upsert({
             where: { id: user.id },
             update: { email, name, avatarUrl },
             create: { id: user.id, email, name, avatarUrl },
           });
+
+          if (dbUser) {
+            const { evaluateSubscription } = await import('@/lib/subscription');
+            const subInfo = evaluateSubscription(dbUser);
+            effectiveTier = subInfo.tier;
+            subscriptionStatus = subInfo.status;
+            subscriptionExpiresAtStr = subInfo.expiresAt ? subInfo.expiresAt.toISOString() : null;
+
+            if (subInfo.isExpired && dbUser.tier !== 'FREE') {
+              try {
+                await prisma.user.update({
+                  where: { id: user.id },
+                  data: {
+                    tier: 'FREE',
+                    subscriptionStatus: 'expired',
+                  },
+                });
+              } catch (_) {}
+            }
+          }
         } catch (err) {
           console.error('Error auto-syncing user on page load:', err);
         }
@@ -60,7 +97,9 @@ export default async function ChatPage() {
         name,
         email,
         imageUrl: avatarUrl,
-        tier: dbUser?.tier || 'FREE',
+        tier: effectiveTier,
+        subscriptionStatus,
+        subscriptionExpiresAt: subscriptionExpiresAtStr,
         cooldownUntil: dbUser?.cooldownUntil ? dbUser.cooldownUntil.toISOString() : null,
         messageCountToday: dbUser?.messageCountToday || 0,
       };

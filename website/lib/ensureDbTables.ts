@@ -13,6 +13,9 @@ export async function ensureDbTables(): Promise<void> {
         "name" TEXT,
         "avatarUrl" TEXT,
         "tier" TEXT NOT NULL DEFAULT 'FREE',
+        "subscriptionStatus" TEXT DEFAULT 'inactive',
+        "subscriptionStartedAt" TIMESTAMP(3),
+        "subscriptionExpiresAt" TIMESTAMP(3),
         "cooldownUntil" TIMESTAMP(3),
         "messageCountToday" INTEGER NOT NULL DEFAULT 0,
         "lastMessageAt" TIMESTAMP(3),
@@ -24,6 +27,10 @@ export async function ensureDbTables(): Promise<void> {
         "finalWarnedAt" TIMESTAMP(3),
         "storageUsedBytes" BIGINT NOT NULL DEFAULT 0
       );
+
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT DEFAULT 'inactive';
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionStartedAt" TIMESTAMP(3);
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionExpiresAt" TIMESTAMP(3);
 
       CREATE TABLE IF NOT EXISTS "Payment" (
         "id" TEXT NOT NULL PRIMARY KEY,
@@ -38,16 +45,19 @@ export async function ensureDbTables(): Promise<void> {
         "status" TEXT NOT NULL DEFAULT 'created',
         "studentIdUploaded" TEXT,
         "receipt" TEXT,
+        "expiresAt" TIMESTAMP(3),
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP(3);
 
       CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
       CREATE UNIQUE INDEX IF NOT EXISTS "Payment_orderId_key" ON "Payment"("orderId");
       CREATE UNIQUE INDEX IF NOT EXISTS "Payment_paymentId_key" ON "Payment"("paymentId");
     `);
     hasEnsuredTables = true;
-    console.log('✅ [Database Migration] Ensured User & Payment tables exist in PostgreSQL.');
+    console.log('✅ [Database Migration] Ensured User & Payment tables with subscription lifecycle exist in PostgreSQL.');
   } catch (err: any) {
     console.warn('⚠️ [Database Migration] Table check note:', err?.message || err);
   }

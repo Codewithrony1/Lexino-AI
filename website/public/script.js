@@ -1156,6 +1156,12 @@
                         };
                         window.lexinoUserTier = data.tier || "FREE";
                         window.lexinoCooldownUntil = data.cooldownUntil || null;
+                        window.lexinoSubscriptionExpiresAt = data.subscriptionExpiresAt || null;
+                        
+                        // If subscription is expired, auto-downgrade client state to FREE
+                        if (window.lexinoSubscriptionExpiresAt && new Date(window.lexinoSubscriptionExpiresAt) <= new Date()) {
+                            window.lexinoUserTier = "FREE";
+                        }
                         
                         try {
                             localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(currentProfile));
@@ -1175,6 +1181,9 @@
                             .then(syncRes => {
                                 if (syncRes?.user?.tier) {
                                     const freshTier = (syncRes.user.tier || "FREE").toUpperCase();
+                                    const freshExpiresAt = syncRes.user.subscriptionExpiresAt || null;
+                                    window.lexinoSubscriptionExpiresAt = freshExpiresAt;
+
                                     if (freshTier !== window.lexinoUserTier) {
                                         console.log(`✨ [Auth Sync] Live tier updated from ${window.lexinoUserTier} to ${freshTier}`);
                                         window.lexinoUserTier = freshTier;
