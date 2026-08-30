@@ -1414,10 +1414,13 @@
             if (window.currentAssistant === "timetable-lai") {
                 return `
                     <div class="empty-state timetable-lai-empty" id="emptyState">
-                        <div class="lai-badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px; letter-spacing: 0.5px; text-transform: uppercase;">
-                            <span>✨</span> Specialized Mentor Mode
+                        <div class="lai-badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 18px; letter-spacing: 0.5px; text-transform: uppercase;">
+                            <img src="/assets/logos/timetable-lai-logo.svg" alt="Timetable LAI" width="16" height="16" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle; border-radius: 4px;" /> Specialized Mentor Mode
                         </div>
-                        <h2 style="color: #fbbf24; text-shadow: 0 0 15px rgba(251, 191, 36, 0.35); font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px;">✨ Timetable LAI</h2>
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 12px;">
+                            <img src="/assets/logos/timetable-lai-logo.svg" alt="Timetable LAI logo" width="56" height="56" style="width: 56px; height: 56px; object-fit: contain; border-radius: 14px; filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.4)); flex-shrink: 0;" />
+                            <h2 style="color: #fbbf24; text-shadow: 0 0 15px rgba(251, 191, 36, 0.35); font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin: 0;">Timetable LAI</h2>
+                        </div>
                         <p style="color: #94a3b8; font-size: 1rem; max-width: 500px; margin: 0 auto 25px; line-height: 1.5; font-weight: 500;">Your AI Academic Strategist & Disciplined Life Architect. Powered by Llama 3.3 (70B) with 45+ years of strategic mentoring experience.</p>
                         <div class="suggestion-chips">
                             <div class="chip" onclick="useSuggestion('Build SSC CGL strategy')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
@@ -1431,9 +1434,6 @@
                             </div>
                             <div class="chip" onclick="useSuggestion('Optimize revision cycles')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
                                 Optimize revision cycles
-                            </div>
-                            <div class="chip" onclick="useSuggestion('Build a realistic UPSC roadmap')" style="border: 1px solid rgba(251, 191, 36, 0.2); background: rgba(251, 191, 36, 0.03); color: #f8fafc;">
-                                Build a realistic UPSC roadmap
                             </div>
                         </div>
                     </div>
@@ -1473,12 +1473,13 @@
             const title = typeof session.title === "string" && session.title.trim() ? session.title.trim() : "New chat";
             const updatedAt = typeof session.updatedAt === "number" ? session.updatedAt : Date.now();
             const pinned = session.pinned === true;
+            const assistant = typeof session.assistant === "string" && session.assistant.trim() ? session.assistant.trim() : "default";
             const thread = Array.isArray(session.thread)
                 ? session.thread.filter((m) =>
                     m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
                 ).map((m) => ({ role: m.role, content: m.content }))
                 : [];
-            return { id, html, title, updatedAt, pinned, thread };
+            return { id, html, title, updatedAt, pinned, thread, assistant };
         }
 
         function createSessionId() {
@@ -1564,7 +1565,12 @@
                         </span>
                     `;
                     item.title = session.title || "New chat";
-                    item.onclick = () => openChatSession(session.id);
+                    item.onclick = (event) => {
+                        if (event && event.target && event.target.closest('.chat-item-options')) {
+                            return;
+                        }
+                        openChatSession(session.id);
+                    };
                     item.oncontextmenu = (event) => openChatContextMenu(event, session.id);
                     item.ontouchstart = primeChatOptionsForTouch;
                     groupEl.appendChild(item);
@@ -1900,7 +1906,7 @@
             modal.classList.add("active");
         }
 
-        window.setAssistantMode = function(mode) {
+        window.setAssistantMode = function(mode, options = {}) {
             window.currentAssistant = mode;
 
             const headerLogo = document.getElementById("headerLogo");
@@ -1909,11 +1915,9 @@
 
             if (mode === 'timetable-lai') {
                 if (headerLogo) {
-                    headerLogo.innerHTML = "✨ Timetable LAI";
-                    headerLogo.style.background = "linear-gradient(110deg, #fbbf24 0%, #f59e0b 28%, #fef3c7 43%, #ffffff 50%, #fde047 57%, #fbbf24 78%, #d97706 100%)";
-                    headerLogo.style.backgroundSize = "260% 100%";
-                    headerLogo.style.webkitBackgroundClip = "text";
-                    headerLogo.style.webkitTextFillColor = "transparent";
+                    headerLogo.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 8px;"><img src="/assets/logos/timetable-lai-logo.svg" alt="Timetable LAI logo" width="24" height="24" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle; border-radius: 6px; flex-shrink: 0;" /><span style="background: linear-gradient(110deg, #fbbf24 0%, #f59e0b 28%, #fef3c7 43%, #ffffff 50%, #fde047 57%, #fbbf24 78%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: inherit;">Timetable LAI</span></span>`;
+                    headerLogo.style.background = "none";
+                    headerLogo.style.webkitTextFillColor = "initial";
                     headerLogo.style.filter = "drop-shadow(0 0 14px rgba(251, 191, 36, 0.25))";
                 }
                 if (headerSubtitle) {
@@ -1945,14 +1949,11 @@
                 applyModelAccent(savedModel);
             }
 
-            const messagesDiv = document.getElementById('chatMessages');
-            if (messagesDiv && (messagesDiv.querySelector(".empty-state") || messagesDiv.innerHTML.trim() === "" || currentConversation.length === 0)) {
-                messagesDiv.style.transition = "opacity 0.15s ease-in-out";
-                messagesDiv.style.opacity = "0";
-                setTimeout(() => {
+            if (options && options.updateEmptyState) {
+                const messagesDiv = document.getElementById('chatMessages');
+                if (messagesDiv && (messagesDiv.querySelector(".empty-state") || messagesDiv.innerHTML.trim() === "" || currentConversation.length === 0)) {
                     messagesDiv.innerHTML = getEmptyStateMarkup();
-                    messagesDiv.style.opacity = "1";
-                }, 150);
+                }
             }
         }
 
@@ -2009,16 +2010,14 @@
             const tier = window.lexinoUserTier || "FREE";
             
             if (mode === 'default') {
-                window.setAssistantMode('default');
-                startNewChat();
+                startNewChat({ mode: 'default' });
                 return;
             }
 
             if (tier === "FREE") {
                 window.showPremiumLockModal(mode);
             } else {
-                window.setAssistantMode(mode);
-                startNewChat();
+                startNewChat({ mode: mode });
             }
         }
 
@@ -2305,6 +2304,74 @@
             scheduleSearchResultsRender();
         }
 
+        function renderThreadToHtml(thread) {
+            if (!Array.isArray(thread) || thread.length === 0) {
+                return getEmptyStateMarkup();
+            }
+            let html = '<div class="messages-wrapper">';
+            thread.forEach((msg) => {
+                if (msg.role === 'user') {
+                    html += `
+                        <div class="message user">
+                            <div class="message-avatar">${getUserAvatarMarkup()}</div>
+                            <div class="message-content">${escapeHtml(msg.content)}</div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="message ai">
+                            <div class="message-avatar">AI</div>
+                            <div class="message-content">
+                                <div class="streaming-text-container">
+                                    <div>${renderMarkdown(msg.content)}</div>
+                                </div>
+                                <div class="message-actions" style="display: flex;">
+                                    <button class="action-btn" onclick="copyMessage(this)" title="Copy">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="likeMessage(this)" title="Like">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="dislikeMessage(this)" title="Dislike">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="shareMessage(this)" title="Share">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                            <polyline points="16 6 12 2 8 6"></polyline>
+                                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn" onclick="regenerateMessage(this)" title="Regenerate">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="23 4 23 10 17 10"></polyline>
+                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn read-aloud-toggle" onclick="toggleReadAloudDirect(this)" title="Read aloud" aria-label="Read aloud" aria-pressed="false">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+            return html;
+        }
+
         function openChatSession(chatId) {
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
@@ -2314,14 +2381,24 @@
             activeChatId = target.id;
             previousNormalChatId = target.id;
 
-            const messagesDiv = getMessagesDiv();
-            if (messagesDiv) {
-                messagesDiv.innerHTML = target.html || getEmptyStateMarkup();
-                ensureMessageMoreMenus(messagesDiv);
-            }
+            // Restore the assistant mode associated with this session (or 'default')
+            const sessionAssistant = target.assistant || 'default';
+            window.setAssistantMode(sessionAssistant, { updateEmptyState: false });
+
             currentConversation = Array.isArray(target.thread)
                 ? target.thread.map((m) => ({ role: m.role, content: m.content }))
                 : [];
+
+            const messagesDiv = getMessagesDiv();
+            if (messagesDiv) {
+                let sessionHtml = target.html;
+                if ((!sessionHtml || sessionHtml.includes('class="empty-state"') || sessionHtml.trim() === "") && currentConversation.length > 0) {
+                    sessionHtml = renderThreadToHtml(currentConversation);
+                    target.html = sessionHtml;
+                }
+                messagesDiv.innerHTML = sessionHtml || getEmptyStateMarkup();
+                ensureMessageMoreMenus(messagesDiv);
+            }
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
@@ -2340,7 +2417,8 @@
                     html: getSavableChatHtml(messagesDiv),
                     title: "New chat",
                     updatedAt: Date.now(),
-                    thread: []
+                    thread: [],
+                    assistant: window.currentAssistant || 'default'
                 };
                 chatSessions.unshift(newSession);
                 activeChatId = newSession.id;
@@ -2352,6 +2430,9 @@
 
             target.html = getSavableChatHtml(messagesDiv);
             target.thread = currentConversation.map((m) => ({ role: m.role, content: m.content }));
+            if (window.currentAssistant) {
+                target.assistant = window.currentAssistant;
+            }
             if ((target.title === "New chat" || !target.title) && currentConversation.length > 0) {
                 const firstUser = currentConversation.find((m) => m.role === "user" && m.content.trim());
                 if (firstUser) {
@@ -2484,13 +2565,22 @@
                 return match ? decodeURIComponent(match[1]) : "";
             })();
             const mostRecent = chatSessions.find((session) => session.id === (importedChatId || hashChatId)) || getOrderedChatSessions()[0];
-            activeChatId = mostRecent.id;
-            previousNormalChatId = mostRecent.id;
-            currentConversation = Array.isArray(mostRecent.thread)
-                ? mostRecent.thread.map((m) => ({ role: m.role, content: m.content }))
-                : [];
-            messagesDiv.innerHTML = mostRecent.html || getEmptyStateMarkup();
-            ensureMessageMoreMenus(messagesDiv);
+            if (mostRecent) {
+                const sessionAssistant = mostRecent.assistant || 'default';
+                window.setAssistantMode(sessionAssistant, { updateEmptyState: false });
+                activeChatId = mostRecent.id;
+                previousNormalChatId = mostRecent.id;
+                currentConversation = Array.isArray(mostRecent.thread)
+                    ? mostRecent.thread.map((m) => ({ role: m.role, content: m.content }))
+                    : [];
+                let sessionHtml = mostRecent.html;
+                if ((!sessionHtml || sessionHtml.includes('class="empty-state"') || sessionHtml.trim() === "") && currentConversation.length > 0) {
+                    sessionHtml = renderThreadToHtml(currentConversation);
+                    mostRecent.html = sessionHtml;
+                }
+                messagesDiv.innerHTML = sessionHtml || getEmptyStateMarkup();
+                ensureMessageMoreMenus(messagesDiv);
+            }
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
@@ -2516,19 +2606,27 @@
             updateTempModeUI();
         }
 
-        function startNewChat() {
+        function startNewChat(options = {}) {
+            const targetMode = (options && typeof options === 'object' && options.mode) ? options.mode : 'default';
+
+            // Explicitly set/reset assistant mode (ensures clicking New Chat always lands on default Lexino AI base mode)
+            window.setAssistantMode(targetMode);
+
             const messagesDiv = document.getElementById('chatMessages');
-            messagesDiv.innerHTML = getEmptyStateMarkup();
+            if (messagesDiv) {
+                messagesDiv.innerHTML = getEmptyStateMarkup();
+            }
             uploadedFiles = [];
             displayUploaded();
 
             if (!isTempMode) {
                 const newSession = {
                     id: createSessionId(),
-                    html: messagesDiv.innerHTML,
+                    html: messagesDiv ? messagesDiv.innerHTML : '',
                     title: "New chat",
                     updatedAt: Date.now(),
-                    thread: []
+                    thread: [],
+                    assistant: targetMode
                 };
                 chatSessions.unshift(newSession);
                 activeChatId = newSession.id;
@@ -3167,8 +3265,13 @@
             try {
                 const modelSelect = document.getElementById('modelSelect');
                 const maxTokensSelect = document.getElementById('maxTokens');
+                const activeSession = activeChatId ? chatSessions.find((s) => s.id === activeChatId) : null;
+                const activeAssistantMode = (activeSession && typeof activeSession.assistant === 'string')
+                    ? activeSession.assistant
+                    : (window.currentAssistant || 'default');
+
                 let selectedModelValue = modelSelect ? modelSelect.value : 'llama-3.1-8b-instant';
-                if (window.currentAssistant === 'timetable-lai') {
+                if (activeAssistantMode === 'timetable-lai') {
                     selectedModelValue = 'timetable-ai';
                 }
                 const selectedMaxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 512;
@@ -3178,6 +3281,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         selectedModel: selectedModelValue,
+                        activeAssistant: activeAssistantMode,
                         maxTokens: selectedMaxTokens,
                         content: memoryUserText,
                         history: historyForApi,

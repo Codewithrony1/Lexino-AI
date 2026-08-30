@@ -55,9 +55,9 @@ export default async function ChatPage() {
       const avatarUrl = user.imageUrl;
       
       let dbUser: any = null;
-      let effectiveTier = 'FREE';
-      let subscriptionExpiresAtStr: string | null = null;
-      let subscriptionStatus = 'inactive';
+      let effectiveTier = (user.publicMetadata?.tier as string) || 'FREE';
+      let subscriptionExpiresAtStr: string | null = (user.publicMetadata?.subscriptionExpiresAt as string) || null;
+      let subscriptionStatus = (user.publicMetadata?.subscriptionStatus as string) || (effectiveTier !== 'FREE' ? 'active' : 'inactive');
 
       if (process.env.DATABASE_URL) {
         try {
@@ -67,6 +67,9 @@ export default async function ChatPage() {
             email,
             name,
             avatarUrl,
+            tier: effectiveTier,
+            subscriptionStatus,
+            subscriptionExpiresAt: subscriptionExpiresAtStr,
           });
 
           if (dbUser) {

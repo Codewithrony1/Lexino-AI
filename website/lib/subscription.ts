@@ -46,8 +46,14 @@ export function evaluateSubscription(user: UserSubscriptionInfo | null | undefin
   }
 
   // If user has a paid tier (STUDENT or PRO), check expiry date
-  if (!expiresAt || isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
-    // Subscription has expired
+  let effectiveExpiresAt = expiresAt;
+  if (!effectiveExpiresAt || isNaN(effectiveExpiresAt.getTime())) {
+    // If no explicit expiry is set on an active paid plan, grant standard 1-month window
+    effectiveExpiresAt = new Date((startedAt ? startedAt.getTime() : now.getTime()) + SUBSCRIPTION_DURATION_MS);
+  }
+
+  if (effectiveExpiresAt.getTime() <= now.getTime()) {
+    // Subscription has genuinely expired
     return {
       tier: 'FREE', // Enforce Free access
       rawTier,
@@ -55,14 +61,14 @@ export function evaluateSubscription(user: UserSubscriptionInfo | null | undefin
       isExpired: true,
       status: 'expired',
       startedAt,
-      expiresAt,
+      expiresAt: effectiveExpiresAt,
       daysRemaining: 0,
     };
   }
 
   // Subscription is currently active and within valid 1-month window
-  const validTier: SubscriptionTier = rawTier === 'PRO' ? 'PRO' : 'STUDENT';
-  const daysRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+  const validTier: SubscriptionTier = rawTier === 'PRO' || rawTier === 'UNLIMITED' ? 'PRO' : 'STUDENT';
+  const daysRemaining = Math.max(0, Math.ceil((effectiveExpiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
 
   return {
     tier: validTier,
@@ -70,8 +76,8 @@ export function evaluateSubscription(user: UserSubscriptionInfo | null | undefin
     isActive: true,
     isExpired: false,
     status: 'active',
-    startedAt,
-    expiresAt,
+    startedAt: startedAt || now,
+    expiresAt: effectiveExpiresAt,
     daysRemaining,
   };
 }

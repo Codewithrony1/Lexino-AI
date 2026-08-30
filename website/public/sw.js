@@ -1,4 +1,11 @@
-const CACHE_NAME = 'lexino-assets-v2';
+// Bumped from v2: the previous version served every cached asset unconditionally and
+// forever, so any visitor who had loaded /chat kept receiving that deployment's
+// styles.css and script.js on the landing page — old CSS against new HTML. The
+// activate handler below deletes older cache names, which unsticks those clients.
+const CACHE_NAME = 'lexino-assets-v3';
+
+// All of these are unhashed filenames, so their contents change between deployments.
+// They are cached only as an offline fallback, never served ahead of the network.
 const ASSETS_TO_CACHE = [
   '/style.css',
   '/api.js',
@@ -31,30 +38,27 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests for local assets
+  // Only handle GET requests for same-origin assets we actually track.
   if (event.request.method !== 'GET') return;
-  
+
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (!ASSETS_TO_CACHE.includes(url.pathname)) return;
 
+  // Network-first: the HTTP layer already sends these with must-revalidate, so a
+  // fresh check is usually a cheap 304. The cache is the offline fallback only,
+  // which keeps the assets in step with the HTML that references them.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((response) => {
-        // Cache new static assets dynamically
-        if (response.status === 200 && ASSETS_TO_CACHE.includes(url.pathname)) {
+    fetch(event.request)
+      .then((response) => {
+        if (response.status === 200) {
           const cacheCopy = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, cacheCopy);
           });
         }
         return response;
-      });
-    }).catch(() => {
-      // Offline fallback
-      return caches.match('/public/index.html');
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });

@@ -114,12 +114,25 @@ function initHeroVideo() {
         safePlay();
     };
 
-    const whenIdle = () => {
-        if (typeof requestIdleCallback === 'function') {
-            requestIdleCallback(activate, { timeout: 2500 });
+    // Deliberately waits for the load event before even queueing idle work: with only
+    // requestIdleCallback's 2.5s timeout, the 630KB-1.2MB video started downloading
+    // inside the LCP window and stole bandwidth from the hero poster.
+    const afterLoad = (fn) => {
+        if (document.readyState === 'complete') {
+            fn();
         } else {
-            setTimeout(activate, 500);
+            window.addEventListener('load', fn, { once: true });
         }
+    };
+
+    const whenIdle = () => {
+        afterLoad(() => {
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(activate, { timeout: 2000 });
+            } else {
+                setTimeout(activate, 300);
+            }
+        });
     };
 
     if (typeof IntersectionObserver !== 'function') {
@@ -294,6 +307,19 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
         targetBtn.textContent = 'Preparing Gateway... ⚡';
     }
 
+    async function safeReadJson(res) {
+        try {
+            const ct = res.headers ? (res.headers.get('content-type') || '') : '';
+            if (ct.includes('application/json')) {
+                return await res.json();
+            }
+            const text = await res.text();
+            return { success: false, message: `Server returned non-JSON response (${res.status})` };
+        } catch (e) {
+            return { success: false, message: e.message || 'Failed to parse response' };
+        }
+    }
+
     try {
         await loadRazorpaySdk();
 
@@ -310,9 +336,9 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
             return;
         }
 
-        const orderData = await createOrderRes.json();
-        if (!createOrderRes.ok || !orderData.success) {
-            throw new Error(orderData.message || 'Could not initiate payment order.');
+        const orderData = await safeReadJson(createOrderRes);
+        if (!createOrderRes.ok || !orderData || !orderData.success) {
+            throw new Error((orderData && orderData.message) || 'Could not initiate payment order.');
         }
 
         // 2. Setup Real-Time Status Polling (for UPI QR Code scanning on mobile)
@@ -348,8 +374,8 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
                         cache: 'no-store',
                     });
                     if (statusRes.ok) {
-                        const statusData = await statusRes.json();
-                        if (statusData.isPaid || statusData.status === 'paid') {
+                        const statusData = await safeReadJson(statusRes);
+                        if (statusData && (statusData.isPaid || statusData.status === 'paid')) {
                             console.log('🎉 [UPI QR Polling] Payment detected as paid in real-time!', statusData);
                             isPaymentCompleted = true;
                             stopPolling();
@@ -410,13 +436,13 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
                         }),
                     });
 
-                    const verifyData = await verifyRes.json();
+                    const verifyData = await safeReadJson(verifyRes);
                     console.log('🔍 [Razorpay Modal] Server verification result:', verifyData);
 
-                    if (verifyRes.ok && verifyData.success) {
+                    if (verifyRes.ok && verifyData && verifyData.success) {
                         showPaymentSuccess(orderData.planName, verifyData.tier);
                     } else {
-                        showPaymentFailure(verifyData.message || 'Payment signature verification failed.');
+                        showPaymentFailure((verifyData && verifyData.message) || 'Payment signature verification failed.');
                     }
                 } catch (verifyErr) {
                     console.error('❌ [Razorpay Modal] Verification fetch error:', verifyErr);

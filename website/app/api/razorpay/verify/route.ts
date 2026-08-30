@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       success: true,
       tier: updatedTier,
       planName: targetPlan.name,
-      expiresAt: expiryInfo.expiresAt.toISOString(),
+      expiresAt: expiryInfo?.expiresAt ? expiryInfo.expiresAt.toISOString() : null,
       message: `Your account has been upgraded to ${targetPlan.name} Plan for 1 month! 🎉`,
     });
   } catch (error: any) {

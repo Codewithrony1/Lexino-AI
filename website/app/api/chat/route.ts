@@ -32,9 +32,23 @@ FOUNDER & LEADERSHIP IDENTITY:
   ### 🌌 The Vision Behind Lexino AI:
   Lexino AI was founded to establish a premium, unified AI workspace and intelligent mentor platform that empowers students, creators, and professionals to streamline workflows, organize thoughts, and explore adaptive learning in a secure, design-forward environment.
 
-RESPONSE STYLE & FORMATTING RULES (STRICT):
-You must always respond in a clean, professional, disciplined, and student-first markdown style:
+CORE PRINCIPLE — MINIMUM USEFUL RESPONSE & PROGRESSIVE DISCLOSURE:
+1. MINIMUM USEFUL RESPONSE:
+   - Your goal is NOT to maximize token length; your goal is to provide the MOST USEFUL answer using the MINIMUM number of tokens necessary.
+   - Think broadly, answer narrowly. Understand the complete intent internally, deliver only what is needed right now, and keep subsequent details ready for follow-ups.
+2. PROGRESSIVE ROADMAP & PLAN GENERATION:
+   - When asked for a roadmap, study plan, preparation strategy, or multi-step workflow, DO NOT dump all phases at once unless the user explicitly requests "complete roadmap" or "everything together".
+   - Deliver Phase 0 / First Stage in a clean, actionable format (Goal, Key Activities, Weekly Target, Milestone).
+   - Stop at a natural boundary and indicate the next step.
+3. CONTINUATION & FOLLOW-UP INTELLIGENCE:
+   - When the user replies with "next", "continue", "phase 1", "haan", "ok", or "what's next?", seamlessly advance to the next logical phase.
+   - DO NOT repeat previously completed phases or re-ask questions whose answers are already present in the conversation history.
+4. ADAPT TO USER STYLE:
+   - For short, fast queries or conversational replies ("ok", "short mein", "next"), give concise, direct answers (2–6 punchy sentences).
+   - For detailed inquiries ("explain deeply", "compare", "why"), provide structured, high-value depth.
+   - Never sacrifice correctness or actionability for brevity.
 
+RESPONSE STYLE & FORMATTING RULES (STRICT):
 1. CONTENT-APPROPRIATE STRUCTURING:
    - Default to clear, natural prose for simple queries or short explanations. Do not force artificial tables, lists, or code blocks onto a simple one-paragraph answer.
    - Only reach for a table when displaying genuinely tabular or comparative data.
@@ -70,40 +84,38 @@ const CHATGPT_SYSTEM_PROMPT = `You are Lexino AI (configured to adopt the respon
 
 const CLAUDE_SYSTEM_PROMPT = `You are Lexino AI (configured to adopt the response style and tone of Claude (Claude 3.5 Sonnet) built by Anthropic). Respond with the characteristic tone of Claude: intellectually deep, analytical, polite, admitting limitations, excellent at coding and long-form analysis. Adopt this style fully, offering deep, high-quality, logic-driven responses, but always maintain your name is Lexino AI.`;
 
-const TIMETABLE_AI_SYSTEM_PROMPT = `You are Lexino AI, configured as the "Timetable AI" — a world-class academic mentor, productivity strategist, and an elite educator with over 45 years of teaching experience. Your purpose is to act as a disciplined coaching strategist, a personal life planner, and an AI study architect for the student.
+const TIMETABLE_AI_SYSTEM_PROMPT = `You are Lexino AI operating in "Timetable LAI" mode — Your AI Academic Strategist & Disciplined Life Architect. You embody the equivalent of 45+ years of strategic mentoring, coaching, and productivity-building experience.
 
-IDENTITY & NAME RULE:
-- Under all circumstances, if asked who you are or what your name is, you must state "I am Lexino AI" or "My name is Lexino AI". Under no situation should you identify as anything else. Your name is strictly Lexino AI.
+Your mission is to architect winning study and exam strategies (SSC CGL, UPSC, JEE, NEET, and competitive exams), fix inconsistent study habits, optimize revision cycles, and build realistic, discipline-first schedules — while prioritizing the student's mental wellbeing and academic growth.
 
-FOUNDER & LEADERSHIP IDENTITY:
+IDENTITY & FOUNDER RULES:
+- Your name is strictly Lexino AI (specialized as Timetable LAI).
 - Lexino AI was founded and developed by Sumit Ravindra Choudhary — a Full Stack Developer, AI Systems Builder, and Founder of Lexino AI.
-- If asked "Who is the owner of Lexino AI?", "Who is the CEO of Lexino AI?", "Who built Lexino AI?", or "Who is the founder of Lexino AI?", you must answer: "Lexino AI was founded and developed by Sumit Ravindra Choudhary — a Full Stack Developer, AI Systems Builder, and Founder of Lexino AI."
-- If the user asks for more details, share the professional background and bio of Sumit Ravindra Choudhary.
 
-CORE PERSONALITY & EMOTIONAL INTELLIGENCE:
-- You are a deeply supportive, empathetic, and psychologically validating mentor.
-- You understand Gen-Z culture, terms, and the modern student ecosystem. Use clean, non-cringe Gen-Z slang when appropriate to build a friendly rapport, but maintain the aura of an experienced, wise, and disciplined teacher.
-- Be an emotional support system. If the student shows signs of stress, burnout, low confidence, or anxiety, validate their feelings immediately. Never dismiss their feelings. Tell them: "I got you. It's okay to feel overwhelmed, but we are going to fix this together step-by-step."
+CORE PRINCIPLE — MINIMUM USEFUL RESPONSE & PROGRESSIVE DISCLOSURE:
+1. UNDERSTAND FIRST, PLAN PROGRESSIVELY:
+   - Do NOT dump a massive 12-month schedule or all phases in a single overwhelming message.
+   - First establish your warm mentor presence and diagnose 1–2 key parameters if not already known:
+     (a) Target goal / exam.
+     (b) Current daily routine & available daily hours.
+     (c) Attention span & burnout bottlenecks.
+   - If the user has already provided their hours/goals in the chat context, DO NOT ask again.
+2. PROGRESSIVE ROADMAP DELIVERY:
+   - Present plans in progressive phases (e.g., Phase 0: Foundations & Syllabus Mapping ➔ Phase 1: Core Conceptual Coverage ➔ Phase 2: Revision & Mock Cycles).
+   - Deliver one phase completely and cleanly with: Goal, Key Subjects/Tasks, Daily/Weekly Target, and Milestone.
+   - Stop at a natural boundary and invite them to move to the next phase when ready.
+3. CONTINUATION INTELLIGENCE:
+   - When the student replies "next", "phase 1", "continue", "haan", or "what next?", advance directly to the subsequent phase without repeating past phases.
+4. SCIENTIFIC ARCHITECTURE:
+   - Implement Active Recall, Spaced Repetition, customized focus blocks, mandatory buffer windows, and 7-8 hours of sleep hygiene.
+5. TONE & RAPPORT:
+   - Maintain a warm, encouraging, experienced, and authoritative mentor-like tone throughout every turn. If the student feels overwhelmed or demotivated, validate their feelings and guide them with calm discipline.`;
 
-INTERACTIVE MULTI-STEP ENGAGEMENT RULES (CRITICAL):
-- **NEVER** output a full timetable or study plan in your first response.
-- Your initial response must be a warm, highly motivating greeting that establishes your 45+ years of experience and your goal to architect their success.
-- You must build their profile first by asking targeted questions. Do not ask all questions at once. Ask them 1-2 questions at a time to avoid overwhelming them.
-- You need to deeply understand:
-  1. Their ultimate goal (e.g., UPSC, JEE, NEET, board exams, or a specific skill).
-  2. Their current daily schedule, sleep routine, and free hours.
-  3. Their mental stamina, study capacity (how long they can focus without getting distracted), and signs of burnout.
-  4. Their productivity cycles (are they a morning bird or a night owl?).
-
-STUDY METHODOLOGY TO IMPLEMENT:
-- When you eventually generate the plan, it must incorporate scientific learning techniques:
-  1. Active Recall (self-testing, flashcards).
-  2. Spaced Repetition (scheduled review sessions).
-  3. Pomodoro or block-study intervals matched to their attention span.
-  4. Buffer times / Rest blocks to manage and prevent burnout.
-  5. Sleep hygiene integration (ensuring at least 7-8 hours of sleep).
-
-Remember: Be disciplined yet kind. Push them to their potential, but safeguard their mental health.`;
+export const AGENT_SYSTEM_PROMPTS: Record<string, string> = {
+  'default': BASE_SYSTEM_PROMPT,
+  'timetable-lai': TIMETABLE_AI_SYSTEM_PROMPT,
+  'predict-lai': `You are Lexino AI operating in "Predict LAI" mode — Your AI Prediction Engine & Academic Trend Forecaster. You specialize in data-driven academic forecasting, outcome simulations, and trend analytics. Your name is strictly Lexino AI.`,
+};
 
 
 export async function POST(request: Request) {
@@ -166,110 +178,129 @@ export async function POST(request: Request) {
     let userCooldownUntil: Date | null = null;
     let messageCount = 0;
 
+    let curUser: any = null;
+    try {
+      const { currentUser } = await import('@clerk/nextjs/server');
+      curUser = await currentUser();
+    } catch (_) {}
+
+    const clerkTier = (curUser?.publicMetadata?.tier as string) || 'FREE';
+    const clerkStatus = (curUser?.publicMetadata?.subscriptionStatus as string) || (clerkTier !== 'FREE' ? 'active' : 'inactive');
+    const clerkExpiresAt = (curUser?.publicMetadata?.subscriptionExpiresAt as string) || null;
+
+    let dbUser: any = null;
+
     if (process.env.DATABASE_URL) {
       try {
-        let dbUser: any = await prisma.user.findUnique({
+        dbUser = await prisma.user.findUnique({
           where: { id: userId },
         });
 
-        if (!dbUser) {
-          try {
-            const { currentUser } = await import('@clerk/nextjs/server');
-            const curUser = await currentUser();
-            if (curUser) {
-              const { syncCanonicalUser } = await import('@/lib/userAccount');
-              dbUser = await syncCanonicalUser({
-                id: userId,
-                email: curUser.emailAddresses[0]?.emailAddress || '',
-                name: `${curUser.firstName || ''} ${curUser.lastName || ''}`.trim() || curUser.username,
-                avatarUrl: curUser.imageUrl,
-              });
-            }
-          } catch (_) {}
+        if (!dbUser || (dbUser.tier === 'FREE' && clerkTier !== 'FREE')) {
+          if (curUser) {
+            const { syncCanonicalUser } = await import('@/lib/userAccount');
+            dbUser = await syncCanonicalUser({
+              id: userId,
+              email: curUser.emailAddresses[0]?.emailAddress || '',
+              name: `${curUser.firstName || ''} ${curUser.lastName || ''}`.trim() || curUser.username,
+              avatarUrl: curUser.imageUrl,
+              tier: clerkTier,
+              subscriptionStatus: clerkStatus,
+              subscriptionExpiresAt: clerkExpiresAt,
+            });
+          }
         }
+      } catch (dbErr) {
+        console.warn('⚠️ [Chat API] Database lookup warning:', dbErr);
+      }
+    }
 
-        if (dbUser) {
-          const { getUserEntitlements, isModelAllowedForUser } = await import('@/lib/entitlements');
-          const entitlements = getUserEntitlements(dbUser);
-          userTier = entitlements.tier;
+    const effectiveUser = dbUser || {
+      id: userId,
+      tier: clerkTier,
+      subscriptionStatus: clerkStatus,
+      subscriptionExpiresAt: clerkExpiresAt ? new Date(clerkExpiresAt) : null,
+    };
 
-          // Enforce model lock server-side (cannot be bypassed by frontend payload)
-          if (!isModelAllowedForUser(selectedModel, dbUser)) {
-            return NextResponse.json({
-              error: 'premium_model_locked',
-              message: `The model '${selectedModel}' requires a ${selectedModel.includes('claude') ? 'Pro / Unlimited' : 'Student'} subscription. Please upgrade to unlock.`,
-            }, { status: 403 });
-          }
+    const { getUserEntitlements, isModelAllowedForUser } = await import('@/lib/entitlements');
+    const entitlements = getUserEntitlements(effectiveUser);
+    userTier = entitlements.tier;
 
-          // If expired, auto-update database user record
-          if (entitlements.isExpired && dbUser.tier !== 'FREE') {
-            try {
-              await prisma.user.update({
-                where: { id: userId },
-                data: {
-                  tier: 'FREE',
-                  subscriptionStatus: 'expired',
-                },
-              });
-              console.log(`ℹ️ [Chat API] User ${userId} subscription expired on ${dbUser.subscriptionExpiresAt}. Auto-downgraded to FREE.`);
-            } catch (_) {}
-          }
+    // Enforce model lock server-side (cannot be bypassed by frontend payload)
+    if (!isModelAllowedForUser(selectedModel, effectiveUser)) {
+      return NextResponse.json({
+        error: 'premium_model_locked',
+        message: `The model '${selectedModel}' requires a ${selectedModel.includes('claude') ? 'Pro / Unlimited' : 'Student'} subscription. Please upgrade to unlock.`,
+      }, { status: 403 });
+    }
 
-          userCooldownUntil = dbUser.cooldownUntil;
-          messageCount = dbUser.messageCountToday;
-
-          if (userCooldownUntil && userCooldownUntil > new Date()) {
-            return NextResponse.json({
-              error: 'cooldown_active',
-              cooldownUntil: userCooldownUntil.toISOString(),
-              message: userTier === 'PRO'
-                ? 'High traffic detected. Priority systems optimizing your stream.'
-                : (userTier === 'STUDENT'
-                  ? 'Your premium stream quota is temporarily cooling down.'
-                  : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
-            }, { status: 429 });
-          }
-
-          const now = new Date();
-          const lastMsgAt = dbUser.lastMessageAt;
-          const isDifferentDay = !lastMsgAt ||
-            lastMsgAt.getUTCFullYear() !== now.getUTCFullYear() ||
-            lastMsgAt.getUTCMonth() !== now.getUTCMonth() ||
-            lastMsgAt.getUTCDate() !== now.getUTCDate();
-
-          if (isDifferentDay) {
-            messageCount = 0;
-          }
-
-          const limit = entitlements.dailyQueryLimit;
-          if (messageCount >= limit) {
-            const cooldownDuration = userTier === 'STUDENT' ? 30 * 60 * 1000 : 60 * 60 * 1000;
-            const nextCooldown = new Date(Date.now() + cooldownDuration);
-            
+    if (dbUser && process.env.DATABASE_URL) {
+      try {
+        // If expired, auto-update database user record
+        if (entitlements.isExpired && dbUser.tier !== 'FREE') {
+          try {
             await prisma.user.update({
               where: { id: userId },
               data: {
-                cooldownUntil: nextCooldown,
-                messageCountToday: 0,
-              }
+                tier: 'FREE',
+                subscriptionStatus: 'expired',
+              },
             });
+          } catch (_) {}
+        }
 
-            return NextResponse.json({
-              error: 'cooldown_active',
-              cooldownUntil: nextCooldown.toISOString(),
-              message: userTier === 'PRO'
-                ? 'High traffic detected. Priority systems optimizing your stream.'
-                : (userTier === 'STUDENT'
-                  ? 'Your premium stream quota is temporarily cooling down.'
-                  : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
-            }, { status: 429 });
-          }
+        userCooldownUntil = dbUser.cooldownUntil;
+        messageCount = dbUser.messageCountToday;
+
+        if (userCooldownUntil && userCooldownUntil > new Date()) {
+          return NextResponse.json({
+            error: 'cooldown_active',
+            cooldownUntil: userCooldownUntil.toISOString(),
+            message: userTier === 'PRO'
+              ? 'High traffic detected. Priority systems optimizing your stream.'
+              : (userTier === 'STUDENT'
+                ? 'Your premium stream quota is temporarily cooling down.'
+                : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
+          }, { status: 429 });
+        }
+
+        const now = new Date();
+        const lastMsgAt = dbUser.lastMessageAt;
+        const isDifferentDay = !lastMsgAt ||
+          lastMsgAt.getUTCFullYear() !== now.getUTCFullYear() ||
+          lastMsgAt.getUTCMonth() !== now.getUTCMonth() ||
+          lastMsgAt.getUTCDate() !== now.getUTCDate();
+
+        if (isDifferentDay) {
+          messageCount = 0;
+        }
+
+        const limit = entitlements.dailyQueryLimit;
+        if (messageCount >= limit) {
+          const cooldownDuration = userTier === 'STUDENT' ? 30 * 60 * 1000 : 60 * 60 * 1000;
+          const nextCooldown = new Date(Date.now() + cooldownDuration);
+          
+          await prisma.user.update({
+            where: { id: userId },
+            data: {
+              cooldownUntil: nextCooldown,
+              messageCountToday: 0,
+            }
+          });
+
+          return NextResponse.json({
+            error: 'cooldown_active',
+            cooldownUntil: nextCooldown.toISOString(),
+            message: userTier === 'PRO'
+              ? 'High traffic detected. Priority systems optimizing your stream.'
+              : (userTier === 'STUDENT'
+                ? 'Your premium stream quota is temporarily cooling down.'
+                : 'Your neural stream has reached its free energy limit. Systems will recharge in 1 hour.')
+          }, { status: 429 });
         }
       } catch (limitErr) {
         console.error('Error during quota validation:', limitErr);
       }
-    } else {
-      console.warn('DATABASE_URL is not set. Bypassing database quota check on server.');
     }
 
     // B. Sync User and Message to Database (concurrent safe writes)
@@ -313,10 +344,14 @@ export async function POST(request: Request) {
     const anthropicKey = (process.env.ANTHROPIC_API_KEY || '').trim();
     const groqKey = (process.env.GROQ_API_KEY || '').trim();
 
-    let actualModel = selectedModel;
-    let systemPrompt = BASE_SYSTEM_PROMPT;
+    const activeAssistant = (typeof parsedBody.activeAssistant === 'string' && parsedBody.activeAssistant.trim())
+      ? parsedBody.activeAssistant.trim()
+      : (selectedModel === 'timetable-ai' ? 'timetable-lai' : 'default');
 
-    if (selectedModel === 'timetable-ai') {
+    let actualModel = selectedModel;
+    let systemPrompt = AGENT_SYSTEM_PROMPTS[activeAssistant] || AGENT_SYSTEM_PROMPTS['default'];
+
+    if (activeAssistant === 'timetable-lai' || selectedModel === 'timetable-ai') {
       if (userTier === 'FREE') {
         return NextResponse.json({
           error: 'premium_locked',
@@ -329,7 +364,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       };
       actualModel = 'openai/gpt-oss-120b';
-      systemPrompt = TIMETABLE_AI_SYSTEM_PROMPT;
+      systemPrompt = AGENT_SYSTEM_PROMPTS['timetable-lai'];
       apiBody = {
         model: actualModel,
         max_tokens: 2048,
@@ -411,6 +446,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       };
       actualModel = selectedModel === 'qwen/qwen3.6-27b' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
+      systemPrompt = AGENT_SYSTEM_PROMPTS[activeAssistant] || AGENT_SYSTEM_PROMPTS['default'];
       apiBody = {
         model: actualModel,
         max_tokens: safeMaxTokens,
