@@ -1,7 +1,14 @@
 ▲ Next.js 16.2.6
 - Local:         http://localhost:3111
 - Network:       http://192.168.1.33:3111
-✓ Ready in 1131ms
+✓ Ready in 550ms
+Error: Clerk: Handshake token verification failed: The provided Clerk Secret Key is invalid. Make sure that your Clerk Secret Key is correct. Contact support@clerk.com (reason=secret-key-invalid, token-carrier=undefined).
+    at aG.handleTokenVerificationErrorInDevelopment (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:33:563)
+    at h (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:34:5221)
+    at async (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:58:1276)
+    at async handler (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:58:11998)
+    at async (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:15:36732)
+    at async th (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:15:33275)
 Error: Clerk: Handshake token verification failed: The provided Clerk Secret Key is invalid. Make sure that your Clerk Secret Key is correct. Contact support@clerk.com (reason=secret-key-invalid, token-carrier=undefined).
     at aG.handleTokenVerificationErrorInDevelopment (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:33:563)
     at h (F:\New folder (3)\Lexino-AI\website\.next\server\chunks\[root-of-the-server]__0jcgs0f._.js:34:5221)
