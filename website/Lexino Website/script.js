@@ -6,21 +6,50 @@ function toggleTheme() {
 }
 
 // --- Music and Preference Logic (Optimized for Sub-Second Performance) ---
-const bgMusic = document.getElementById('bgMusic');
+// The <audio> element is not in the served HTML: it is created on the first
+// music-toggle click, so a visitor who never opts in downloads zero audio bytes
+// and the page ships no media element at all.
+const AMBIENCE_SOURCES = [
+    { src: '/lexino-website/ambience.webm', type: 'audio/webm; codecs=opus' },
+    { src: '/lexino-website/ambience.m4a', type: 'audio/mp4; codecs=mp4a.40.2' },
+];
+
 const musicToggle = document.getElementById('musicToggle');
+let bgMusic = null;
 let isMuted = true; // Default muted for performance and browser autoplay policies
 
+function getBgMusic() {
+    if (bgMusic) return bgMusic;
+
+    const audio = document.createElement('audio');
+    audio.id = 'bgMusic';
+    audio.loop = true;
+    audio.preload = 'none';
+    audio.muted = true;
+    audio.style.display = 'none';
+
+    for (const source of AMBIENCE_SOURCES) {
+        const el = document.createElement('source');
+        el.src = source.src;
+        el.type = source.type;
+        audio.appendChild(el);
+    }
+
+    document.body.appendChild(audio);
+    bgMusic = audio;
+    return bgMusic;
+}
+
 function toggleMusic() {
-    if (!bgMusic) return;
-    
     if (isMuted) {
         // UNMUTE and play on explicit user interaction
-        bgMusic.muted = false;
-        bgMusic.volume = 0.15;
+        const audio = getBgMusic();
+        audio.muted = false;
+        audio.volume = 0.15;
         if (musicToggle) musicToggle.textContent = '🔊';
         isMuted = false;
-        
-        const playPromise = bgMusic.play();
+
+        const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.catch(e => {
                 console.log('Audio playback waiting for interaction:', e);
@@ -30,11 +59,11 @@ function toggleMusic() {
         }
     } else {
         // MUTE
-        bgMusic.muted = true;
+        if (bgMusic) bgMusic.muted = true;
         if (musicToggle) musicToggle.textContent = '🔇';
         isMuted = true;
     }
-    
+
     localStorage.setItem('musicMuted', isMuted.toString());
 }
 
@@ -55,19 +84,108 @@ function createParticles() {
     }
 }
 
+// Hero clip: the poster (a ~35 KB WebP) is what paints — and therefore what LCP
+// measures. The MP4 itself is only requested once the element is near the viewport
+// and the main thread is idle, and it is paused whenever it is not on screen.
+function initHeroVideo() {
+    const video = document.querySelector('.demo-preview');
+    if (!video) return;
+
+    const chooseSource = () => {
+        const compact = window.matchMedia('(max-width: 700px)').matches;
+        return (compact && video.dataset.srcMobile) || video.dataset.srcDesktop;
+    };
+
+    const safePlay = () => {
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {});
+        }
+    };
+
+    let activated = false;
+    const activate = () => {
+        if (activated) return;
+        activated = true;
+        const src = chooseSource();
+        if (!src) return;
+        video.src = src;
+        video.load();
+        safePlay();
+    };
+
+    // Deliberately waits for the load event before even queueing idle work: with only
+    // requestIdleCallback's 2.5s timeout, the 630KB-1.2MB video started downloading
+    // inside the LCP window and stole bandwidth from the hero poster.
+    const afterLoad = (fn) => {
+        if (document.readyState === 'complete') {
+            fn();
+        } else {
+            window.addEventListener('load', fn, { once: true });
+        }
+    };
+
+    const whenIdle = () => {
+        afterLoad(() => {
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(activate, { timeout: 2000 });
+            } else {
+                setTimeout(activate, 300);
+            }
+        });
+    };
+
+    if (typeof IntersectionObserver !== 'function') {
+        whenIdle();
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                if (!activated) whenIdle();
+                else if (video.paused && !document.hidden) safePlay();
+            } else if (activated && !video.paused) {
+                video.pause();
+            }
+        }
+    }, { rootMargin: '200px 0px' });
+    observer.observe(video);
+
+    document.addEventListener('visibilitychange', () => {
+        if (!activated) return;
+        if (document.hidden) video.pause();
+        else if (video.dataset.onScreen === '1') safePlay();
+    });
+
+    // Track on-screen state for the visibilitychange handler above.
+    const screenObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            video.dataset.onScreen = entry.isIntersecting ? '1' : '0';
+        }
+    });
+    screenObserver.observe(video);
+}
+
 function initLanding() {
     // 1. Load Saved Theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light') {
         document.body.classList.add('light-mode');
     }
-    
+
     // 2. Initialize Audio in Muted/Ready state
     isMuted = true;
     if (musicToggle) musicToggle.textContent = '🔇';
 
     // 3. Create background particles
     createParticles();
+
+    // 4. Wire up deferred media and below-the-fold animations
+    initAuthCta();
+    initHeroVideo();
+    initCardReveal();
+    initWaves();
 }
 
 if (document.readyState === 'loading') {
@@ -77,8 +195,28 @@ if (document.readyState === 'loading') {
 }
 
 // Page Navigation
+// The landing page is statically generated, so the signed-in CTA is resolved on the
+// client from Clerk's JS-readable session hint cookie instead of rendering the page
+// per request. `/login?redirect_url=/chat` already forwards signed-in users to the
+// chat workspace, so the click target stays correct even if the hint is unavailable.
+function hasClerkSession() {
+    const match = document.cookie.match(/(?:^|;\s*)__client_uat(?:_[^=;]+)?=([^;]*)/);
+    if (!match) return false;
+    const issuedAt = Number(decodeURIComponent(match[1]));
+    return Number.isFinite(issuedAt) && issuedAt > 0;
+}
+
+function initAuthCta() {
+    if (!hasClerkSession()) return;
+    document.querySelectorAll('.cta-button').forEach(button => {
+        if (button.textContent.trim() === 'Experience Lexino AI Now 🚀') {
+            button.textContent = 'Go to Chat Dashboard 🚀';
+        }
+    });
+}
+
 function navigateToTry() {
-    window.location.href = '/login?redirect_url=/chat';
+    window.location.href = hasClerkSession() ? '/chat' : '/login?redirect_url=/chat';
 }
 
 function navigateToHome() {
@@ -418,13 +556,18 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 // Observe cards for scroll animations
-window.addEventListener('load', () => {
+function initCardReveal() {
     const cards = document.querySelectorAll('.card');
+    if (!cards.length) return;
+
+    if (typeof IntersectionObserver !== 'function') return;
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
+                observer.unobserve(entry.target);
             }
         });
     }, { threshold: 0.1 });
@@ -432,17 +575,21 @@ window.addEventListener('load', () => {
     cards.forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(30px)';
-        card.style.transition = 'all 0.6s ease';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
-});
+}
 
 
-// Join the lexino ERA section 
+// Join the lexino ERA section
+// Both canvases sit below the fold. The render loop only runs while the canvas is
+// actually on screen and the tab is visible, so it costs nothing during page load.
 
 function initWave(canvasId, hueStart, hueEnd, direction) {
   const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return;
   let w, h;
 
   function resize() {
@@ -450,7 +597,16 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
     h = canvas.height = canvas.offsetHeight * devicePixelRatio;
   }
   resize();
-  window.addEventListener('resize', resize);
+
+  let resizePending = false;
+  window.addEventListener('resize', () => {
+    if (resizePending) return;
+    resizePending = true;
+    requestAnimationFrame(() => {
+      resizePending = false;
+      resize();
+    });
+  }, { passive: true });
 
   const cols = 26, rows = 14;
   const pts = [];
@@ -459,6 +615,8 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
       pts.push({ c, r, offset: Math.random() * Math.PI * 2 });
     }
   }
+
+  let frameId = null;
 
   function draw(t) {
     ctx.clearRect(0, 0, w, h);
@@ -480,10 +638,42 @@ function initWave(canvasId, hueStart, hueEnd, direction) {
       ctx.arc(px, py, (0.6 + persp * 0.9) * devicePixelRatio, 0, Math.PI * 2);
       ctx.fill();
     }
-    requestAnimationFrame(draw);
+    frameId = requestAnimationFrame(draw);
   }
-  requestAnimationFrame(draw);
+
+  let onScreen = false;
+
+  function start() {
+    if (frameId !== null) return;
+    frameId = requestAnimationFrame(draw);
+  }
+
+  function stop() {
+    if (frameId === null) return;
+    cancelAnimationFrame(frameId);
+    frameId = null;
+  }
+
+  function sync() {
+    if (onScreen && !document.hidden) start();
+    else stop();
+  }
+
+  if (typeof IntersectionObserver === 'function') {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) onScreen = entry.isIntersecting;
+      sync();
+    }, { rootMargin: '120px 0px' });
+    observer.observe(canvas);
+  } else {
+    onScreen = true;
+    sync();
+  }
+
+  document.addEventListener('visibilitychange', sync);
 }
 
-initWave('wave-left', 280, 250, 'left');
-initWave('wave-right', 200, 230, 'right');
+function initWaves() {
+  initWave('wave-left', 280, 250, 'left');
+  initWave('wave-right', 200, 230, 'right');
+}

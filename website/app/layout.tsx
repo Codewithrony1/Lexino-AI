@@ -1,19 +1,18 @@
 import type { Metadata, Viewport } from 'next';
 import { Poppins, Orbitron } from 'next/font/google';
-import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-poppins',
   display: 'swap',
 });
 
 const orbitron = Orbitron({
   subsets: ['latin'],
-  weight: ['500', '700'],
   variable: '--font-orbitron',
   display: 'swap',
 });
@@ -171,35 +170,21 @@ const jsonLdData = [
   },
 ];
 
+// Clerk is mounted per route group — see components/shared/AppClerkProvider.tsx —
+// so the static marketing pages ship no Clerk JS.
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider
-      publishableKey={
-        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-        'pk_test_Y2xlYW4td2hpcHBldC04OS5jbGVyay5hY2NvdW50cy5kZXYk'
-      }
-      signInUrl="/login"
-      signUpUrl="/signup"
-      signInForceRedirectUrl="/chat"
-      signUpForceRedirectUrl="/chat"
-      signInFallbackRedirectUrl="/chat"
-      signUpFallbackRedirectUrl="/chat"
-    >
-      <html
-        lang="en"
-        className={`${poppins.variable} ${orbitron.variable}`}
-        suppressHydrationWarning
-      >
-        <head />
-        <body>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
-          />
-          {children}
-          <Analytics />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className={`${poppins.variable} ${orbitron.variable}`} suppressHydrationWarning>
+      <head />
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
+        />
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }

@@ -1,11 +1,7 @@
 import type { Metadata } from 'next';
-import { auth } from '@clerk/nextjs/server';
-import { ClientScriptLoader } from '@/components/shared/ClientScriptLoader';
 import { STATIC_LANDING_HTML } from '@/lib/staticLandingHtml';
 
 const siteUrl = 'https://lexinoai.in';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Lexino AI — Best AI Chatbot for Study, Exam Preparation & Coding',
@@ -61,23 +57,9 @@ const homeFaqSchema = {
   ],
 };
 
-export default async function LandingPage() {
-  let userId: string | null = null;
-  try {
-    const authData = await auth();
-    userId = authData?.userId ?? null;
-  } catch {
-    userId = null;
-  }
-
-  let websiteMarkup = STATIC_LANDING_HTML;
-
-  if (userId) {
-    websiteMarkup = websiteMarkup
-      .replaceAll('Experience Lexino AI Now 🚀', 'Go to Chat Dashboard 🚀')
-      .replaceAll('navigateToTry()', "window.location.href='/chat'");
-  }
-
+// Marketing content with no per-visitor data: prerendered once at build time.
+// The signed-in CTA swap happens on the client in /lexino-website/script.js.
+export default function LandingPage() {
   return (
     <>
       <script
@@ -85,8 +67,8 @@ export default async function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqSchema) }}
       />
       <link rel="stylesheet" href="/lexino-website/styles.css" />
-      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: websiteMarkup }} />
-      <ClientScriptLoader scripts={['/lexino-website/script.js']} />
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: STATIC_LANDING_HTML }} />
+      <script defer src="/lexino-website/script.js" />
     </>
   );
 }

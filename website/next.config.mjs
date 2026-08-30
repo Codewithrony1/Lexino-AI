@@ -55,11 +55,23 @@ const nextConfig = {
         ],
       },
       {
-        source: '/lexino-website/:path*',
+        // Media and fonts under /lexino-website are content-stable, so they may be
+        // cached hard. styles.css and script.js are NOT content-hashed, so they must
+        // revalidate or visitors would be stuck on a previous deployment's assets.
+        source: '/lexino-website/:path*.(ico|png|jpg|jpeg|svg|webp|avif|mp4|webm|mp3|m4a|woff|woff2|ttf)',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/lexino-website/:file(styles.css|script.js)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
           },
         ],
       },
@@ -82,7 +94,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:file.(ico|png|jpg|jpeg|svg|webp|avif|mp4|mp3|woff|woff2|ttf)',
+        source: '/:file.(ico|png|jpg|jpeg|svg|webp|avif|mp4|webm|mp3|m4a|woff|woff2|ttf)',
         headers: [
           {
             key: 'Cache-Control',

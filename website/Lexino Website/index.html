@@ -20,16 +20,17 @@
             <div class="bg-ring ring-inner"></div>
         </div>
     </div>
-    <!-- Background Music (Zero initial preload for sub-second LCP) -->
-    <audio id="bgMusic" loop preload="none" style="display: none;">
-        <source src="/lexino-website/Manifest Anything You Desire  10 Minute Meditation Music.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+    <!-- Background ambience: the <audio> element is created by script.js on the first
+         music-toggle click, so no audio bytes or media element exist on initial load. -->
     <!-- Navigation -->
     <nav>
        <div class="logo-container" style="display: flex; align-items: center; gap: 12px;">
-    <img src="/lexino-website/Lexino_AI_Logo-removebg-preview.png" alt="Lexino AI logo" class="brand-logo" style="height:45px;width:auto;object-fit:contain;">
-    
+    <picture>
+        <source type="image/avif" srcset="/lexino-website/logo-96.avif 96w, /lexino-website/logo-160.avif 160w" sizes="48px">
+        <source type="image/webp" srcset="/lexino-website/logo-96.webp 96w, /lexino-website/logo-160.webp 160w" sizes="48px">
+        <img src="/lexino-website/Lexino_AI_Logo-removebg-preview.png" alt="Lexino AI logo" class="brand-logo" width="516" height="484" decoding="async" style="height:45px;width:auto;object-fit:contain;">
+    </picture>
+
     <div class="logo" style="margin: 0;">LEXINO<sup class="logo-sup">AI</sup></div>
 </div>
         <div class="nav-right">
@@ -45,7 +46,7 @@
                 <li><a href="/privacy" onclick="window.location.href='/privacy'; return false;">Privacy</a></li>
             </ul>
             <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
-            <button class="music-toggle" id="musicToggle" onclick="toggleMusic()">🔊</button>
+            <button class="music-toggle" id="musicToggle" onclick="toggleMusic()">🔇</button>
         </div>
     </nav>
     <div class="page-content">
@@ -57,7 +58,11 @@
                 <p>Lexino AI isn't just another assistant — it's your thinking partner, your creative spark, and your digital mirror that learns, evolves, and grows with you.</p>
                 <button class="cta-button" onclick="navigateToTry()">Experience Lexino AI Now 🚀</button>
                 <div class="video-container">
-                    <video class="demo-preview" src="/lexino-website/mp_.mp4" preload="metadata" autoplay loop muted playsinline></video>
+                    <video class="demo-preview" width="1280" height="720"
+                           poster="/lexino-website/hero-poster.webp"
+                           preload="none" loop muted playsinline
+                           data-src-desktop="/lexino-website/hero-720.mp4"
+                           data-src-mobile="/lexino-website/hero-480.mp4"></video>
                 </div>
             </section>
             <!-- About Section -->
@@ -120,7 +125,11 @@
                 <div class="why-section">
                     <div class="why-visual">
                         <div class="why-image-card">
-                            <img src="/lexino-website/Image22.png" alt="Lexino AI smart assistant preview">
+                            <picture>
+                                <source type="image/avif" sizes="(max-width: 582px) 195px, (max-width: 1182px) 33vw, 388px" srcset="/lexino-website/Image22-480.avif 480w, /lexino-website/Image22-720.avif 720w, /lexino-website/Image22-969.avif 969w">
+                                <source type="image/webp" sizes="(max-width: 582px) 195px, (max-width: 1182px) 33vw, 388px" srcset="/lexino-website/Image22-480.webp 480w, /lexino-website/Image22-720.webp 720w, /lexino-website/Image22-969.webp 969w">
+                                <img src="/lexino-website/Image22.png" alt="Lexino AI smart assistant preview" width="969" height="1624" loading="lazy" decoding="async">
+                            </picture>
                         </div>
                     </div>
                     <div class="why-content">
@@ -404,7 +413,7 @@
             <div class="modal-header">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5rem;">🎓</span>
-                    <h3 style="margin: 0; font-family: 'Orbitron', sans-serif; font-size: 1.25rem;">Student Verification</h3>
+                    <h3 style="margin: 0; font-family: var(--font-orbitron), 'Orbitron', sans-serif; font-size: 1.25rem;">Student Verification</h3>
                 </div>
                 <button class="modal-close" onclick="closeStudentModal()" aria-label="Close modal">✕</button>
             </div>
@@ -436,7 +445,7 @@
     <div class="lexino-modal-overlay" id="paymentSuccessModal" style="display: none;" onclick="if(event.target === this) closeSuccessModal()">
         <div class="lexino-modal-card" style="text-align: center; border-color: rgba(52, 211, 153, 0.4); box-shadow: 0 0 40px rgba(52, 211, 153, 0.2);" onclick="event.stopPropagation()">
             <div style="font-size: 3.5rem; margin-bottom: 1rem; animation: pulse 2s infinite;">🎉</div>
-            <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: #34d399; margin-bottom: 0.5rem;">Payment Successful!</h3>
+            <h3 style="font-family: var(--font-orbitron), 'Orbitron', sans-serif; font-size: 1.5rem; color: #34d399; margin-bottom: 0.5rem;">Payment Successful!</h3>
             <p id="successPlanText" style="font-size: 1.05rem; margin-bottom: 1.5rem; opacity: 0.9;">Your Lexino AI Plan has been activated.</p>
             <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.9rem; color: #e2e8f0; text-align: left;">
                 ✓ Priority neural response streaming unlocked<br>
@@ -451,7 +460,7 @@
     <div class="lexino-modal-overlay" id="paymentFailureModal" style="display: none;" onclick="if(event.target === this) closeFailureModal()">
         <div class="lexino-modal-card" style="text-align: center; border-color: rgba(245, 158, 11, 0.35);" onclick="event.stopPropagation()">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-            <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.35rem; color: #f59e0b; margin-bottom: 0.5rem;">Payment Incomplete</h3>
+            <h3 style="font-family: var(--font-orbitron), 'Orbitron', sans-serif; font-size: 1.35rem; color: #f59e0b; margin-bottom: 0.5rem;">Payment Incomplete</h3>
             <p id="failureReasonText" style="font-size: 0.95rem; margin-bottom: 1.5rem; opacity: 0.85; line-height: 1.6;">
                 The transaction was not completed. No charges were made to your account.
             </p>

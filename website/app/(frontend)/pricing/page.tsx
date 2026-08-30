@@ -1,11 +1,7 @@
 import type { Metadata } from 'next';
-import { auth } from '@clerk/nextjs/server';
 import { STATIC_LANDING_HTML } from '@/lib/staticLandingHtml';
-import { ClientScriptLoader } from '@/components/shared/ClientScriptLoader';
 
 const siteUrl = 'https://lexinoai.in';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Pricing Plans — Free, Student & Pro Access for Exam & Career Prep',
@@ -53,23 +49,9 @@ const pricingFaqSchema = {
   ],
 };
 
-export default async function PricingPage() {
-  let userId: string | null = null;
-  try {
-    const authData = await auth();
-    userId = authData?.userId ?? null;
-  } catch {
-    userId = null;
-  }
-
-  let websiteMarkup = STATIC_LANDING_HTML;
-
-  if (userId) {
-    websiteMarkup = websiteMarkup
-      .replaceAll('Experience Lexino AI Now 🚀', 'Go to Chat Dashboard 🚀')
-      .replaceAll('navigateToTry()', "window.location.href='/chat'");
-  }
-
+// Same statically prerendered marketing markup as the landing page; the signed-in
+// CTA swap is handled on the client in /lexino-website/script.js.
+export default function PricingPage() {
   return (
     <>
       <script
@@ -77,17 +59,15 @@ export default async function PricingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingFaqSchema) }}
       />
       <link rel="stylesheet" href="/lexino-website/styles.css" />
-      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: websiteMarkup }} />
-      <ClientScriptLoader scripts={['/lexino-website/script.js']} />
-      
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: STATIC_LANDING_HTML }} />
+      <script defer src="/lexino-website/script.js" />
+
       <script
         dangerouslySetInnerHTML={{
           __html: `
-            window.addEventListener('load', () => {
-              setTimeout(() => {
-                const pricing = document.getElementById('pricing');
-                if (pricing) pricing.scrollIntoView({ behavior: 'smooth' });
-              }, 150);
+            document.addEventListener('DOMContentLoaded', () => {
+              const pricing = document.getElementById('pricing');
+              if (pricing) pricing.scrollIntoView({ behavior: 'smooth' });
             });
           `,
         }}

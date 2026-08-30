@@ -29,15 +29,33 @@ if (fs.existsSync(srcScript)) {
 }
 
 // 3. Sync all media assets (images, videos, audio)
+// Served from /lexino-website/<file> only — no second copy in the public root,
+// because nothing references the root paths and the duplicate doubled deploy weight.
+const MEDIA_EXTENSIONS = [
+  '.png', '.jpg', '.jpeg', '.svg', '.ico',
+  '.webp', '.avif',
+  '.mp4', '.webm',
+  '.mp3', '.m4a',
+];
+
+// Uncompressed masters kept in source control for future re-encodes, but not shipped:
+// the page now references the optimized derivatives instead.
+const UNSHIPPED_MASTERS = new Set([
+  'mp_.mp4',
+  'Manifest Anything You Desire  10 Minute Meditation Music.mp3',
+]);
+
 const allFiles = fs.readdirSync(lexinoWebsiteDir);
 for (const file of allFiles) {
   const ext = path.extname(file).toLowerCase();
-  if (['.png', '.jpg', '.jpeg', '.svg', '.mp4', '.mp3', '.webp', '.ico'].includes(ext)) {
-    const src = path.join(lexinoWebsiteDir, file);
-    fs.copyFileSync(src, path.join(publicDir, file));
-    fs.copyFileSync(src, path.join(publicLexinoDir, file));
-    console.log(`✅ Synchronized asset: ${file}`);
+  if (!MEDIA_EXTENSIONS.includes(ext)) continue;
+  if (UNSHIPPED_MASTERS.has(file)) {
+    console.log(`⏭️  Skipped unshipped master: ${file}`);
+    continue;
   }
+  const src = path.join(lexinoWebsiteDir, file);
+  fs.copyFileSync(src, path.join(publicLexinoDir, file));
+  console.log(`✅ Synchronized asset: ${file}`);
 }
 
 // 4. Extract and generate staticLandingHtml.ts from Lexino Website/index.html
@@ -51,8 +69,8 @@ if (fs.existsSync(landingHtmlPath)) {
     bodyContent = bodyContent.replace(/<script[\s\S]*?<\/script>/gi, '');
   }
 
-  bodyContent = bodyContent.replace(/\/website\/Lexino Website\/Image22\.png/g, '/Image22.png');
-  bodyContent = bodyContent.replace(/src="Image22\.png"/g, 'src="/Image22.png"');
+  bodyContent = bodyContent.replace(/\/website\/Lexino Website\/Image22\.png/g, '/lexino-website/Image22.png');
+  bodyContent = bodyContent.replace(/src="Image22\.png"/g, 'src="/lexino-website/Image22.png"');
 
   const tsContent = '// Auto-generated during build from Lexino Website/index.html\nexport const STATIC_LANDING_HTML = ' + JSON.stringify(bodyContent) + ';\n';
   fs.writeFileSync(path.join(libDir, 'staticLandingHtml.ts'), tsContent);
