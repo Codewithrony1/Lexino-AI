@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { STATIC_LANDING_HTML } from '@/lib/staticLandingHtml';
 
+export const dynamic = 'force-static';
+export const revalidate = false;
+
 const siteUrl = 'https://lexinoai.in';
 
 export const metadata: Metadata = {
@@ -49,8 +52,45 @@ const pricingFaqSchema = {
   ],
 };
 
-// Same statically prerendered marketing markup as the landing page; the signed-in
-// CTA swap is handled on the client in /lexino-website/script.js.
+const criticalHeroCss = `
+:root {
+  --color-bg-dark: #050506;
+  --color-bg-light: #f8fafc;
+  --color-surface-dark: rgba(14, 14, 18, 0.72);
+  --color-text-dark: #f2f2f5;
+  --color-text-secondary-dark: #a9a9b4;
+  --color-primary: #a855f7;
+  --color-secondary: #ec4899;
+  --color-accent: #6366f1;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, .page-content, .home-page {
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #050506;
+  color: #f2f2f5;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+.bg-animation {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; overflow: hidden; pointer-events: none; background: #050506;
+  contain: layout paint;
+}
+nav {
+  position: fixed; top: 0; width: 100%; padding: 1.25rem 6%;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 100; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: rgba(5, 5, 6, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.brand-logo { height: 45px; width: auto; object-fit: contain; }
+.logo { font-family: var(--font-orbitron), 'Orbitron', sans-serif; font-size: 1.4rem; font-weight: 800; letter-spacing: 2px; color: #fff; }
+.logo-sup { font-size: 0.65rem; color: #a855f7; margin-left: 2px; }
+.nav-right { display: flex; align-items: center; gap: 1.5rem; }
+.nav-links { display: flex; gap: 1.75rem; list-style: none; }
+.nav-links a { color: #a9a9b4; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+`;
+
 export default function PricingPage() {
   return (
     <>
@@ -58,7 +98,13 @@ export default function PricingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingFaqSchema) }}
       />
+      {/* Critical inlined CSS for 0ms First Paint */}
+      <style dangerouslySetInnerHTML={{ __html: criticalHeroCss }} />
+
+      {/* Preload critical stylesheet */}
+      <link rel="preload" href="/lexino-website/styles.css" as="style" />
       <link rel="stylesheet" href="/lexino-website/styles.css" />
+
       <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: STATIC_LANDING_HTML }} />
       <script defer src="/lexino-website/script.js" />
 

@@ -25,13 +25,16 @@ export async function POST(request: Request) {
       razorpay_payment_id,
       razorpay_signature,
       planId,
+      plan_id,
     } = body;
+
+    const effectivePlanId = planId || plan_id;
 
     console.log('🔍 [Razorpay Verify] Params:', {
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       hasSignature: !!razorpay_signature,
-      planId,
+      planId: effectivePlanId,
       sessionUserId: authUserId,
     });
 
@@ -62,7 +65,12 @@ export async function POST(request: Request) {
         } catch (e) {}
       }
       return NextResponse.json(
-        { error: 'invalid_signature', message: 'Payment signature verification failed. Please contact support.' },
+        {
+          error: 'invalid_signature',
+          message: `Payment could not be verified for transaction ${razorpay_payment_id}. Please contact support at lexinoofficial@gmail.com with your payment ID.`,
+          paymentId: razorpay_payment_id,
+          orderId: razorpay_order_id,
+        },
         { status: 400 }
       );
     }
@@ -101,7 +109,7 @@ export async function POST(request: Request) {
     }
 
     // Security: Determine target plan from server-side order record (prevent client planId tampering)
-    const trustedPlanId = (existingPayment?.planId || planId || 'student').toLowerCase();
+    const trustedPlanId = (existingPayment?.planId || effectivePlanId || 'student').toLowerCase();
     const targetPlan = PLANS[trustedPlanId] || PLANS['student'];
     const updatedTier = targetPlan.tier;
 
@@ -124,11 +132,34 @@ export async function POST(request: Request) {
       amount: targetPlan.amountInPaise,
     });
 
+    const currentPeriodEnd = expiryInfo?.expiresAt ? expiryInfo.expiresAt.toISOString() : null;
+    const startedOn = expiryInfo?.startedAt ? expiryInfo.startedAt.toISOString() : new Date().toISOString();
+
+    const subscriptionObject = {
+      plan: targetPlan.id,
+      planName: targetPlan.name,
+      tier: updatedTier,
+      status: 'active',
+      amountPaid: targetPlan.amountInPaise,
+      amountPaidFormatted: `₹${targetPlan.priceInr}`,
+      startedOn,
+      currentPeriodEnd,
+      autoRenew: false,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+    };
+
     return NextResponse.json({
       success: true,
+      subscription: subscriptionObject,
       tier: updatedTier,
+      plan: targetPlan.id,
       planName: targetPlan.name,
-      expiresAt: expiryInfo?.expiresAt ? expiryInfo.expiresAt.toISOString() : null,
+      status: 'active',
+      amount: targetPlan.amountInPaise,
+      amountPaid: targetPlan.amountInPaise,
+      expiresAt: currentPeriodEnd,
+      currentPeriodEnd,
       message: `Your account has been upgraded to ${targetPlan.name} Plan for 1 month! 🎉`,
     });
   } catch (error: any) {
@@ -139,4 +170,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

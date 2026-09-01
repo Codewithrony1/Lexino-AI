@@ -67,21 +67,24 @@ function toggleMusic() {
     localStorage.setItem('musicMuted', isMuted.toString());
 }
 
-// Create animated particles
+// Create animated particles (optimized for compositor & idle execution)
 function createParticles() {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return;
     const container = document.querySelector('.bg-animation');
     if (!container || container.querySelector('.particle')) return;
-    const particleCount = 50;
+    const particleCount = 18;
+    const fragment = document.createDocumentFragment();
 
     for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
         particle.style.left = Math.random() * 100 + '%';
         particle.style.top = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 15 + 's';
-        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        container.appendChild(particle);
+        particle.style.animationDelay = Math.random() * 12 + 's';
+        particle.style.animationDuration = (Math.random() * 8 + 12) + 's';
+        fragment.appendChild(particle);
     }
+    container.appendChild(fragment);
 }
 
 // Hero clip: the poster (a ~35 KB WebP) is what paints — and therefore what LCP
@@ -168,7 +171,7 @@ function initHeroVideo() {
 }
 
 function initLanding() {
-    // 1. Load Saved Theme
+    // 1. Load Saved Theme immediately
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light') {
         document.body.classList.add('light-mode');
@@ -178,20 +181,77 @@ function initLanding() {
     isMuted = true;
     if (musicToggle) musicToggle.textContent = '🔇';
 
-    // 3. Create background particles
-    createParticles();
-
-    // 4. Wire up deferred media and below-the-fold animations
+    // 3. Fast auth CTA check
     initAuthCta();
-    initHeroVideo();
-    initCardReveal();
-    initWaves();
+
+    // 4. Defer non-critical setup until main thread is idle (Priority 6)
+    const deferTask = (fn) => {
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(fn, { timeout: 1500 });
+        } else {
+            setTimeout(fn, 100);
+        }
+    };
+
+    deferTask(() => {
+        createParticles();
+        initPricingStatus();
+        initHeroVideo();
+        initCardReveal();
+        initWaves();
+    });
 }
 
 if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', initLanding);
 } else {
     initLanding();
+}
+
+// Dynamically fetch and display authenticated user's current subscription on Pricing cards (Phase 9.5)
+async function initPricingStatus() {
+    if (!hasClerkSession()) return;
+    try {
+        const res = await fetch('/api/subscription/status', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.authenticated) return;
+
+        const currentTier = (data.tier || 'FREE').toUpperCase();
+        const isExpired = !!data.isExpired;
+        const studentBtn = document.getElementById('studentCheckoutBtn');
+        const proBtn = document.getElementById('proCheckoutBtn');
+
+        if (currentTier === 'STUDENT' && !isExpired) {
+            if (studentBtn) {
+                studentBtn.textContent = 'Active Current Plan ✓';
+                studentBtn.disabled = true;
+                studentBtn.style.opacity = '0.9';
+                studentBtn.style.background = 'rgba(52, 211, 153, 0.2)';
+                studentBtn.style.borderColor = '#34d399';
+                studentBtn.style.color = '#34d399';
+                studentBtn.title = 'You are currently subscribed to the Student Plan';
+            }
+            if (proBtn) {
+                proBtn.textContent = 'Upgrade to Pro ⚡';
+            }
+        } else if (currentTier === 'PRO' && !isExpired) {
+            if (proBtn) {
+                proBtn.textContent = 'Active Current Plan ✓';
+                proBtn.disabled = true;
+                proBtn.style.opacity = '0.9';
+                proBtn.style.background = 'rgba(0, 240, 255, 0.2)';
+                proBtn.style.borderColor = '#00f0ff';
+                proBtn.style.color = '#00f0ff';
+                proBtn.title = 'You are currently subscribed to the Pro Plan';
+            }
+            if (studentBtn) {
+                studentBtn.textContent = 'Switch to Student';
+            }
+        }
+    } catch (e) {
+        console.warn('Subscription status check note:', e);
+    }
 }
 
 // Page Navigation
@@ -423,7 +483,7 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
                 isPaymentCompleted = true;
                 stopPolling();
 
-                // 4. Verify signature on server
+                // 4. Verify signature on server (Phase 9.2)
                 try {
                     const verifyRes = await fetch('/api/verify-payment', {
                         method: 'POST',
@@ -440,13 +500,33 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
                     console.log('🔍 [Razorpay Modal] Server verification result:', verifyData);
 
                     if (verifyRes.ok && verifyData && verifyData.success) {
-                        showPaymentSuccess(orderData.planName, verifyData.tier);
+                        showPaymentSuccess(verifyData);
+                    } else if (verifyData && verifyData.error === 'invalid_signature') {
+                        showPaymentFailure(verifyData.message || `Payment could not be verified for transaction ID ${response.razorpay_payment_id}. Please contact support at lexinoofficial@gmail.com.`);
                     } else {
-                        showPaymentFailure((verifyData && verifyData.message) || 'Payment signature verification failed.');
+                        // Resilient Fallback: If verify call encountered server error but payment was captured, poll status for 6 seconds
+                        let recovered = false;
+                        for (let attempt = 0; attempt < 3; attempt++) {
+                            await new Promise(r => setTimeout(r, 2000));
+                            try {
+                                const pollRes = await fetch(`/api/subscription/status?t=${Date.now()}`);
+                                if (pollRes.ok) {
+                                    const pollData = await safeReadJson(pollRes);
+                                    if (pollData && pollData.tier && pollData.tier !== 'FREE') {
+                                        showPaymentSuccess(pollData);
+                                        recovered = true;
+                                        break;
+                                    }
+                                }
+                            } catch (_) {}
+                        }
+                        if (!recovered) {
+                            showPaymentFailure((verifyData && verifyData.message) || `Payment received, but verification encountered a processing delay for ID ${response.razorpay_payment_id}. Your plan will activate automatically via webhook.`);
+                        }
                     }
                 } catch (verifyErr) {
                     console.error('❌ [Razorpay Modal] Verification fetch error:', verifyErr);
-                    showPaymentFailure('Network error verifying transaction. Please contact support if amount was deducted.');
+                    showPaymentFailure(`Network error verifying transaction (${response.razorpay_payment_id}). If amount was deducted, your plan is activating automatically via webhook.`);
                 }
             },
         };
@@ -473,8 +553,35 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
     }
 }
 
-function showPaymentSuccess(planName, tier) {
-    const targetTier = (tier || (planName?.toLowerCase().includes('student') ? 'STUDENT' : 'PRO')).toUpperCase();
+// Render accurate post-payment details modal (Phase 9.4)
+function showPaymentSuccess(details, tier) {
+    let planName = 'Pro';
+    let targetTier = 'PRO';
+    let amountStr = '₹299';
+    let validityStr = '';
+
+    if (details && typeof details === 'object') {
+        planName = details.planName || (details.subscription && details.subscription.planName) || (details.tier === 'STUDENT' ? 'Student' : 'Pro');
+        targetTier = (details.tier || (details.subscription && details.subscription.tier) || (planName.toLowerCase().includes('student') ? 'STUDENT' : 'PRO')).toUpperCase();
+        const amt = details.amount || details.amountPaid || (details.subscription && details.subscription.amountPaid);
+        if (amt) {
+            amountStr = `₹${Math.round(amt / 100)}`;
+        } else if (targetTier === 'STUDENT') {
+            amountStr = '₹49';
+        }
+        const expiresAt = details.expiresAt || details.currentPeriodEnd || (details.subscription && details.subscription.currentPeriodEnd);
+        if (expiresAt) {
+            try {
+                const d = new Date(expiresAt);
+                validityStr = `Valid until ${d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            } catch (_) {}
+        }
+    } else if (typeof details === 'string') {
+        planName = details;
+        targetTier = (tier || (planName.toLowerCase().includes('student') ? 'STUDENT' : 'PRO')).toUpperCase();
+        amountStr = targetTier === 'STUDENT' ? '₹49' : '₹299';
+    }
+
     window.lexinoUserTier = targetTier;
 
     // Cross-tab broadcast to all open Lexino AI tabs
@@ -497,13 +604,13 @@ function showPaymentSuccess(planName, tier) {
 
     const modal = document.getElementById('paymentSuccessModal');
     const text = document.getElementById('successPlanText');
-    if (text) text.textContent = `Your Lexino AI ${planName} Plan is now active.`;
+    if (text) {
+        text.innerHTML = `<strong>Lexino AI ${planName} Plan</strong> is now active.<br><span style="font-size: 0.95rem; color: #34d399; display: inline-block; margin-top: 4px;">Amount Charged: ${amountStr} (Paid & Verified)</span>${validityStr ? `<br><span style="font-size: 0.85rem; color: #94a3b8; display: inline-block; margin-top: 2px;">${validityStr}</span>` : ''}`;
+    }
     if (modal) modal.style.display = 'flex';
 
-    // Auto-redirect to chat workspace with query parameter
-    setTimeout(() => {
-        window.location.href = `/chat?payment=success&tier=${targetTier}`;
-    }, 2000);
+    // Update pricing cards immediately
+    initPricingStatus();
 }
 
 function closeSuccessModal() {

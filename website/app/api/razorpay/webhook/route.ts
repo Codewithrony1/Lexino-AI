@@ -27,21 +27,30 @@ export async function POST(request: Request) {
     const eventType = event.event;
     console.log(`🔔 [Razorpay Webhook] Verified event: ${eventType} (ID: ${event.id || 'n/a'})`);
 
-    if (eventType === 'payment.captured' || eventType === 'order.paid') {
+    if (
+      eventType === 'payment.captured' ||
+      eventType === 'order.paid' ||
+      eventType === 'subscription.activated' ||
+      eventType === 'subscription.charged'
+    ) {
       const paymentEntity = event.payload?.payment?.entity || {};
       const orderEntity = event.payload?.order?.entity || {};
-      const orderId = paymentEntity.order_id || orderEntity.id;
-      const paymentId = paymentEntity.id;
+      const subscriptionEntity = event.payload?.subscription?.entity || {};
+      
+      const orderId = paymentEntity.order_id || orderEntity.id || subscriptionEntity.id;
+      const paymentId = paymentEntity.id || `subpay_${Date.now()}`;
 
       const notes = {
         ...(orderEntity.notes || {}),
         ...(paymentEntity.notes || {}),
+        ...(subscriptionEntity.notes || {}),
       };
 
-      let userId = notes.userId;
-      let planId = (notes.planId || '').toLowerCase();
+      let userId = notes.userId || notes.user_id;
+      let planId = (notes.planId || notes.plan_id || '').toLowerCase();
 
       console.log('🔍 [Razorpay Webhook] Event details:', {
+        eventType,
         orderId,
         paymentId,
         notesUserId: userId,
@@ -86,13 +95,14 @@ export async function POST(request: Request) {
           const { activateSubscriptionForUser } = await import('@/lib/userAccount');
           await activateSubscriptionForUser({
             userId,
-            email: notes.email || null,
+            email: notes.email || notes.userEmail || null,
             targetTier,
             planId: targetPlan.id,
             orderId,
             paymentId,
             amount: paymentEntity.amount || targetPlan.amountInPaise,
           });
+          console.log(`✅ [Razorpay Webhook] Activated ${targetPlan.name} for user ${userId || 'unknown'} via ${eventType}`);
         } catch (dbErr) {
           console.error('❌ [Razorpay Webhook] Database update failed:', dbErr);
         }
@@ -121,4 +131,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Webhook internal error' }, { status: 500 });
   }
 }
-

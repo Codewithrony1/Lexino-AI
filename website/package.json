@@ -10,6 +10,14 @@
     "start": "next start",
     "tauri": "tauri"
   },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions",
+    "not dead",
+    "not IE 11"
+  ],
   "dependencies": {
     "@clerk/nextjs": "^6.35.0",
     "@prisma/client": "^6.4.1",
