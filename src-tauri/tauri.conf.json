@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' https://lexino.ai https://*.clerk.accounts.dev https://clerk.lexino.ai; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev; connect-src 'self' https: wss:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:;"
+      "csp": "default-src 'self' https://lexino.ai https://*.clerk.accounts.dev https://clerk.lexino.ai; script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev; connect-src 'self' https: wss:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:;"
     }
   },
   "build": {
