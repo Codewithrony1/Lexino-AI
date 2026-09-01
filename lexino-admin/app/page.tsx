@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Payment {
   id: string;
@@ -172,6 +173,12 @@ export default function AdminDashboardPage() {
             <span className="w-2 h-2 rounded-full bg-current" />
             Neon DB: {stats?.dbConnected ? 'Connected' : 'Standby / Local'}
           </span>
+          <Link
+            href="/status"
+            className="px-3 py-1.5 bg-gradient-to-r from-cyan-500/20 to-violet-500/20 hover:from-cyan-500/30 hover:to-violet-500/30 border border-cyan-500/30 rounded-lg text-cyan-300 font-semibold transition flex items-center gap-1.5"
+          >
+            ⚡ System Telemetry & AI Status
+          </Link>
           <button
             onClick={() => {
               fetchStats();
