@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { restoreChatSession } from '../../../lib/chatCompression';
 import fs from 'fs';
 import path from 'path';
 
@@ -306,6 +307,16 @@ export async function POST(request: Request) {
     // B. Sync User and Message to Database (concurrent safe writes)
     if (process.env.DATABASE_URL) {
       try {
+        // If session was archived/compressed, seamlessly restore before appending new turn
+        const existingSession = await prisma.chatSession.findUnique({
+          where: { id: sessionId },
+          select: { storageState: true },
+        });
+
+        if (existingSession?.storageState === 'COMPRESSED') {
+          await restoreChatSession(sessionId);
+        }
+
         await Promise.all([
           prisma.user.upsert({
             where: { id: userId },
@@ -317,7 +328,7 @@ export async function POST(request: Request) {
           }),
           prisma.chatSession.upsert({
             where: { id: sessionId },
-            update: { updatedAt: new Date() },
+            update: { updatedAt: new Date(), lastInteractionAt: new Date(), storageState: 'HOT' },
             create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
           }),
           prisma.message.create({
