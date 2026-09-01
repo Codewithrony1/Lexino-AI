@@ -6,7 +6,7 @@ const isAdminRoute = createRouteMatcher(['/lexino-owner-panel-x7a91(.*)']);
 
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.lexinoai.in https://va.vercel-scripts.com",
+  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://*.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.lexinoai.in https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
@@ -29,6 +29,8 @@ function applySecurityHeaders(res: NextResponse) {
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.headers.set('X-DNS-Prefetch-Control', 'on');
   res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")');
+  res.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.headers.set('Cross-Origin-Resource-Policy', 'same-site');
   return res;
 }
 
