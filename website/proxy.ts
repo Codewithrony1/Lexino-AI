@@ -1,8 +1,9 @@
 import { clerkMiddleware, createRouteMatcher, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-const isProtectedRoute = createRouteMatcher(['/chat(.*)', '/account(.*)']);
-const isAdminRoute = createRouteMatcher(['/lexino-owner-panel-x7a91(.*)']);
+const isProtectedRoute = createRouteMatcher(['/chat(.*)', '/account(.*)', '/settings(.*)']);
+const isConsoleRoute = createRouteMatcher(['/console(.*)', '/lexino-owner-panel-x7a91(.*)']);
+const isApiRoute = createRouteMatcher(['/api/(.*)', '/api/v1/(.*)']);
 
 const cspDirectives = [
   "default-src 'self'",
@@ -21,7 +22,7 @@ const cspDirectives = [
 
 const cspHeader = cspDirectives.join('; ');
 
-function applySecurityHeaders(res: NextResponse) {
+function applySecurityHeaders(res: NextResponse, reqId: string) {
   res.headers.set('Content-Security-Policy', cspHeader);
   res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   res.headers.set('X-Content-Type-Options', 'nosniff');
@@ -31,40 +32,70 @@ function applySecurityHeaders(res: NextResponse) {
   res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")');
   res.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.headers.set('Cross-Origin-Resource-Policy', 'same-site');
+  res.headers.set('x-request-id', reqId);
   return res;
 }
 
 export default clerkMiddleware(async (auth, req) => {
+  const reqId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const url = req.nextUrl;
+  const hostname = req.headers.get('host') || '';
+
+  // 1. Subdomain Routing: chat.lexinoai.in -> /chat workspace
+  if (hostname.startsWith('chat.') && url.pathname === '/') {
+    const rewriteRes = NextResponse.rewrite(new URL('/chat', req.url));
+    return applySecurityHeaders(rewriteRes, reqId);
+  }
+
+  // 2. Subdomain Routing: accounts.lexinoai.in -> auth platform
+  if (hostname.startsWith('accounts.') && url.pathname === '/') {
+    const rewriteRes = NextResponse.rewrite(new URL('/login', req.url));
+    return applySecurityHeaders(rewriteRes, reqId);
+  }
+
   const authObj = await auth();
-  
-  if (isAdminRoute(req)) {
+
+  // 3. Role-Gated Admin Console (/console/*): Returns 404 (Not Found) for unauthorized requests
+  if (isConsoleRoute(req)) {
     if (!authObj.userId) {
-      // Force sign-in
-      await auth.protect();
-      return;
+      // Return strict 404 (Not Found), not 403 or redirect
+      const notFoundRes = NextResponse.rewrite(new URL('/_not-found', req.url), { status: 404 });
+      notFoundRes.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      notFoundRes.headers.set('Cache-Control', 'no-store, max-age=0');
+      return applySecurityHeaders(notFoundRes, reqId);
     }
-    
-    // Server-side OWNER role check
+
     try {
       const client = await clerkClient();
       const user = await client.users.getUser(authObj.userId);
       const role = user.publicMetadata?.role;
-      if (role !== 'OWNER') {
-        // Redirect unauthorized to home
-        const redirectRes = NextResponse.redirect(new URL('/', req.url));
-        return applySecurityHeaders(redirectRes);
+      if (role !== 'OWNER' && role !== 'ADMIN') {
+        // Return strict 404 (Not Found)
+        const notFoundRes = NextResponse.rewrite(new URL('/_not-found', req.url), { status: 404 });
+        notFoundRes.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        notFoundRes.headers.set('Cache-Control', 'no-store, max-age=0');
+        return applySecurityHeaders(notFoundRes, reqId);
       }
     } catch (err) {
       console.error('Error verifying admin role in middleware:', err);
-      const redirectRes = NextResponse.redirect(new URL('/', req.url));
-      return applySecurityHeaders(redirectRes);
+      const notFoundRes = NextResponse.rewrite(new URL('/_not-found', req.url), { status: 404 });
+      notFoundRes.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      notFoundRes.headers.set('Cache-Control', 'no-store, max-age=0');
+      return applySecurityHeaders(notFoundRes, reqId);
     }
   } else if (isProtectedRoute(req)) {
     await auth.protect();
   }
 
   const response = NextResponse.next();
-  return applySecurityHeaders(response);
+
+  // 4. Exclude API and Console routes from edge caching and search indexers
+  if (isApiRoute(req) || isConsoleRoute(req)) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
+
+  return applySecurityHeaders(response, reqId);
 });
 
 export const config = {

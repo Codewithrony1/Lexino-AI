@@ -18,6 +18,8 @@ export default function robots(): MetadataRoute.Robots {
         ],
         disallow: [
           '/api/',
+          '/api/v1/',
+          '/console/',
           '/chat/',
           '/account/',
           '/settings/',
@@ -40,6 +42,8 @@ export default function robots(): MetadataRoute.Robots {
         ],
         disallow: [
           '/api/',
+          '/api/v1/',
+          '/console/',
           '/chat/',
           '/account/',
           '/settings/',
