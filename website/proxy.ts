@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-const isProtectedRoute = createRouteMatcher(['/chat(.*)', '/account(.*)', '/settings(.*)']);
+const isProtectedRoute = createRouteMatcher(['/chat(.*)', '/account(.*)', '/settings(.*)', '/projects(.*)', '/files(.*)']);
 const isConsoleRoute = createRouteMatcher(['/console(.*)', '/lexino-owner-panel-x7a91(.*)']);
 const isApiRoute = createRouteMatcher(['/api/(.*)', '/api/v1/(.*)']);
 
@@ -50,6 +50,12 @@ export default clerkMiddleware(async (auth, req) => {
   // 2. Subdomain Routing: accounts.lexinoai.in -> auth platform
   if (hostname.startsWith('accounts.') && url.pathname === '/') {
     const rewriteRes = NextResponse.rewrite(new URL('/login', req.url));
+    return applySecurityHeaders(rewriteRes, reqId);
+  }
+
+  // 3. Subdomain Routing: docs.lexinoai.in -> /docs
+  if (hostname.startsWith('docs.') && url.pathname === '/') {
+    const rewriteRes = NextResponse.rewrite(new URL('/docs', req.url));
     return applySecurityHeaders(rewriteRes, reqId);
   }
 
