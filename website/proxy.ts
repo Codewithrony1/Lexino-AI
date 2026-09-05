@@ -132,7 +132,16 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://docs.lexinoai.in'), 307);
     }
 
-    // Auth endpoints (/login, /signup, /account, /__clerk, /api/auth) serve directly
+    // Active session redirect for /login and /signup
+    if ((url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) && authObj.userId) {
+      const rawRedirect = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl');
+      const safeDest = rawRedirect && !rawRedirect.includes('/login') && !rawRedirect.includes('/signup')
+        ? rawRedirect
+        : 'https://chat.lexinoai.in';
+      return NextResponse.redirect(new URL(safeDest), 307);
+    }
+
+    // Auth endpoints (/login, /signup, /sso-callback, /account, /__clerk, /api/auth) serve directly
     const response = NextResponse.next();
     return applySecurityHeaders(response, reqId);
   }
@@ -254,6 +263,15 @@ export default clerkMiddleware(async (auth, req) => {
         await auth.protect();
         return;
       }
+    }
+
+    // Local dev: forward logged-in users from /login or /signup to /chat
+    if ((url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) && authObj.userId) {
+      const rawRedirect = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl');
+      const safeDest = rawRedirect && !rawRedirect.includes('/login') && !rawRedirect.includes('/signup')
+        ? rawRedirect
+        : '/chat';
+      return NextResponse.redirect(new URL(safeDest, req.url), 307);
     }
 
     const response = NextResponse.next();
