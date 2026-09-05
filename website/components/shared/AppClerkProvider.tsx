@@ -19,8 +19,6 @@ export function AppClerkProvider({ children }: { children: React.ReactNode }) {
       }
       signInUrl="/login"
       signUpUrl="/signup"
-      signInForceRedirectUrl="/chat"
-      signUpForceRedirectUrl="/chat"
       signInFallbackRedirectUrl="/chat"
       signUpFallbackRedirectUrl="/chat"
     >

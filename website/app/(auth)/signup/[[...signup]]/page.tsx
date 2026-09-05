@@ -9,7 +9,6 @@ export default function SignUpPage() {
         path="/signup"
         routing="path"
         signInUrl="/login"
-        forceRedirectUrl="/chat"
         fallbackRedirectUrl="/chat"
         appearance={lexinoClerkAppearance}
       />

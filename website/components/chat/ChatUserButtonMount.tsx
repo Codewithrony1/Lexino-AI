@@ -40,7 +40,8 @@ export function ChatUserButtonMount() {
     // Expose signOut helper globally so script.js can invoke it directly
     (window as any).clerkSignOut = async () => {
       await signOut();
-      window.location.href = '/login';
+      const isProd = window.location.hostname.endsWith('lexinoai.in');
+      window.location.href = isProd ? 'https://accounts.lexinoai.in/login' : '/login';
     };
     
     return () => {
@@ -50,12 +51,16 @@ export function ChatUserButtonMount() {
 
   if (!target) return null;
 
+  const isProd = typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in');
+  const logoutUrl = isProd ? 'https://accounts.lexinoai.in/login' : '/';
+
   return createPortal(
     <div className="clerk-header-user">
       {!isLoaded ? (
         <div className="clerk-loading-skeleton" />
       ) : (
         <UserButton
+          afterSignOutUrl={logoutUrl}
           appearance={{
             elements: {
               userButtonAvatarBox: 'clerk-header-avatar',

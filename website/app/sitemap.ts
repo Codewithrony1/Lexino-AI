@@ -36,6 +36,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: 'https://docs.lexinoai.in',
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: 'https://docs.lexinoai.in/docs/getting-started',
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: 'https://docs.lexinoai.in/docs/api',
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/login`,
       lastModified: currentDate,
       changeFrequency: 'monthly',

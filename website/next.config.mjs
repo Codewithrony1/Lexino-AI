@@ -2,17 +2,17 @@
 
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://*.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.lexinoai.in https://va.vercel-scripts.com",
+  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://*.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.lexinoai.in https://*.lexinoai.in https://lexinoai.in https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob:",
-  "connect-src 'self' https://api.razorpay.com https://*.razorpay.com https://checkout.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.lexinoai.in https://clerk-telemetry.com https://*.accounts.dev https://va.vercel-scripts.com https://vitals.vercel-insights.com",
-  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://accounts.google.com",
+  "connect-src 'self' https://api.razorpay.com https://*.razorpay.com https://checkout.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.lexinoai.in https://*.lexinoai.in https://lexinoai.in https://clerk-telemetry.com https://*.accounts.dev https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://accounts.google.com https://*.lexinoai.in https://lexinoai.in",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com",
+  "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.clerk.accounts.dev https://*.clerk.com https://*.lexinoai.in https://lexinoai.in",
 ];
 
 const cspHeader = cspDirectives.join('; ');
