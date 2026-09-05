@@ -50,6 +50,25 @@ export default clerkMiddleware(async (auth, req) => {
   const isLexinoDomain = host === 'lexinoai.in' || host.endsWith('.lexinoai.in');
 
   // =========================================================================
+  // 0. CROSS-SUBDOMAIN SESSION SYNC HANDLER
+  // If __session token is passed in query, set cookie on .lexinoai.in and redirect
+  // =========================================================================
+  const querySession = url.searchParams.get('__session');
+  if (querySession && isLexinoDomain) {
+    url.searchParams.delete('__session');
+    const cleanPath = (url.pathname || '/') + (url.search ? url.search : '');
+    const redirectRes = NextResponse.redirect(new URL(cleanPath, req.url), 307);
+    redirectRes.cookies.set('__session', querySession, {
+      domain: '.lexinoai.in',
+      path: '/',
+      sameSite: 'lax',
+      secure: true,
+      httpOnly: false,
+    });
+    return applySecurityHeaders(redirectRes, reqId);
+  }
+
+  // =========================================================================
   // 1. APEX DOMAIN: lexinoai.in -> 308 Permanent Redirect to www.lexinoai.in
   // =========================================================================
   if (host === 'lexinoai.in') {
@@ -75,7 +94,6 @@ export default clerkMiddleware(async (auth, req) => {
       return applySecurityHeaders(rewriteRes, reqId);
     }
 
-    // Support direct paths without '/docs/' prefix (e.g. docs.lexinoai.in/getting-started)
     const docSlugs = [
       'getting-started',
       'quickstart',
@@ -101,7 +119,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // =========================================================================
-  // 3. AUTHENTICATION SERVICE: accounts.lexinoai.in (Existing Central Auth)
+  // 3. AUTHENTICATION SERVICE: accounts.lexinoai.in (Central Auth)
   // =========================================================================
   const authObj = await auth();
 
@@ -132,17 +150,49 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://docs.lexinoai.in'), 307);
     }
 
-    // Active session redirect for /login and /signup
+    // Active session redirect for /login and /signup with cross-subdomain cookie reinforcement
     if ((url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) && authObj.userId) {
       const rawRedirect = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl');
       const safeDest = rawRedirect && !rawRedirect.includes('/login') && !rawRedirect.includes('/signup')
         ? rawRedirect
         : 'https://chat.lexinoai.in';
-      return NextResponse.redirect(new URL(safeDest), 307);
+      
+      let targetUrl: URL;
+      try {
+        targetUrl = new URL(safeDest, 'https://chat.lexinoai.in');
+      } catch {
+        targetUrl = new URL('https://chat.lexinoai.in');
+      }
+      const sessionToken = req.cookies.get('__session')?.value;
+      if (sessionToken && isLexinoDomain) {
+        targetUrl.searchParams.set('__session', sessionToken);
+      }
+      
+      const redirectRes = NextResponse.redirect(targetUrl, 307);
+      if (sessionToken && isLexinoDomain) {
+        redirectRes.cookies.set('__session', sessionToken, {
+          domain: '.lexinoai.in',
+          path: '/',
+          sameSite: 'lax',
+          secure: true,
+          httpOnly: false,
+        });
+      }
+      return applySecurityHeaders(redirectRes, reqId);
     }
 
     // Auth endpoints (/login, /signup, /sso-callback, /account, /__clerk, /api/auth) serve directly
     const response = NextResponse.next();
+    const sessionCookie = req.cookies.get('__session')?.value;
+    if (sessionCookie && isLexinoDomain) {
+      response.cookies.set('__session', sessionCookie, {
+        domain: '.lexinoai.in',
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+        httpOnly: false,
+      });
+    }
     return applySecurityHeaders(response, reqId);
   }
 
@@ -150,6 +200,12 @@ export default clerkMiddleware(async (auth, req) => {
   // 4. CHAT WEBSITE: chat.lexinoai.in (Dedicated AI Chat & Workspace)
   // =========================================================================
   if (host === 'chat.lexinoai.in') {
+    // If login or signup directly requested on chat domain -> redirect to accounts.lexinoai.in
+    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) {
+      const targetReturn = 'https://chat.lexinoai.in';
+      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in${url.pathname}?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
+    }
+
     // If marketing paths requested on chat domain -> redirect to www.lexinoai.in
     if (url.pathname === '/pricing' || url.pathname === '/help' || url.pathname === '/terms' || url.pathname === '/privacy') {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://www.lexinoai.in'), 307);

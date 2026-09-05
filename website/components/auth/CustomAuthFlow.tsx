@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSignIn, useSignUp, useUser } from '@clerk/nextjs';
+import { useSignIn, useSignUp, useUser, useClerk } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
 
 export type AuthMode = 'signin' | 'signup' | 'forgot-password' | 'reset-verify' | 'verify-email';
@@ -91,6 +91,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
   const searchParams = useSearchParams();
 
   // Clerk hooks
+  const clerk = useClerk();
   const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn();
   const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
   const { user, isLoaded: isUserLoaded } = useUser();
@@ -120,6 +121,39 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
   const rawRedirect = searchParams.get('redirect_url') || searchParams.get('redirectUrl');
   const redirectUrl = getSafeRedirectUrl(rawRedirect);
 
+  // Cross-subdomain session sync & redirection helper
+  const completeAuthAndRedirect = async (destination: string) => {
+    try {
+      const isLexino = typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in');
+      let token: string | null = null;
+      try {
+        token = (await clerk.session?.getToken()) || null;
+      } catch {}
+      if (!token && typeof window !== 'undefined' && (window as any).Clerk?.session) {
+        try {
+          token = await (window as any).Clerk.session.getToken();
+        } catch {}
+      }
+      if (!token && typeof document !== 'undefined') {
+        const match = document.cookie.match(/(?:^|;\s*)__session=([^;]+)/);
+        if (match && match[1]) token = match[1];
+      }
+
+      if (token && isLexino) {
+        document.cookie = `__session=${token}; Domain=.lexinoai.in; Path=/; SameSite=Lax; Secure`;
+        try {
+          const destUrl = new URL(destination, window.location.origin);
+          destUrl.searchParams.set('__session', token);
+          window.location.href = destUrl.toString();
+          return;
+        } catch {}
+      }
+    } catch (e) {
+      console.error('Session sync error:', e);
+    }
+    window.location.href = destination;
+  };
+
   // Synchronize mode with prop if it changes
   useEffect(() => {
     setMode(initialMode);
@@ -130,7 +164,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
   // If already authenticated, forward immediately to destination
   useEffect(() => {
     if (isUserLoaded && user) {
-      window.location.href = redirectUrl;
+      completeAuthAndRedirect(redirectUrl);
     }
   }, [isUserLoaded, user, redirectUrl]);
 
@@ -185,7 +219,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
       if (res.status === 'complete') {
         setSuccessMsg('Signed in successfully. Redirecting...');
         await setSignInActive({ session: res.createdSessionId });
-        window.location.href = redirectUrl;
+        await completeAuthAndRedirect(redirectUrl);
       } else if (res.status === 'needs_first_factor') {
         setMode('verify-email');
         setError('Verification required. Check your email for a verification code.');
@@ -234,7 +268,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
       if (res.status === 'complete') {
         setSuccessMsg('Account created successfully! Redirecting...');
         await setSignUpActive({ session: res.createdSessionId });
-        window.location.href = redirectUrl;
+        await completeAuthAndRedirect(redirectUrl);
       } else {
         await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
         setMode('verify-email');
@@ -273,7 +307,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
       if (completeSignUp.status === 'complete') {
         setSuccessMsg('Verification complete! Redirecting to workspace...');
         await setSignUpActive({ session: completeSignUp.createdSessionId });
-        window.location.href = redirectUrl;
+        await completeAuthAndRedirect(redirectUrl);
       } else {
         setError(`Verification status: ${completeSignUp.status}. Please try again.`);
         setLoading(false);
@@ -347,7 +381,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
       if (res.status === 'complete') {
         setSuccessMsg('Password updated! Redirecting...');
         await setSignInActive({ session: res.createdSessionId });
-        window.location.href = redirectUrl;
+        await completeAuthAndRedirect(redirectUrl);
       } else {
         setSuccessMsg('Password updated successfully! Please sign in with your new password.');
         setMode('signin');

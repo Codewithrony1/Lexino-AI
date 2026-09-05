@@ -3,12 +3,8 @@ import { ClerkProvider } from '@clerk/nextjs';
 /**
  * Clerk configuration for the routes that actually need an authenticated client.
  *
- * This used to live in the root layout, which meant every visitor to the static
- * marketing pages downloaded Clerk's React client plus the cross-origin
- * clerk.browser.js loader for nothing. It is now mounted only by the (app),
- * (auth) and (admin) route group layouts. The (frontend) marketing pages read
- * the signed-in hint from the __client_uat cookie in
- * /lexino-website/script.js instead, so they need no Clerk JS at all.
+ * Configured with allowedRedirectOrigins to support cross-subdomain authentication
+ * across accounts.lexinoai.in, chat.lexinoai.in, and www.lexinoai.in.
  */
 export function AppClerkProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -21,6 +17,12 @@ export function AppClerkProvider({ children }: { children: React.ReactNode }) {
       signUpUrl="/signup"
       signInFallbackRedirectUrl="/chat"
       signUpFallbackRedirectUrl="/chat"
+      allowedRedirectOrigins={[
+        'https://chat.lexinoai.in',
+        'https://accounts.lexinoai.in',
+        'https://www.lexinoai.in',
+        'https://docs.lexinoai.in',
+      ]}
     >
       {children}
     </ClerkProvider>

@@ -41,6 +41,9 @@ export function ChatUserButtonMount() {
     (window as any).clerkSignOut = async () => {
       await signOut();
       const isProd = window.location.hostname.endsWith('lexinoai.in');
+      if (isProd) {
+        document.cookie = '__session=; Domain=.lexinoai.in; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax; Secure';
+      }
       window.location.href = isProd ? 'https://accounts.lexinoai.in/login' : '/login';
     };
     

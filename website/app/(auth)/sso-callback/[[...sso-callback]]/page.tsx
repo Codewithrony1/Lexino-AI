@@ -1,6 +1,21 @@
-import { AuthenticateWithRedirectCallback } from '@clerk/nextjs';
+'use client';
+
+import { AuthenticateWithRedirectCallback, useSession } from '@clerk/nextjs';
+import { useEffect } from 'react';
 
 export default function SSOCallbackPage() {
+  const { session } = useSession();
+
+  useEffect(() => {
+    if (session && typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in')) {
+      session.getToken().then((token) => {
+        if (token) {
+          document.cookie = `__session=${token}; Domain=.lexinoai.in; Path=/; SameSite=Lax; Secure`;
+        }
+      }).catch(() => {});
+    }
+  }, [session]);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#020208] text-white">
       <div className="text-center p-8 rounded-2xl border border-violet-500/30 bg-slate-950/80 backdrop-blur-xl max-w-sm w-full mx-4 shadow-2xl shadow-violet-500/10">
