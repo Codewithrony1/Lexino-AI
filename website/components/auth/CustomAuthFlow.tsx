@@ -166,14 +166,14 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
   };
 
   // Sign In submit
-  const handleSignInSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignInSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!isSignInLoaded || !signIn) return;
     setError(null);
     setSuccessMsg(null);
 
     if (!identifier.trim() || !password) {
-      setError('Please fill in both email/username and password.');
+      setError('Please fill in both fields to continue.');
       return;
     }
 
@@ -185,7 +185,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
       });
 
       if (res.status === 'complete') {
-        setSuccessMsg('Signed in successfully! Redirecting...');
+        setSuccessMsg('Signed in successfully. Redirecting...');
         await setSignInActive({ session: res.createdSessionId });
         window.location.href = redirectUrl;
       } else if (res.status === 'needs_first_factor') {
@@ -202,7 +202,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
         err?.errors?.[0]?.longMessage ||
         err?.errors?.[0]?.message ||
         err?.message ||
-        'Invalid credentials. Please double check your email and password.';
+        'Invalid email or password. Please try again.';
       setError(msg);
     }
   };
@@ -403,547 +403,634 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
   return (
     <div className="lx-auth-viewport">
       {/* ================================================================
-          DESKTOP & LAPTOP STAGE (1672 x 941 Aspect Ratio Stage)
+          EXACT IMAGE STAGE (1672 x 941 Aspect Ratio Stage)
           ================================================================ */}
-      <div className="lx-desktop-stage" id="lexino-login-root">
-        {/* Right Stage Glassmorphism Card */}
-        <div className="lx-card-stage" role="region" aria-label="Lexino AI Authentication">
-          {/* Card Header: Brand Icon & Title */}
-          <div className="lx-card-header">
-            <div className="lx-brand-icon-wrap">
-              <LexinoGlyph />
-            </div>
-            <h2 className="lx-brand-title">Lexino AI</h2>
-            <p className="lx-brand-subtitle">
-              {mode === 'signin' && 'Welcome back! Sign in to continue to your AI workspace.'}
-              {mode === 'signup' && 'Create your account to unlock your private AI workspace.'}
-              {mode === 'forgot-password' && 'Forgot password? Enter your email to receive a recovery code.'}
-              {mode === 'reset-verify' && 'Enter the reset code sent to your email to set a new password.'}
-              {mode === 'verify-email' && 'Enter the 6-digit verification code sent to your inbox.'}
-            </p>
-          </div>
+      <div id="lexino-login-root">
+        {/* MODE: SIGN IN - EXACT OVERLAY MATCHING REFERENCE HTML */}
+        {mode === 'signin' && (
+          <div className="lx-exact-desktop-overlay">
+            {/* Google button overlay */}
+            <button
+              type="button"
+              id="lx-google-btn"
+              className="lx-hit"
+              aria-label="Continue with Google"
+              onClick={() => handleGoogleAuth('signin')}
+              disabled={loading}
+            />
 
-          {/* Status / Alert Messages */}
-          {error && (
-            <div className="lx-alert lx-alert-error" role="alert">
-              <span>⚠️</span>
-              <p>{error}</p>
+            {/* Form status / error message */}
+            <div
+              id="lx-form-message"
+              className={error ? 'lx-msg-error' : successMsg ? 'lx-msg-success' : ''}
+              style={{ display: error || successMsg ? 'block' : 'none' }}
+            >
+              {loading ? 'Signing in...' : error ? error : successMsg}
             </div>
-          )}
-          {successMsg && (
-            <div className="lx-alert lx-alert-success" role="status">
-              <span>✓</span>
-              <p>{successMsg}</p>
-            </div>
-          )}
 
-          {/* ============================================================
-              FORM MODE: SIGN IN
-              ============================================================ */}
-          {mode === 'signin' && (
-            <form onSubmit={handleSignInSubmit} className="lx-form-body">
-              {/* Continue with Google */}
-              <button
-                type="button"
-                className="lx-google-btn"
-                onClick={() => handleGoogleAuth('signin')}
-                disabled={loading}
-                aria-label="Continue with Google"
-              >
-                <GoogleIcon />
-                <span>Continue with Google</span>
-              </button>
-
-              <div className="lx-divider">
-                <span className="lx-divider-line" />
-                <span className="lx-divider-text">or</span>
-                <span className="lx-divider-line" />
+            <form
+              onSubmit={handleSignInSubmit}
+              style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}
+            >
+              {/* Email field overlay */}
+              <div id="lx-email-wrap">
+                <input
+                  type="text"
+                  id="lx-input-identifier"
+                  name="identifier"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Enter your email or username"
+                  autoComplete="username"
+                  disabled={loading}
+                  required
+                />
               </div>
 
-              {/* Identifier Input */}
-              <div className="lx-field-group">
-                <label htmlFor="desktop-signin-id" className="lx-field-label">
-                  Email or username
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">✉️</span>
-                  <input
-                    id="desktop-signin-id"
-                    type="text"
-                    name="identifier"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Enter your email or username"
-                    autoComplete="username"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div className="lx-field-group">
-                <label htmlFor="desktop-signin-pw" className="lx-field-label">
-                  Password
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">🔒</span>
-                  <input
-                    id="desktop-signin-pw"
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
-                  <button
-                    type="button"
-                    className="lx-toggle-pw"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Forgot Password Trigger */}
-              <div className="lx-forgot-wrap">
+              {/* Password field overlay */}
+              <div id="lx-password-wrap">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="lx-input-password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  disabled={loading}
+                  required
+                />
                 <button
                   type="button"
-                  className="lx-text-link"
-                  onClick={() => switchMode('forgot-password')}
-                  disabled={loading}
-                >
-                  Forgot password?
-                </button>
+                  id="lx-toggle-pass"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                />
               </div>
 
-              {/* Sign In Submit Button */}
+              {/* Forgot password overlay */}
+              <button
+                type="button"
+                id="lx-forgot-link"
+                className="lx-hit"
+                aria-label="Forgot password"
+                onClick={() => switchMode('forgot-password')}
+                disabled={loading}
+              />
+
+              {/* Sign in button overlay */}
               <button
                 type="submit"
-                className="lx-submit-btn"
+                id="lexino-submit-btn"
+                className="lx-hit"
+                aria-label="Sign in"
                 disabled={loading || !isSignInLoaded}
-              >
-                {loading ? (
-                  <span className="lx-spinner-row">
-                    <span className="lx-spinner" /> Signing in...
-                  </span>
-                ) : (
-                  <span>Sign in →</span>
-                )}
-              </button>
+              />
+            </form>
 
-              {/* Toggle to Sign Up */}
-              <div className="lx-toggle-mode-row">
-                <span>Don’t have an account?</span>{' '}
+            {/* Sign up overlay */}
+            <button
+              type="button"
+              id="lx-signup-link"
+              className="lx-hit"
+              aria-label="Sign up"
+              onClick={() => switchMode('signup')}
+              disabled={loading}
+            />
+          </div>
+        )}
+
+        {/* ============================================================
+            FORMS FOR SIGN UP / FORGOT PASSWORD / VERIFICATION
+            OR MOBILE/TABLET SCREENS
+            ============================================================ */}
+        {(mode !== 'signin' || true) && (
+          <div
+            className={`lx-card-stage ${mode === 'signin' ? 'lx-mobile-only-card' : ''}`}
+            role="region"
+            aria-label="Lexino AI Authentication"
+          >
+            {/* Card Header: Brand Icon & Title */}
+            <div className="lx-card-header">
+              <div className="lx-brand-icon-wrap">
+                <LexinoGlyph />
+              </div>
+              <h2 className="lx-brand-title">Lexino AI</h2>
+              <p className="lx-brand-subtitle">
+                {mode === 'signin' && 'Welcome back! Sign in to continue to your AI workspace.'}
+                {mode === 'signup' && 'Create your account to unlock your private AI workspace.'}
+                {mode === 'forgot-password' && 'Forgot password? Enter your email to receive a recovery code.'}
+                {mode === 'reset-verify' && 'Enter the reset code sent to your email to set a new password.'}
+                {mode === 'verify-email' && 'Enter the 6-digit verification code sent to your inbox.'}
+              </p>
+            </div>
+
+            {/* Status / Alert Messages */}
+            {error && (
+              <div className="lx-alert lx-alert-error" role="alert">
+                <span>⚠️</span>
+                <p>{error}</p>
+              </div>
+            )}
+            {successMsg && (
+              <div className="lx-alert lx-alert-success" role="status">
+                <span>✓</span>
+                <p>{successMsg}</p>
+              </div>
+            )}
+
+            {/* Mobile Sign In Form */}
+            {mode === 'signin' && (
+              <form onSubmit={handleSignInSubmit} className="lx-form-body">
                 <button
                   type="button"
-                  className="lx-highlight-link"
-                  onClick={() => switchMode('signup')}
+                  className="lx-google-btn"
+                  onClick={() => handleGoogleAuth('signin')}
                   disabled={loading}
+                  aria-label="Continue with Google"
                 >
-                  Sign up
+                  <GoogleIcon />
+                  <span>Continue with Google</span>
                 </button>
-              </div>
-            </form>
-          )}
 
-          {/* ============================================================
-              FORM MODE: CREATE ACCOUNT (SIGN UP)
-              ============================================================ */}
-          {mode === 'signup' && (
-            <form onSubmit={handleSignUpSubmit} className="lx-form-body">
-              {/* Continue with Google - MUST BE VISIBLE in Create Account */}
-              <button
-                type="button"
-                className="lx-google-btn"
-                onClick={() => handleGoogleAuth('signup')}
-                disabled={loading}
-                aria-label="Continue with Google"
-              >
-                <GoogleIcon />
-                <span>Continue with Google</span>
-              </button>
+                <div className="lx-divider">
+                  <span className="lx-divider-line" />
+                  <span className="lx-divider-text">or</span>
+                  <span className="lx-divider-line" />
+                </div>
 
-              <div className="lx-divider">
-                <span className="lx-divider-line" />
-                <span className="lx-divider-text">or create with email</span>
-                <span className="lx-divider-line" />
-              </div>
-
-              {/* Name fields row */}
-              <div className="lx-field-row-split">
                 <div className="lx-field-group">
-                  <label htmlFor="desktop-signup-fn" className="lx-field-label">
-                    First name
+                  <label htmlFor="mobile-signin-id" className="lx-field-label">
+                    Email or username
                   </label>
                   <div className="lx-input-wrap">
-                    <span className="lx-input-icon">👤</span>
+                    <span className="lx-input-icon">✉️</span>
                     <input
-                      id="desktop-signup-fn"
+                      id="mobile-signin-id"
                       type="text"
-                      name="firstName"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="First name"
-                      autoComplete="given-name"
+                      name="identifier"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="Enter your email or username"
+                      autoComplete="username"
                       disabled={loading}
+                      required
                       className="lx-input"
                     />
                   </div>
                 </div>
+
                 <div className="lx-field-group">
-                  <label htmlFor="desktop-signup-ln" className="lx-field-label">
-                    Last name
+                  <label htmlFor="mobile-signin-pw" className="lx-field-label">
+                    Password
                   </label>
                   <div className="lx-input-wrap">
-                    <span className="lx-input-icon">👤</span>
+                    <span className="lx-input-icon">🔒</span>
                     <input
-                      id="desktop-signup-ln"
-                      type="text"
-                      name="lastName"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Last name"
-                      autoComplete="family-name"
+                      id="mobile-signin-pw"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
                       disabled={loading}
+                      required
+                      className="lx-input"
+                    />
+                    <button
+                      type="button"
+                      className="lx-toggle-pw"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="lx-forgot-wrap">
+                  <button
+                    type="button"
+                    className="lx-text-link"
+                    onClick={() => switchMode('forgot-password')}
+                    disabled={loading}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="lx-submit-btn"
+                  disabled={loading || !isSignInLoaded}
+                >
+                  {loading ? (
+                    <span className="lx-spinner-row">
+                      <span className="lx-spinner" /> Signing in...
+                    </span>
+                  ) : (
+                    <span>Sign in →</span>
+                  )}
+                </button>
+
+                <div className="lx-toggle-mode-row">
+                  <span>Don’t have an account?</span>{' '}
+                  <button
+                    type="button"
+                    className="lx-highlight-link"
+                    onClick={() => switchMode('signup')}
+                    disabled={loading}
+                  >
+                    Sign up
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Mode: Create Account (Sign Up) */}
+            {mode === 'signup' && (
+              <form onSubmit={handleSignUpSubmit} className="lx-form-body">
+                <button
+                  type="button"
+                  className="lx-google-btn"
+                  onClick={() => handleGoogleAuth('signup')}
+                  disabled={loading}
+                  aria-label="Continue with Google"
+                >
+                  <GoogleIcon />
+                  <span>Continue with Google</span>
+                </button>
+
+                <div className="lx-divider">
+                  <span className="lx-divider-line" />
+                  <span className="lx-divider-text">or create with email</span>
+                  <span className="lx-divider-line" />
+                </div>
+
+                <div className="lx-field-row-split">
+                  <div className="lx-field-group">
+                    <label htmlFor="signup-fn" className="lx-field-label">
+                      First name
+                    </label>
+                    <div className="lx-input-wrap">
+                      <span className="lx-input-icon">👤</span>
+                      <input
+                        id="signup-fn"
+                        type="text"
+                        name="firstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                        autoComplete="given-name"
+                        disabled={loading}
+                        className="lx-input"
+                      />
+                    </div>
+                  </div>
+                  <div className="lx-field-group">
+                    <label htmlFor="signup-ln" className="lx-field-label">
+                      Last name
+                    </label>
+                    <div className="lx-input-wrap">
+                      <span className="lx-input-icon">👤</span>
+                      <input
+                        id="signup-ln"
+                        type="text"
+                        name="lastName"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                        disabled={loading}
+                        className="lx-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lx-field-group">
+                  <label htmlFor="signup-email" className="lx-field-label">
+                    Email address
+                  </label>
+                  <div className="lx-input-wrap">
+                    <span className="lx-input-icon">✉️</span>
+                    <input
+                      id="signup-email"
+                      type="email"
+                      name="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      autoComplete="email"
+                      disabled={loading}
+                      required
                       className="lx-input"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Email Address */}
-              <div className="lx-field-group">
-                <label htmlFor="desktop-signup-email" className="lx-field-label">
-                  Email address
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">✉️</span>
-                  <input
-                    id="desktop-signup-email"
-                    type="email"
-                    name="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    autoComplete="email"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
+                <div className="lx-field-group">
+                  <label htmlFor="signup-pw" className="lx-field-label">
+                    Password (min. 8 characters)
+                  </label>
+                  <div className="lx-input-wrap">
+                    <span className="lx-input-icon">🔒</span>
+                    <input
+                      id="signup-pw"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a strong password"
+                      autoComplete="new-password"
+                      disabled={loading}
+                      required
+                      className="lx-input"
+                    />
+                    <button
+                      type="button"
+                      className="lx-toggle-pw"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Password */}
-              <div className="lx-field-group">
-                <label htmlFor="desktop-signup-pw" className="lx-field-label">
-                  Password (min. 8 characters)
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">🔒</span>
-                  <input
-                    id="desktop-signup-pw"
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a strong password"
-                    autoComplete="new-password"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
+                {/* Create Account Submit Button - FULLY VISIBLE */}
+                <button
+                  type="submit"
+                  className="lx-submit-btn lx-create-btn"
+                  disabled={loading || !isSignUpLoaded}
+                >
+                  {loading ? (
+                    <span className="lx-spinner-row">
+                      <span className="lx-spinner" /> Creating account...
+                    </span>
+                  ) : (
+                    <span>Create Account →</span>
+                  )}
+                </button>
+
+                <div className="lx-toggle-mode-row">
+                  <span>Already have an account?</span>{' '}
                   <button
                     type="button"
-                    className="lx-toggle-pw"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    tabIndex={-1}
+                    className="lx-highlight-link"
+                    onClick={() => switchMode('signin')}
+                    disabled={loading}
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    Sign in
                   </button>
                 </div>
-              </div>
+              </form>
+            )}
 
-              {/* Create Account Submit Button - FULLY VISIBLE & CLICKABLE */}
-              <button
-                type="submit"
-                className="lx-submit-btn lx-create-btn"
-                disabled={loading || !isSignUpLoaded}
-              >
-                {loading ? (
-                  <span className="lx-spinner-row">
-                    <span className="lx-spinner" /> Creating account...
-                  </span>
-                ) : (
-                  <span>Create Account →</span>
-                )}
-              </button>
-
-              {/* Toggle to Sign In */}
-              <div className="lx-toggle-mode-row">
-                <span>Already have an account?</span>{' '}
-                <button
-                  type="button"
-                  className="lx-highlight-link"
-                  onClick={() => switchMode('signin')}
-                  disabled={loading}
-                >
-                  Sign in
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* ============================================================
-              FORM MODE: FORGOT PASSWORD (REQUEST CODE)
-              ============================================================ */}
-          {mode === 'forgot-password' && (
-            <form onSubmit={handleForgotPasswordRequest} className="lx-form-body">
-              <div className="lx-field-group">
-                <label htmlFor="desktop-forgot-email" className="lx-field-label">
-                  Account email
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">✉️</span>
-                  <input
-                    id="desktop-forgot-email"
-                    type="email"
-                    name="forgotEmail"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="Enter your registered email"
-                    autoComplete="email"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
+            {/* Mode: Forgot Password */}
+            {mode === 'forgot-password' && (
+              <form onSubmit={handleForgotPasswordRequest} className="lx-form-body">
+                <div className="lx-field-group">
+                  <label htmlFor="forgot-email" className="lx-field-label">
+                    Account email
+                  </label>
+                  <div className="lx-input-wrap">
+                    <span className="lx-input-icon">✉️</span>
+                    <input
+                      id="forgot-email"
+                      type="email"
+                      name="forgotEmail"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="Enter your registered email"
+                      autoComplete="email"
+                      disabled={loading}
+                      required
+                      className="lx-input"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                className="lx-submit-btn"
-                disabled={loading || !isSignInLoaded}
-              >
-                {loading ? (
-                  <span className="lx-spinner-row">
-                    <span className="lx-spinner" /> Sending code...
-                  </span>
-                ) : (
-                  <span>Send Reset Code →</span>
-                )}
-              </button>
-
-              <div className="lx-toggle-mode-row">
-                <span>Remember your password?</span>{' '}
                 <button
-                  type="button"
-                  className="lx-highlight-link"
-                  onClick={() => switchMode('signin')}
-                  disabled={loading}
+                  type="submit"
+                  className="lx-submit-btn"
+                  disabled={loading || !isSignInLoaded}
                 >
-                  Back to Sign In
+                  {loading ? (
+                    <span className="lx-spinner-row">
+                      <span className="lx-spinner" /> Sending code...
+                    </span>
+                  ) : (
+                    <span>Send Reset Code →</span>
+                  )}
                 </button>
-              </div>
-            </form>
-          )}
 
-          {/* ============================================================
-              FORM MODE: RESET VERIFY (ENTER CODE & NEW PASSWORD)
-              ============================================================ */}
-          {mode === 'reset-verify' && (
-            <form onSubmit={handleResetPasswordSubmit} className="lx-form-body">
-              <div className="lx-field-group">
-                <label htmlFor="desktop-reset-code" className="lx-field-label">
-                  Reset code from email
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">🔑</span>
-                  <input
-                    id="desktop-reset-code"
-                    type="text"
-                    value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value)}
-                    placeholder="Enter reset code"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
-                </div>
-              </div>
-
-              <div className="lx-field-group">
-                <label htmlFor="desktop-reset-np" className="lx-field-label">
-                  New password (min. 8 chars)
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">🔒</span>
-                  <input
-                    id="desktop-reset-np"
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    autoComplete="new-password"
-                    disabled={loading}
-                    required
-                    className="lx-input"
-                  />
+                <div className="lx-toggle-mode-row">
+                  <span>Remember your password?</span>{' '}
                   <button
                     type="button"
-                    className="lx-toggle-pw"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    aria-label="Toggle password visibility"
-                    tabIndex={-1}
+                    className="lx-highlight-link"
+                    onClick={() => switchMode('signin')}
+                    disabled={loading}
                   >
-                    {showNewPassword ? '👁️' : '👁️‍🗨️'}
+                    Back to Sign In
                   </button>
                 </div>
-              </div>
+              </form>
+            )}
 
-              <button
-                type="submit"
-                className="lx-submit-btn"
-                disabled={loading || !isSignInLoaded}
-              >
-                {loading ? (
-                  <span className="lx-spinner-row">
-                    <span className="lx-spinner" /> Updating password...
-                  </span>
-                ) : (
-                  <span>Update Password →</span>
-                )}
-              </button>
-
-              <div className="lx-code-actions-row">
-                <button
-                  type="button"
-                  className="lx-text-link"
-                  onClick={handleResendCode}
-                  disabled={loading}
-                >
-                  Resend code
-                </button>
-                <button
-                  type="button"
-                  className="lx-highlight-link"
-                  onClick={() => switchMode('signin')}
-                  disabled={loading}
-                >
-                  Back to Sign In
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* ============================================================
-              FORM MODE: VERIFY EMAIL (SIGN UP CODE)
-              ============================================================ */}
-          {mode === 'verify-email' && (
-            <form onSubmit={handleVerifyEmailSubmit} className="lx-form-body">
-              <div className="lx-field-group">
-                <label htmlFor="desktop-verify-code" className="lx-field-label">
-                  6-digit verification code
-                </label>
-                <div className="lx-input-wrap">
-                  <span className="lx-input-icon">🛡️</span>
-                  <input
-                    id="desktop-verify-code"
-                    type="text"
-                    maxLength={6}
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    placeholder="123456"
-                    disabled={loading}
-                    required
-                    className="lx-input lx-code-input"
-                  />
+            {/* Mode: Reset Verify */}
+            {mode === 'reset-verify' && (
+              <form onSubmit={handleResetPasswordSubmit} className="lx-form-body">
+                <div className="lx-field-group">
+                  <label htmlFor="reset-code" className="lx-field-label">
+                    Reset code from email
+                  </label>
+                  <div className="lx-input-wrap">
+                    <span className="lx-input-icon">🔑</span>
+                    <input
+                      id="reset-code"
+                      type="text"
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value)}
+                      placeholder="Enter reset code"
+                      disabled={loading}
+                      required
+                      className="lx-input"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                className="lx-submit-btn"
-                disabled={loading || !isSignUpLoaded}
-              >
-                {loading ? (
-                  <span className="lx-spinner-row">
-                    <span className="lx-spinner" /> Verifying...
-                  </span>
-                ) : (
-                  <span>Verify & Launch Workspace →</span>
-                )}
-              </button>
+                <div className="lx-field-group">
+                  <label htmlFor="reset-np" className="lx-field-label">
+                    New password (min. 8 chars)
+                  </label>
+                  <div className="lx-input-wrap">
+                    <span className="lx-input-icon">🔒</span>
+                    <input
+                      id="reset-np"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      disabled={loading}
+                      required
+                      className="lx-input"
+                    />
+                    <button
+                      type="button"
+                      className="lx-toggle-pw"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      aria-label="Toggle password visibility"
+                      tabIndex={-1}
+                    >
+                      {showNewPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
 
-              <div className="lx-code-actions-row">
                 <button
-                  type="button"
-                  className="lx-text-link"
-                  onClick={handleResendCode}
-                  disabled={loading}
+                  type="submit"
+                  className="lx-submit-btn"
+                  disabled={loading || !isSignInLoaded}
                 >
-                  Resend code
+                  {loading ? (
+                    <span className="lx-spinner-row">
+                      <span className="lx-spinner" /> Updating password...
+                    </span>
+                  ) : (
+                    <span>Update Password →</span>
+                  )}
                 </button>
-                <button
-                  type="button"
-                  className="lx-highlight-link"
-                  onClick={() => switchMode('signin')}
-                  disabled={loading}
-                >
-                  Back to Sign In
-                </button>
-              </div>
-            </form>
-          )}
 
-          {/* Bottom Trust Indicators */}
-          <div className="lx-trust-indicators">
-            <div className="lx-trust-item">
-              <span className="lx-trust-icon">⚡</span>
-              <span className="lx-trust-text">Fast</span>
-            </div>
-            <div className="lx-trust-item">
-              <span className="lx-trust-icon">🛡️</span>
-              <span className="lx-trust-text">Secure</span>
-            </div>
-            <div className="lx-trust-item">
-              <span className="lx-trust-icon">👥</span>
-              <span className="lx-trust-text">Trusted</span>
+                <div className="lx-code-actions-row">
+                  <button
+                    type="button"
+                    className="lx-text-link"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                  >
+                    Resend code
+                  </button>
+                  <button
+                    type="button"
+                    className="lx-highlight-link"
+                    onClick={() => switchMode('signin')}
+                    disabled={loading}
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Mode: Verify Email */}
+            {mode === 'verify-email' && (
+              <form onSubmit={handleVerifyEmailSubmit} className="lx-form-body">
+                <div className="lx-field-group">
+                  <label htmlFor="verify-code" className="lx-field-label">
+                    6-digit verification code
+                  </label>
+                  <div className="lx-input-wrap">
+                    <span className="lx-input-icon">🛡️</span>
+                    <input
+                      id="verify-code"
+                      type="text"
+                      maxLength={6}
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      placeholder="123456"
+                      disabled={loading}
+                      required
+                      className="lx-input lx-code-input"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="lx-submit-btn"
+                  disabled={loading || !isSignUpLoaded}
+                >
+                  {loading ? (
+                    <span className="lx-spinner-row">
+                      <span className="lx-spinner" /> Verifying...
+                    </span>
+                  ) : (
+                    <span>Verify & Launch Workspace →</span>
+                  )}
+                </button>
+
+                <div className="lx-code-actions-row">
+                  <button
+                    type="button"
+                    className="lx-text-link"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                  >
+                    Resend code
+                  </button>
+                  <button
+                    type="button"
+                    className="lx-highlight-link"
+                    onClick={() => switchMode('signin')}
+                    disabled={loading}
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Bottom Trust Indicators */}
+            <div className="lx-trust-indicators">
+              <div className="lx-trust-item">
+                <span className="lx-trust-icon">⚡</span>
+                <span className="lx-trust-text">Fast</span>
+              </div>
+              <div className="lx-trust-item">
+                <span className="lx-trust-icon">🛡️</span>
+                <span className="lx-trust-text">Secure</span>
+              </div>
+              <div className="lx-trust-item">
+                <span className="lx-trust-icon">👥</span>
+                <span className="lx-trust-text">Trusted</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ================================================================
-          EMBEDDED SCOPED STYLES
+          EXACT CSS FROM THE ATTACHED DESIGN + RESPONSIVE STYLES
           ================================================================ */}
-      <style jsx>{`
+      <style jsx global>{`
+        :root {
+          --violet: #8b5cf6;
+          --cyan: #22d3ee;
+        }
+
         .lx-auth-viewport {
-          position: relative;
           min-height: 100vh;
-          width: 100%;
           background: #020208;
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Segoe UI', Arial, sans-serif;
-          color: #f1f5f9;
-          overflow-x: hidden;
-          padding: 16px;
+          width: 100%;
+          margin: 0;
+          padding: 0;
           box-sizing: border-box;
+          overflow-x: hidden;
         }
 
-        /* Desktop Stage keeping the 1672 / 941 composition */
-        .lx-desktop-stage {
+        /* ===== Exact-image stage: keeps the 1672:941 ratio at any screen size ===== */
+        #lexino-login-root {
           position: relative;
           width: 100%;
           max-width: 1672px;
@@ -951,21 +1038,168 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           background-image: url('/auth-bg.png');
           background-size: 100% 100%;
           background-repeat: no-repeat;
-          background-position: center;
           margin: 0 auto;
           overflow: hidden;
-          box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9);
-          border-radius: 20px;
         }
 
-        /* Glassmorphism Card Frame on the Right Stage */
+        /* generic overlay hit-box */
+        .lx-hit {
+          position: absolute;
+          background: transparent;
+          border: none;
+          outline: none;
+          cursor: pointer;
+          padding: 0;
+          transition: background-color 0.2s;
+        }
+
+        .lx-hit:hover:not(:disabled) {
+          background-color: rgba(255, 255, 255, 0.04);
+          border-radius: 8px;
+        }
+
+        /* ===== Google button overlay ===== */
+        #lx-google-btn {
+          left: 65.67%;
+          top: 31.65%;
+          width: 27.4%;
+          height: 5.0%;
+          border-radius: 12px;
+        }
+
+        /* ===== Email field overlay ===== */
+        #lx-email-wrap {
+          left: 65.67%;
+          top: 47.35%;
+          width: 27.4%;
+          height: 4.9%;
+          position: absolute;
+        }
+
+        #lx-input-identifier {
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          padding-left: 8.5%;
+          font-size: min(1.6vw, 15px);
+          color: #f4f5fb;
+          font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        #lx-input-identifier:focus {
+          background: rgba(5, 6, 16, 0.65);
+          border-radius: 10px;
+        }
+
+        #lx-input-identifier::placeholder {
+          color: transparent;
+        }
+
+        /* ===== Password field overlay ===== */
+        #lx-password-wrap {
+          left: 65.67%;
+          top: 56.9%;
+          width: 27.4%;
+          height: 5.1%;
+          position: absolute;
+        }
+
+        #lx-input-password {
+          width: 88%;
+          height: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          padding-left: 8.5%;
+          font-size: min(1.6vw, 15px);
+          color: #f4f5fb;
+          font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        #lx-input-password:focus {
+          background: rgba(5, 6, 16, 0.65);
+          border-radius: 10px;
+        }
+
+        #lx-input-password::placeholder {
+          color: transparent;
+        }
+
+        #lx-toggle-pass {
+          position: absolute;
+          right: 2%;
+          top: 20%;
+          width: 7%;
+          height: 60%;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          border-radius: 6px;
+        }
+
+        /* ===== Forgot password overlay ===== */
+        #lx-forgot-link {
+          left: 85.6%;
+          top: 63.3%;
+          width: 7.6%;
+          height: 2.3%;
+          border-radius: 6px;
+        }
+
+        /* ===== Sign in button overlay ===== */
+        #lexino-submit-btn {
+          left: 65.67%;
+          top: 66.9%;
+          width: 27.4%;
+          height: 5.9%;
+          border-radius: 12px;
+        }
+
+        /* ===== Sign up overlay ===== */
+        #lx-signup-link {
+          left: 82.9%;
+          top: 74.9%;
+          width: 3.9%;
+          height: 2.4%;
+          border-radius: 4px;
+        }
+
+        /* Message Box */
+        #lx-form-message {
+          position: absolute;
+          left: 65.67%;
+          top: 40.3%;
+          width: 27.4%;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 600;
+          display: none;
+          font-family: 'Segoe UI', Arial, sans-serif;
+          z-index: 5;
+        }
+
+        #lx-form-message.lx-msg-error {
+          display: block;
+          color: #fca5a5;
+        }
+
+        #lx-form-message.lx-msg-success {
+          display: block;
+          color: #67e8f9;
+        }
+
+        /* ================================================================
+            GLASSMORPHISM FORM STYLES (Sign Up, Forgot Password & Mobile)
+            ================================================================ */
         .lx-card-stage {
           position: absolute;
           right: 4.2%;
           top: 6.8%;
           width: 32.8%;
           max-height: 87.5%;
-          background: rgba(8, 9, 20, 0.9);
+          background: rgba(8, 9, 20, 0.94);
           backdrop-filter: blur(28px);
           -webkit-backdrop-filter: blur(28px);
           border-radius: 28px;
@@ -978,10 +1212,17 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           display: flex;
           flex-direction: column;
           box-sizing: border-box;
-          z-index: 10;
+          z-index: 20;
           overflow-y: auto;
           scrollbar-width: thin;
           scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+        }
+
+        /* Hide the mobile card on desktop when in signin mode */
+        @media (min-width: 1024px) and (min-aspect-ratio: 1.15) {
+          .lx-mobile-only-card {
+            display: none !important;
+          }
         }
 
         .lx-card-stage::-webkit-scrollbar {
@@ -1022,7 +1263,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           line-height: 1.4;
         }
 
-        /* Alert notifications */
         .lx-alert {
           display: flex;
           align-items: flex-start;
@@ -1059,7 +1299,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           gap: min(1.1vw, 12px);
         }
 
-        /* Continue with Google button */
         .lx-google-btn {
           width: 100%;
           min-height: min(3.6vw, 42px);
@@ -1091,7 +1330,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           cursor: not-allowed;
         }
 
-        /* Divider */
         .lx-divider {
           display: flex;
           align-items: center;
@@ -1111,7 +1349,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           text-transform: lowercase;
         }
 
-        /* Inputs and Labels */
         .lx-field-group {
           display: flex;
           flex-direction: column;
@@ -1225,7 +1462,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           text-decoration: underline;
         }
 
-        /* Primary Action Button (Sign in / Create Account) */
         .lx-submit-btn {
           width: 100%;
           min-height: min(3.8vw, 42px);
@@ -1279,7 +1515,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           }
         }
 
-        /* Toggle Mode Row */
         .lx-toggle-mode-row {
           text-align: center;
           font-size: min(1.15vw, 13px);
@@ -1310,7 +1545,6 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           margin-top: 6px;
         }
 
-        /* Trust Badges on bottom of card */
         .lx-trust-indicators {
           display: flex;
           justify-content: space-around;
@@ -1348,13 +1582,17 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
             align-items: flex-start;
           }
 
-          .lx-desktop-stage {
+          #lexino-login-root {
             aspect-ratio: auto;
             max-width: 460px;
             background-image: none;
             box-shadow: none;
             border-radius: 0;
             overflow: visible;
+          }
+
+          .lx-exact-desktop-overlay {
+            display: none !important;
           }
 
           .lx-card-stage {
@@ -1370,6 +1608,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
               0 0 40px rgba(0, 0, 0, 0.9),
               0 0 25px rgba(139, 92, 246, 0.18);
             border: 1px solid rgba(139, 92, 246, 0.4);
+            display: flex !important;
           }
 
           .lx-brand-title {
