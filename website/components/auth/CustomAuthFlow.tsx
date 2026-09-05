@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSignIn, useSignUp, useUser } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 export type AuthMode = 'signin' | 'signup' | 'forgot-password' | 'reset-verify' | 'verify-email';
 
@@ -68,7 +69,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// Lexino Logo Glyph
+// Lexino Logo Aperture Glyph
 const LexinoGlyph = () => (
   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="10" stroke="url(#lexino-grad)" strokeWidth="1.8" strokeDasharray="3 3" />
@@ -136,7 +137,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
     }
   }, [isUserLoaded, user, redirectUrl]);
 
-  // Google OAuth handler (works for both Sign In & Sign Up)
+  // Google OAuth handler
   const handleGoogleAuth = async (targetMode: 'signin' | 'signup') => {
     setError(null);
     setLoading(true);
@@ -401,613 +402,560 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
   };
 
   return (
-    <div className="lx-auth-viewport">
-      {/* ================================================================
-          EXACT IMAGE STAGE (1672 x 941 Aspect Ratio Stage)
-          ================================================================ */}
-      <div id="lexino-login-root">
-        {/* MODE: SIGN IN - EXACT OVERLAY MATCHING REFERENCE HTML */}
-        {mode === 'signin' && (
-          <div className="lx-exact-desktop-overlay">
-            {/* Google button overlay */}
-            <button
-              type="button"
-              id="lx-google-btn"
-              className="lx-hit"
-              aria-label="Continue with Google"
-              onClick={() => handleGoogleAuth('signin')}
-              disabled={loading}
+    <main className="lx-web-auth-page">
+      {/* Background ambient lighting */}
+      <div className="lx-bg-ambient lx-ambient-top" />
+      <div className="lx-bg-ambient lx-ambient-bottom" />
+      <div className="lx-bg-grid" />
+
+      {/* Main split container */}
+      <div className="lx-web-container">
+        {/* ============================================================
+            LEFT COLUMN: BRAND SHOWCASE (Desktop only)
+            ============================================================ */}
+        <aside className="lx-left-showcase" aria-label="Lexino AI Features">
+          {/* Subtle cosmic border glow */}
+          <div className="lx-showcase-art-wrap">
+            <img
+              src="/auth-artwork-left.webp"
+              alt="Lexino AI — Your Smartest Digital Partner"
+              className="lx-showcase-img"
+              loading="eager"
             />
-
-            {/* Form status / error message */}
-            <div
-              id="lx-form-message"
-              className={error ? 'lx-msg-error' : successMsg ? 'lx-msg-success' : ''}
-              style={{ display: error || successMsg ? 'block' : 'none' }}
-            >
-              {loading ? 'Signing in...' : error ? error : successMsg}
-            </div>
-
-            <form
-              onSubmit={handleSignInSubmit}
-              style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}
-            >
-              {/* Email field overlay */}
-              <div id="lx-email-wrap">
-                <input
-                  type="text"
-                  id="lx-input-identifier"
-                  name="identifier"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Enter your email or username"
-                  autoComplete="username"
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              {/* Password field overlay */}
-              <div id="lx-password-wrap">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="lx-input-password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  disabled={loading}
-                  required
-                />
-                <button
-                  type="button"
-                  id="lx-toggle-pass"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
-                />
-              </div>
-
-              {/* Forgot password overlay */}
-              <button
-                type="button"
-                id="lx-forgot-link"
-                className="lx-hit"
-                aria-label="Forgot password"
-                onClick={() => switchMode('forgot-password')}
-                disabled={loading}
-              />
-
-              {/* Sign in button overlay */}
-              <button
-                type="submit"
-                id="lexino-submit-btn"
-                className="lx-hit"
-                aria-label="Sign in"
-                disabled={loading || !isSignInLoaded}
-              />
-            </form>
-
-            {/* Sign up overlay */}
-            <button
-              type="button"
-              id="lx-signup-link"
-              className="lx-hit"
-              aria-label="Sign up"
-              onClick={() => switchMode('signup')}
-              disabled={loading}
-            />
+            <div className="lx-showcase-overlay-vignette" />
           </div>
-        )}
+        </aside>
 
         {/* ============================================================
-            FORMS FOR SIGN UP / FORGOT PASSWORD / VERIFICATION
-            OR MOBILE/TABLET SCREENS
+            RIGHT COLUMN: INTERACTIVE AUTH CARD (Real web component)
             ============================================================ */}
-        {(mode !== 'signin' || true) && (
-          <div
-            className={`lx-card-stage ${mode === 'signin' ? 'lx-mobile-only-card' : ''}`}
-            role="region"
-            aria-label="Lexino AI Authentication"
-          >
-            {/* Card Header: Brand Icon & Title */}
-            <div className="lx-card-header">
-              <div className="lx-brand-icon-wrap">
-                <LexinoGlyph />
+        <section className="lx-right-auth-section" aria-label="Lexino AI Account Access">
+          <div className="lx-card-glow-shell">
+            <div className="lx-auth-card">
+              {/* Card Top: Small Tagline */}
+              <div className="lx-card-top-tagline">
+                <span className="lx-tagline-accent" />
+                <span className="lx-tagline-text">Think · Create · Grow</span>
               </div>
-              <h2 className="lx-brand-title">Lexino AI</h2>
-              <p className="lx-brand-subtitle">
-                {mode === 'signin' && 'Welcome back! Sign in to continue to your AI workspace.'}
-                {mode === 'signup' && 'Create your account to unlock your private AI workspace.'}
-                {mode === 'forgot-password' && 'Forgot password? Enter your email to receive a recovery code.'}
-                {mode === 'reset-verify' && 'Enter the reset code sent to your email to set a new password.'}
-                {mode === 'verify-email' && 'Enter the 6-digit verification code sent to your inbox.'}
-              </p>
-            </div>
 
-            {/* Status / Alert Messages */}
-            {error && (
-              <div className="lx-alert lx-alert-error" role="alert">
-                <span>⚠️</span>
-                <p>{error}</p>
+              {/* Card Header: Brand Icon & Title */}
+              <div className="lx-card-header">
+                <div className="lx-brand-icon-wrap">
+                  <LexinoGlyph />
+                </div>
+                <h1 className="lx-brand-title">Lexino AI</h1>
+                <p className="lx-brand-subtitle">
+                  {mode === 'signin' && 'Welcome back! Sign in to continue to your AI workspace.'}
+                  {mode === 'signup' && 'Create your account to unlock your private AI workspace.'}
+                  {mode === 'forgot-password' && 'Enter your email to receive a secure recovery code.'}
+                  {mode === 'reset-verify' && 'Enter the reset code sent to your email and set your new password.'}
+                  {mode === 'verify-email' && 'Enter the 6-digit verification code sent to your inbox.'}
+                </p>
               </div>
-            )}
-            {successMsg && (
-              <div className="lx-alert lx-alert-success" role="status">
-                <span>✓</span>
-                <p>{successMsg}</p>
-              </div>
-            )}
 
-            {/* Mobile Sign In Form */}
-            {mode === 'signin' && (
-              <form onSubmit={handleSignInSubmit} className="lx-form-body">
-                <button
-                  type="button"
-                  className="lx-google-btn"
-                  onClick={() => handleGoogleAuth('signin')}
-                  disabled={loading}
-                  aria-label="Continue with Google"
-                >
-                  <GoogleIcon />
-                  <span>Continue with Google</span>
-                </button>
-
-                <div className="lx-divider">
-                  <span className="lx-divider-line" />
-                  <span className="lx-divider-text">or</span>
-                  <span className="lx-divider-line" />
+              {/* Status / Alert Messages */}
+              {error && (
+                <div className="lx-alert lx-alert-error" role="alert">
+                  <span className="lx-alert-icon">⚠️</span>
+                  <p>{error}</p>
                 </div>
-
-                <div className="lx-field-group">
-                  <label htmlFor="mobile-signin-id" className="lx-field-label">
-                    Email or username
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">✉️</span>
-                    <input
-                      id="mobile-signin-id"
-                      type="text"
-                      name="identifier"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Enter your email or username"
-                      autoComplete="username"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
-                  </div>
+              )}
+              {successMsg && (
+                <div className="lx-alert lx-alert-success" role="status">
+                  <span className="lx-alert-icon">✓</span>
+                  <p>{successMsg}</p>
                 </div>
+              )}
 
-                <div className="lx-field-group">
-                  <label htmlFor="mobile-signin-pw" className="lx-field-label">
-                    Password
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">🔒</span>
-                    <input
-                      id="mobile-signin-pw"
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      autoComplete="current-password"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
-                    <button
-                      type="button"
-                      className="lx-toggle-pw"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      tabIndex={-1}
-                    >
-                      {showPassword ? '👁️' : '👁️‍🗨️'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="lx-forgot-wrap">
+              {/* ========================================================
+                  MODE 1: SIGN IN (Real Web Form)
+                  ======================================================== */}
+              {mode === 'signin' && (
+                <form onSubmit={handleSignInSubmit} className="lx-form-body">
                   <button
                     type="button"
-                    className="lx-text-link"
-                    onClick={() => switchMode('forgot-password')}
+                    className="lx-google-btn"
+                    onClick={() => handleGoogleAuth('signin')}
                     disabled={loading}
+                    aria-label="Continue with Google"
                   >
-                    Forgot password?
+                    <GoogleIcon />
+                    <span>Continue with Google</span>
                   </button>
-                </div>
 
-                <button
-                  type="submit"
-                  className="lx-submit-btn"
-                  disabled={loading || !isSignInLoaded}
-                >
-                  {loading ? (
-                    <span className="lx-spinner-row">
-                      <span className="lx-spinner" /> Signing in...
-                    </span>
-                  ) : (
-                    <span>Sign in →</span>
-                  )}
-                </button>
+                  <div className="lx-divider">
+                    <span className="lx-divider-line" />
+                    <span className="lx-divider-text">or</span>
+                    <span className="lx-divider-line" />
+                  </div>
 
-                <div className="lx-toggle-mode-row">
-                  <span>Don’t have an account?</span>{' '}
-                  <button
-                    type="button"
-                    className="lx-highlight-link"
-                    onClick={() => switchMode('signup')}
-                    disabled={loading}
-                  >
-                    Sign up
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Mode: Create Account (Sign Up) */}
-            {mode === 'signup' && (
-              <form onSubmit={handleSignUpSubmit} className="lx-form-body">
-                <button
-                  type="button"
-                  className="lx-google-btn"
-                  onClick={() => handleGoogleAuth('signup')}
-                  disabled={loading}
-                  aria-label="Continue with Google"
-                >
-                  <GoogleIcon />
-                  <span>Continue with Google</span>
-                </button>
-
-                <div className="lx-divider">
-                  <span className="lx-divider-line" />
-                  <span className="lx-divider-text">or create with email</span>
-                  <span className="lx-divider-line" />
-                </div>
-
-                <div className="lx-field-row-split">
                   <div className="lx-field-group">
-                    <label htmlFor="signup-fn" className="lx-field-label">
-                      First name
+                    <label htmlFor="signin-identifier" className="lx-field-label">
+                      Email or username
                     </label>
                     <div className="lx-input-wrap">
-                      <span className="lx-input-icon">👤</span>
+                      <span className="lx-input-icon">✉️</span>
                       <input
-                        id="signup-fn"
+                        id="signin-identifier"
                         type="text"
-                        name="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="First name"
-                        autoComplete="given-name"
+                        name="identifier"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder="Enter your email or username"
+                        autoComplete="username"
                         disabled={loading}
+                        required
                         className="lx-input"
                       />
                     </div>
                   </div>
+
                   <div className="lx-field-group">
-                    <label htmlFor="signup-ln" className="lx-field-label">
-                      Last name
+                    <label htmlFor="signin-password" className="lx-field-label">
+                      Password
                     </label>
                     <div className="lx-input-wrap">
-                      <span className="lx-input-icon">👤</span>
+                      <span className="lx-input-icon">🔒</span>
                       <input
-                        id="signup-ln"
-                        type="text"
-                        name="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Last name"
-                        autoComplete="family-name"
+                        id="signin-password"
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        autoComplete="current-password"
                         disabled={loading}
+                        required
+                        className="lx-input"
+                      />
+                      <button
+                        type="button"
+                        className="lx-toggle-pw"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="lx-forgot-wrap">
+                    <button
+                      type="button"
+                      className="lx-text-link"
+                      onClick={() => switchMode('forgot-password')}
+                      disabled={loading}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="lx-submit-btn"
+                    disabled={loading || !isSignInLoaded}
+                  >
+                    {loading ? (
+                      <span className="lx-spinner-row">
+                        <span className="lx-spinner" /> Signing in...
+                      </span>
+                    ) : (
+                      <span>Sign in →</span>
+                    )}
+                  </button>
+
+                  <div className="lx-toggle-mode-row">
+                    <span>Don’t have an account?</span>{' '}
+                    <button
+                      type="button"
+                      className="lx-highlight-link"
+                      onClick={() => switchMode('signup')}
+                      disabled={loading}
+                    >
+                      Sign up
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* ========================================================
+                  MODE 2: SIGN UP / CREATE ACCOUNT (Real Web Form)
+                  ======================================================== */}
+              {mode === 'signup' && (
+                <form onSubmit={handleSignUpSubmit} className="lx-form-body">
+                  <button
+                    type="button"
+                    className="lx-google-btn"
+                    onClick={() => handleGoogleAuth('signup')}
+                    disabled={loading}
+                    aria-label="Continue with Google"
+                  >
+                    <GoogleIcon />
+                    <span>Continue with Google</span>
+                  </button>
+
+                  <div className="lx-divider">
+                    <span className="lx-divider-line" />
+                    <span className="lx-divider-text">or create with email</span>
+                    <span className="lx-divider-line" />
+                  </div>
+
+                  <div className="lx-field-row-split">
+                    <div className="lx-field-group">
+                      <label htmlFor="signup-fn" className="lx-field-label">
+                        First name
+                      </label>
+                      <div className="lx-input-wrap">
+                        <span className="lx-input-icon">👤</span>
+                        <input
+                          id="signup-fn"
+                          type="text"
+                          name="firstName"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="First name"
+                          autoComplete="given-name"
+                          disabled={loading}
+                          className="lx-input"
+                        />
+                      </div>
+                    </div>
+                    <div className="lx-field-group">
+                      <label htmlFor="signup-ln" className="lx-field-label">
+                        Last name
+                      </label>
+                      <div className="lx-input-wrap">
+                        <span className="lx-input-icon">👤</span>
+                        <input
+                          id="signup-ln"
+                          type="text"
+                          name="lastName"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Last name"
+                          autoComplete="family-name"
+                          disabled={loading}
+                          className="lx-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lx-field-group">
+                    <label htmlFor="signup-email" className="lx-field-label">
+                      Email address
+                    </label>
+                    <div className="lx-input-wrap">
+                      <span className="lx-input-icon">✉️</span>
+                      <input
+                        id="signup-email"
+                        type="email"
+                        name="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email address"
+                        autoComplete="email"
+                        disabled={loading}
+                        required
                         className="lx-input"
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="lx-field-group">
-                  <label htmlFor="signup-email" className="lx-field-label">
-                    Email address
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">✉️</span>
-                    <input
-                      id="signup-email"
-                      type="email"
-                      name="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email address"
-                      autoComplete="email"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
+                  <div className="lx-field-group">
+                    <label htmlFor="signup-password" className="lx-field-label">
+                      Password (min. 8 characters)
+                    </label>
+                    <div className="lx-input-wrap">
+                      <span className="lx-input-icon">🔒</span>
+                      <input
+                        id="signup-password"
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Create a strong password"
+                        autoComplete="new-password"
+                        disabled={loading}
+                        required
+                        className="lx-input"
+                      />
+                      <button
+                        type="button"
+                        className="lx-toggle-pw"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="lx-field-group">
-                  <label htmlFor="signup-pw" className="lx-field-label">
-                    Password (min. 8 characters)
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">🔒</span>
-                    <input
-                      id="signup-pw"
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create a strong password"
-                      autoComplete="new-password"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
+                  <button
+                    type="submit"
+                    className="lx-submit-btn"
+                    disabled={loading || !isSignUpLoaded}
+                  >
+                    {loading ? (
+                      <span className="lx-spinner-row">
+                        <span className="lx-spinner" /> Creating account...
+                      </span>
+                    ) : (
+                      <span>Create Account →</span>
+                    )}
+                  </button>
+
+                  <div className="lx-toggle-mode-row">
+                    <span>Already have an account?</span>{' '}
                     <button
                       type="button"
-                      className="lx-toggle-pw"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      tabIndex={-1}
+                      className="lx-highlight-link"
+                      onClick={() => switchMode('signin')}
+                      disabled={loading}
                     >
-                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                      Sign in
                     </button>
                   </div>
-                </div>
+                </form>
+              )}
 
-                {/* Create Account Submit Button - FULLY VISIBLE */}
-                <button
-                  type="submit"
-                  className="lx-submit-btn lx-create-btn"
-                  disabled={loading || !isSignUpLoaded}
-                >
-                  {loading ? (
-                    <span className="lx-spinner-row">
-                      <span className="lx-spinner" /> Creating account...
-                    </span>
-                  ) : (
-                    <span>Create Account →</span>
-                  )}
-                </button>
-
-                <div className="lx-toggle-mode-row">
-                  <span>Already have an account?</span>{' '}
-                  <button
-                    type="button"
-                    className="lx-highlight-link"
-                    onClick={() => switchMode('signin')}
-                    disabled={loading}
-                  >
-                    Sign in
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Mode: Forgot Password */}
-            {mode === 'forgot-password' && (
-              <form onSubmit={handleForgotPasswordRequest} className="lx-form-body">
-                <div className="lx-field-group">
-                  <label htmlFor="forgot-email" className="lx-field-label">
-                    Account email
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">✉️</span>
-                    <input
-                      id="forgot-email"
-                      type="email"
-                      name="forgotEmail"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="Enter your registered email"
-                      autoComplete="email"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
+              {/* ========================================================
+                  MODE 3: FORGOT PASSWORD (STEP 1)
+                  ======================================================== */}
+              {mode === 'forgot-password' && (
+                <form onSubmit={handleForgotPasswordRequest} className="lx-form-body">
+                  <div className="lx-field-group">
+                    <label htmlFor="forgot-email" className="lx-field-label">
+                      Account email
+                    </label>
+                    <div className="lx-input-wrap">
+                      <span className="lx-input-icon">✉️</span>
+                      <input
+                        id="forgot-email"
+                        type="email"
+                        name="forgotEmail"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="Enter your account email"
+                        autoComplete="email"
+                        disabled={loading}
+                        required
+                        className="lx-input"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  className="lx-submit-btn"
-                  disabled={loading || !isSignInLoaded}
-                >
-                  {loading ? (
-                    <span className="lx-spinner-row">
-                      <span className="lx-spinner" /> Sending code...
-                    </span>
-                  ) : (
-                    <span>Send Reset Code →</span>
-                  )}
-                </button>
-
-                <div className="lx-toggle-mode-row">
-                  <span>Remember your password?</span>{' '}
                   <button
-                    type="button"
-                    className="lx-highlight-link"
-                    onClick={() => switchMode('signin')}
-                    disabled={loading}
+                    type="submit"
+                    className="lx-submit-btn"
+                    disabled={loading || !isSignInLoaded}
                   >
-                    Back to Sign In
+                    {loading ? (
+                      <span className="lx-spinner-row">
+                        <span className="lx-spinner" /> Sending code...
+                      </span>
+                    ) : (
+                      <span>Send Recovery Code →</span>
+                    )}
                   </button>
-                </div>
-              </form>
-            )}
 
-            {/* Mode: Reset Verify */}
-            {mode === 'reset-verify' && (
-              <form onSubmit={handleResetPasswordSubmit} className="lx-form-body">
-                <div className="lx-field-group">
-                  <label htmlFor="reset-code" className="lx-field-label">
-                    Reset code from email
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">🔑</span>
-                    <input
-                      id="reset-code"
-                      type="text"
-                      value={resetCode}
-                      onChange={(e) => setResetCode(e.target.value)}
-                      placeholder="Enter reset code"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="lx-field-group">
-                  <label htmlFor="reset-np" className="lx-field-label">
-                    New password (min. 8 chars)
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">🔒</span>
-                    <input
-                      id="reset-np"
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      autoComplete="new-password"
-                      disabled={loading}
-                      required
-                      className="lx-input"
-                    />
+                  <div className="lx-toggle-mode-row">
+                    <span>Remember your password?</span>{' '}
                     <button
                       type="button"
-                      className="lx-toggle-pw"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      aria-label="Toggle password visibility"
-                      tabIndex={-1}
+                      className="lx-highlight-link"
+                      onClick={() => switchMode('signin')}
+                      disabled={loading}
                     >
-                      {showNewPassword ? '👁️' : '👁️‍🗨️'}
+                      Sign in
                     </button>
                   </div>
-                </div>
+                </form>
+              )}
 
-                <button
-                  type="submit"
-                  className="lx-submit-btn"
-                  disabled={loading || !isSignInLoaded}
-                >
-                  {loading ? (
-                    <span className="lx-spinner-row">
-                      <span className="lx-spinner" /> Updating password...
-                    </span>
-                  ) : (
-                    <span>Update Password →</span>
-                  )}
-                </button>
-
-                <div className="lx-code-actions-row">
-                  <button
-                    type="button"
-                    className="lx-text-link"
-                    onClick={handleResendCode}
-                    disabled={loading}
-                  >
-                    Resend code
-                  </button>
-                  <button
-                    type="button"
-                    className="lx-highlight-link"
-                    onClick={() => switchMode('signin')}
-                    disabled={loading}
-                  >
-                    Back to Sign In
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Mode: Verify Email */}
-            {mode === 'verify-email' && (
-              <form onSubmit={handleVerifyEmailSubmit} className="lx-form-body">
-                <div className="lx-field-group">
-                  <label htmlFor="verify-code" className="lx-field-label">
-                    6-digit verification code
-                  </label>
-                  <div className="lx-input-wrap">
-                    <span className="lx-input-icon">🛡️</span>
-                    <input
-                      id="verify-code"
-                      type="text"
-                      maxLength={6}
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      placeholder="123456"
-                      disabled={loading}
-                      required
-                      className="lx-input lx-code-input"
-                    />
+              {/* ========================================================
+                  MODE 4: FORGOT PASSWORD (STEP 2: RESET CODE)
+                  ======================================================== */}
+              {mode === 'reset-verify' && (
+                <form onSubmit={handleResetPasswordSubmit} className="lx-form-body">
+                  <div className="lx-field-group">
+                    <label htmlFor="reset-code" className="lx-field-label">
+                      6-digit recovery code
+                    </label>
+                    <div className="lx-input-wrap">
+                      <input
+                        id="reset-code"
+                        type="text"
+                        name="resetCode"
+                        value={resetCode}
+                        onChange={(e) => setResetCode(e.target.value)}
+                        placeholder="Enter code"
+                        disabled={loading}
+                        required
+                        className="lx-input lx-code-input"
+                        maxLength={6}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  className="lx-submit-btn"
-                  disabled={loading || !isSignUpLoaded}
-                >
-                  {loading ? (
-                    <span className="lx-spinner-row">
-                      <span className="lx-spinner" /> Verifying...
-                    </span>
-                  ) : (
-                    <span>Verify & Launch Workspace →</span>
-                  )}
-                </button>
+                  <div className="lx-field-group">
+                    <label htmlFor="new-pw" className="lx-field-label">
+                      New password (min. 8 characters)
+                    </label>
+                    <div className="lx-input-wrap">
+                      <span className="lx-input-icon">🔒</span>
+                      <input
+                        id="new-pw"
+                        type={showNewPassword ? 'text' : 'password'}
+                        name="newPassword"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter your new password"
+                        disabled={loading}
+                        required
+                        className="lx-input"
+                      />
+                      <button
+                        type="button"
+                        className="lx-toggle-pw"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                      >
+                        {showNewPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="lx-code-actions-row">
                   <button
-                    type="button"
-                    className="lx-text-link"
-                    onClick={handleResendCode}
-                    disabled={loading}
+                    type="submit"
+                    className="lx-submit-btn"
+                    disabled={loading || !isSignInLoaded}
                   >
-                    Resend code
+                    {loading ? (
+                      <span className="lx-spinner-row">
+                        <span className="lx-spinner" /> Updating password...
+                      </span>
+                    ) : (
+                      <span>Update Password →</span>
+                    )}
                   </button>
-                  <button
-                    type="button"
-                    className="lx-highlight-link"
-                    onClick={() => switchMode('signin')}
-                    disabled={loading}
-                  >
-                    Back to Sign In
-                  </button>
-                </div>
-              </form>
-            )}
 
-            {/* Bottom Trust Indicators */}
-            <div className="lx-trust-indicators">
-              <div className="lx-trust-item">
-                <span className="lx-trust-icon">⚡</span>
-                <span className="lx-trust-text">Fast</span>
+                  <div className="lx-code-actions-row">
+                    <button
+                      type="button"
+                      className="lx-text-link"
+                      onClick={handleResendCode}
+                      disabled={loading}
+                    >
+                      Resend code
+                    </button>
+                    <button
+                      type="button"
+                      className="lx-text-link"
+                      onClick={() => switchMode('signin')}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* ========================================================
+                  MODE 5: SIGN UP EMAIL VERIFICATION
+                  ======================================================== */}
+              {mode === 'verify-email' && (
+                <form onSubmit={handleVerifyEmailSubmit} className="lx-form-body">
+                  <div className="lx-field-group">
+                    <label htmlFor="verify-code" className="lx-field-label">
+                      Verification code
+                    </label>
+                    <div className="lx-input-wrap">
+                      <input
+                        id="verify-code"
+                        type="text"
+                        name="verificationCode"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        placeholder="Enter 6-digit code"
+                        disabled={loading}
+                        required
+                        className="lx-input lx-code-input"
+                        maxLength={6}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="lx-submit-btn"
+                    disabled={loading || !isSignUpLoaded}
+                  >
+                    {loading ? (
+                      <span className="lx-spinner-row">
+                        <span className="lx-spinner" /> Verifying...
+                      </span>
+                    ) : (
+                      <span>Complete Verification →</span>
+                    )}
+                  </button>
+
+                  <div className="lx-code-actions-row">
+                    <button
+                      type="button"
+                      className="lx-text-link"
+                      onClick={handleResendCode}
+                      disabled={loading}
+                    >
+                      Resend code
+                    </button>
+                    <button
+                      type="button"
+                      className="lx-text-link"
+                      onClick={() => switchMode('signup')}
+                      disabled={loading}
+                    >
+                      Back to sign up
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Trust Indicators */}
+              <div className="lx-trust-indicators">
+                <div className="lx-trust-item">
+                  <span className="lx-trust-icon">⚡</span>
+                  <span className="lx-trust-text">Fast</span>
+                </div>
+                <div className="lx-trust-divider" />
+                <div className="lx-trust-item">
+                  <span className="lx-trust-icon">🛡️</span>
+                  <span className="lx-trust-text">Secure</span>
+                </div>
+                <div className="lx-trust-divider" />
+                <div className="lx-trust-item">
+                  <span className="lx-trust-icon">👥</span>
+                  <span className="lx-trust-text">Trusted</span>
+                </div>
               </div>
-              <div className="lx-trust-item">
-                <span className="lx-trust-icon">🛡️</span>
-                <span className="lx-trust-text">Secure</span>
-              </div>
-              <div className="lx-trust-item">
-                <span className="lx-trust-icon">👥</span>
-                <span className="lx-trust-text">Trusted</span>
+
+              {/* Card Footer: Domain & Homepage Link */}
+              <div className="lx-card-footer">
+                <span className="lx-footer-domain">LEXINOAI.IN</span>
+                <Link href="https://www.lexinoai.in" className="lx-back-link">
+                  ← Back to Home
+                </Link>
               </div>
             </div>
           </div>
-        )}
+        </section>
       </div>
 
       {/* ================================================================
-          EXACT CSS FROM THE ATTACHED DESIGN + RESPONSIVE STYLES
+          NATIVE WEB STYLING (TRUE MODERN SAAS FEEL)
           ================================================================ */}
       <style jsx global>{`
         :root {
@@ -1015,276 +963,237 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           --cyan: #22d3ee;
         }
 
-        .lx-auth-viewport {
+        .lx-web-auth-page {
           min-height: 100vh;
+          width: 100%;
           background: #020208;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: 'Segoe UI', Arial, sans-serif;
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          overflow-x: hidden;
-        }
-
-        /* ===== Exact-image stage: keeps the 1672:941 ratio at any screen size ===== */
-        #lexino-login-root {
+          font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
           position: relative;
-          width: 100%;
-          max-width: 1672px;
-          aspect-ratio: 1672 / 941;
-          background-image: url('/auth-bg.png');
-          background-size: 100% 100%;
-          background-repeat: no-repeat;
-          margin: 0 auto;
-          overflow: hidden;
-        }
-
-        /* generic overlay hit-box */
-        .lx-hit {
-          position: absolute;
-          background: transparent;
-          border: none;
-          outline: none;
-          cursor: pointer;
-          padding: 0;
-          transition: background-color 0.2s;
-        }
-
-        .lx-hit:hover:not(:disabled) {
-          background-color: rgba(255, 255, 255, 0.04);
-          border-radius: 8px;
-        }
-
-        /* ===== Google button overlay ===== */
-        #lx-google-btn {
-          left: 65.67%;
-          top: 31.65%;
-          width: 27.4%;
-          height: 5.0%;
-          border-radius: 12px;
-        }
-
-        /* ===== Email field overlay ===== */
-        #lx-email-wrap {
-          left: 65.67%;
-          top: 47.35%;
-          width: 27.4%;
-          height: 4.9%;
-          position: absolute;
-        }
-
-        #lx-input-identifier {
-          width: 100%;
-          height: 100%;
-          background: transparent;
-          border: none;
-          outline: none;
-          padding-left: 8.5%;
-          font-size: min(1.6vw, 15px);
-          color: #f4f5fb;
-          font-family: 'Segoe UI', Arial, sans-serif;
-        }
-
-        #lx-input-identifier:focus {
-          background: rgba(5, 6, 16, 0.65);
-          border-radius: 10px;
-        }
-
-        #lx-input-identifier::placeholder {
-          color: transparent;
-        }
-
-        /* ===== Password field overlay ===== */
-        #lx-password-wrap {
-          left: 65.67%;
-          top: 56.9%;
-          width: 27.4%;
-          height: 5.1%;
-          position: absolute;
-        }
-
-        #lx-input-password {
-          width: 88%;
-          height: 100%;
-          background: transparent;
-          border: none;
-          outline: none;
-          padding-left: 8.5%;
-          font-size: min(1.6vw, 15px);
-          color: #f4f5fb;
-          font-family: 'Segoe UI', Arial, sans-serif;
-        }
-
-        #lx-input-password:focus {
-          background: rgba(5, 6, 16, 0.65);
-          border-radius: 10px;
-        }
-
-        #lx-input-password::placeholder {
-          color: transparent;
-        }
-
-        #lx-toggle-pass {
-          position: absolute;
-          right: 2%;
-          top: 20%;
-          width: 7%;
-          height: 60%;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          border-radius: 6px;
-        }
-
-        /* ===== Forgot password overlay ===== */
-        #lx-forgot-link {
-          left: 85.6%;
-          top: 63.3%;
-          width: 7.6%;
-          height: 2.3%;
-          border-radius: 6px;
-        }
-
-        /* ===== Sign in button overlay ===== */
-        #lexino-submit-btn {
-          left: 65.67%;
-          top: 66.9%;
-          width: 27.4%;
-          height: 5.9%;
-          border-radius: 12px;
-        }
-
-        /* ===== Sign up overlay ===== */
-        #lx-signup-link {
-          left: 82.9%;
-          top: 74.9%;
-          width: 3.9%;
-          height: 2.4%;
-          border-radius: 4px;
-        }
-
-        /* Message Box */
-        #lx-form-message {
-          position: absolute;
-          left: 65.67%;
-          top: 40.3%;
-          width: 27.4%;
-          text-align: center;
-          font-size: 12px;
-          font-weight: 600;
-          display: none;
-          font-family: 'Segoe UI', Arial, sans-serif;
-          z-index: 5;
-        }
-
-        #lx-form-message.lx-msg-error {
-          display: block;
-          color: #fca5a5;
-        }
-
-        #lx-form-message.lx-msg-success {
-          display: block;
-          color: #67e8f9;
-        }
-
-        /* ================================================================
-            GLASSMORPHISM FORM STYLES (Sign Up, Forgot Password & Mobile)
-            ================================================================ */
-        .lx-card-stage {
-          position: absolute;
-          right: 4.2%;
-          top: 6.8%;
-          width: 32.8%;
-          max-height: 87.5%;
-          background: rgba(8, 9, 20, 0.94);
-          backdrop-filter: blur(28px);
-          -webkit-backdrop-filter: blur(28px);
-          border-radius: 28px;
-          border: 1px solid rgba(139, 92, 246, 0.35);
-          box-shadow:
-            0 20px 45px rgba(0, 0, 0, 0.8),
-            0 0 35px rgba(139, 92, 246, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.08);
-          padding: min(2.4vw, 28px) min(2.2vw, 26px) min(1.8vw, 20px);
-          display: flex;
-          flex-direction: column;
+          overflow-x: hidden;
+          padding: 24px 16px;
           box-sizing: border-box;
-          z-index: 20;
-          overflow-y: auto;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
         }
 
-        /* Hide the mobile card on desktop when in signin mode */
-        @media (min-width: 1024px) and (min-aspect-ratio: 1.15) {
-          .lx-mobile-only-card {
-            display: none !important;
+        /* Ambient background glow effects */
+        .lx-bg-ambient {
+          position: fixed;
+          border-radius: 50%;
+          filter: blur(140px);
+          pointer-events: none;
+          z-index: 0;
+          opacity: 0.45;
+        }
+
+        .lx-ambient-top {
+          width: 600px;
+          height: 600px;
+          top: -150px;
+          right: -100px;
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, transparent 70%);
+        }
+
+        .lx-ambient-bottom {
+          width: 650px;
+          height: 650px;
+          bottom: -150px;
+          left: -100px;
+          background: radial-gradient(circle, rgba(34, 211, 238, 0.25) 0%, transparent 70%);
+        }
+
+        .lx-bg-grid {
+          position: fixed;
+          inset: 0;
+          background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+          background-size: 48px 48px;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* Responsive 2-Column Split Container */
+        .lx-web-container {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 1400px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 40px;
+          margin: 0 auto;
+        }
+
+        /* Left Showcase Column (Desktop Only) */
+        .lx-left-showcase {
+          display: none;
+          flex: 1.15;
+          align-items: center;
+          justify-content: center;
+          max-width: 680px;
+        }
+
+        @media (min-width: 1024px) {
+          .lx-left-showcase {
+            display: flex;
           }
         }
 
-        .lx-card-stage::-webkit-scrollbar {
-          width: 4px;
-        }
-        .lx-card-stage::-webkit-scrollbar-thumb {
-          background: rgba(139, 92, 246, 0.4);
-          border-radius: 4px;
+        .lx-showcase-art-wrap {
+          position: relative;
+          width: 100%;
+          border-radius: 28px;
+          overflow: hidden;
+          border: 1px solid rgba(139, 92, 246, 0.25);
+          box-shadow:
+            0 25px 60px -15px rgba(0, 0, 0, 0.95),
+            0 0 35px rgba(139, 92, 246, 0.15);
+          background: #03040b;
         }
 
+        .lx-showcase-img {
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: cover;
+          transform: scale(1.01);
+        }
+
+        .lx-showcase-overlay-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(2, 2, 8, 0.4) 100%);
+          pointer-events: none;
+        }
+
+        /* Right Auth Column */
+        .lx-right-auth-section {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          max-width: 480px;
+          width: 100%;
+        }
+
+        /* Neon gradient glowing shell */
+        .lx-card-glow-shell {
+          position: relative;
+          width: 100%;
+          border-radius: 28px;
+          padding: 1.5px;
+          background: linear-gradient(
+            135deg,
+            rgba(139, 92, 246, 0.75) 0%,
+            rgba(34, 211, 238, 0.5) 50%,
+            rgba(139, 92, 246, 0.75) 100%
+          );
+          box-shadow:
+            0 25px 60px -10px rgba(0, 0, 0, 0.95),
+            0 0 45px rgba(139, 92, 246, 0.25);
+          transition: all 0.3s ease;
+        }
+
+        .lx-card-glow-shell:hover {
+          box-shadow:
+            0 30px 70px -10px rgba(0, 0, 0, 0.95),
+            0 0 55px rgba(139, 92, 246, 0.35);
+        }
+
+        /* Inner solid glassmorphism card */
+        .lx-auth-card {
+          width: 100%;
+          background: rgba(9, 11, 24, 0.98);
+          border-radius: 26.5px;
+          padding: 34px 30px 24px;
+          box-sizing: border-box;
+          backdrop-filter: blur(30px);
+          -webkit-backdrop-filter: blur(30px);
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* Tagline at top */
+        .lx-card-top-tagline {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 14px;
+          gap: 6px;
+        }
+
+        .lx-tagline-accent {
+          width: 38px;
+          height: 2px;
+          background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+          border-radius: 2px;
+        }
+
+        .lx-tagline-text {
+          font-size: 11px;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        /* Brand Title & Icon */
         .lx-card-header {
           text-align: center;
-          margin-bottom: min(1.4vw, 16px);
+          margin-bottom: 20px;
         }
 
         .lx-brand-icon-wrap {
           display: flex;
           justify-content: center;
           align-items: center;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
         }
 
         .lx-brand-title {
           font-family: var(--font-orbitron), 'Orbitron', 'Segoe UI', sans-serif;
-          font-size: min(1.9vw, 22px);
+          font-size: 24px;
           font-weight: 800;
           letter-spacing: 1px;
-          margin: 0 0 4px;
-          background: linear-gradient(135deg, #ffffff 30%, #c084fc 80%, #22d3ee 100%);
+          margin: 0 0 6px;
+          background: linear-gradient(135deg, #ffffff 20%, #c084fc 70%, #22d3ee 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .lx-brand-subtitle {
-          font-size: min(1.15vw, 13px);
+          font-size: 13px;
           color: #94a3b8;
           margin: 0;
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
+        /* Alert notifications */
         .lx-alert {
           display: flex;
           align-items: flex-start;
-          gap: 8px;
-          padding: 8px 12px;
-          border-radius: 10px;
-          font-size: min(1.15vw, 12px);
+          gap: 10px;
+          padding: 10px 14px;
+          border-radius: 12px;
+          font-size: 12.5px;
           font-weight: 500;
-          margin-bottom: 10px;
+          margin-bottom: 14px;
           line-height: 1.4;
           box-sizing: border-box;
+          animation: lx-fade-in 0.25s ease-out;
         }
 
         .lx-alert-error {
-          background: rgba(239, 68, 68, 0.12);
-          border: 1px solid rgba(239, 68, 68, 0.4);
+          background: rgba(239, 68, 68, 0.14);
+          border: 1px solid rgba(239, 68, 68, 0.45);
           color: #fca5a5;
         }
 
         .lx-alert-success {
-          background: rgba(34, 211, 238, 0.12);
-          border: 1px solid rgba(34, 211, 238, 0.4);
+          background: rgba(34, 211, 238, 0.14);
+          border: 1px solid rgba(34, 211, 238, 0.45);
           color: #67e8f9;
         }
 
@@ -1293,35 +1202,48 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           word-break: break-word;
         }
 
+        @keyframes lx-fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Form elements */
         .lx-form-body {
           display: flex;
           flex-direction: column;
-          gap: min(1.1vw, 12px);
+          gap: 14px;
         }
 
+        /* Continue with Google button */
         .lx-google-btn {
           width: 100%;
-          min-height: min(3.6vw, 42px);
+          min-height: 44px;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
+          gap: 12px;
           background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 12px;
-          color: #f1f5f9;
-          font-size: min(1.25vw, 14px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 14px;
+          color: #f8fafc;
+          font-size: 14px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          padding: 8px 16px;
+          padding: 10px 18px;
           box-sizing: border-box;
         }
 
         .lx-google-btn:hover:not(:disabled) {
           background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(139, 92, 246, 0.5);
-          box-shadow: 0 0 16px rgba(139, 92, 246, 0.2);
+          border-color: rgba(139, 92, 246, 0.6);
+          box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
           transform: translateY(-1px);
         }
 
@@ -1330,6 +1252,7 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           cursor: not-allowed;
         }
 
+        /* Divider */
         .lx-divider {
           display: flex;
           align-items: center;
@@ -1344,15 +1267,16 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
         }
 
         .lx-divider-text {
-          font-size: min(1.05vw, 12px);
+          font-size: 12px;
           color: #64748b;
           text-transform: lowercase;
         }
 
+        /* Field groups & inputs */
         .lx-field-group {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 5px;
           text-align: left;
         }
 
@@ -1363,9 +1287,10 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
         }
 
         .lx-field-label {
-          font-size: min(1.05vw, 12px);
+          font-size: 12px;
           font-weight: 600;
           color: #cbd5e1;
+          letter-spacing: 0.2px;
         }
 
         .lx-input-wrap {
@@ -1373,24 +1298,24 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           display: flex;
           align-items: center;
           width: 100%;
-          min-height: min(3.6vw, 40px);
+          min-height: 44px;
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 11px;
+          border-radius: 12px;
           transition: all 0.2s ease;
           box-sizing: border-box;
         }
 
         .lx-input-wrap:focus-within {
           border-color: #8b5cf6;
-          background: rgba(255, 255, 255, 0.06);
-          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+          background: rgba(255, 255, 255, 0.07);
+          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
         }
 
         .lx-input-icon {
           position: absolute;
-          left: 12px;
-          font-size: min(1.1vw, 13px);
+          left: 14px;
+          font-size: 14px;
           pointer-events: none;
           opacity: 0.7;
         }
@@ -1401,9 +1326,9 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           background: transparent;
           border: none;
           outline: none;
-          padding: 8px 36px 8px 36px;
+          padding: 10px 40px 10px 42px;
           color: #f8fafc;
-          font-size: min(1.25vw, 14px);
+          font-size: 14px;
           font-family: inherit;
           box-sizing: border-box;
         }
@@ -1413,22 +1338,22 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
         }
 
         .lx-code-input {
-          letter-spacing: 4px;
+          letter-spacing: 6px;
           font-weight: 700;
-          font-size: min(1.5vw, 18px);
+          font-size: 18px;
           text-align: center;
-          padding-left: 12px;
-          padding-right: 12px;
+          padding-left: 14px;
+          padding-right: 14px;
         }
 
         .lx-toggle-pw {
           position: absolute;
-          right: 10px;
+          right: 12px;
           background: transparent;
           border: none;
           color: #94a3b8;
           cursor: pointer;
-          font-size: min(1.1vw, 13px);
+          font-size: 14px;
           padding: 4px;
           display: flex;
           align-items: center;
@@ -1443,14 +1368,14 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
         .lx-forgot-wrap {
           display: flex;
           justify-content: flex-end;
-          margin-top: -3px;
+          margin-top: -4px;
         }
 
         .lx-text-link {
           background: transparent;
           border: none;
-          color: #a78bfa;
-          font-size: min(1.05vw, 12px);
+          color: #c084fc;
+          font-size: 12px;
           font-weight: 500;
           cursor: pointer;
           padding: 0;
@@ -1458,13 +1383,14 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
         }
 
         .lx-text-link:hover {
-          color: #c4b5fd;
+          color: #e879f9;
           text-decoration: underline;
         }
 
+        /* Primary Action Button (Gradient) */
         .lx-submit-btn {
           width: 100%;
-          min-height: min(3.8vw, 42px);
+          min-height: 45px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1472,19 +1398,19 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           border: none;
           border-radius: 12px;
           color: #ffffff;
-          font-size: min(1.25vw, 14px);
+          font-size: 14.5px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+          box-shadow: 0 0 24px rgba(139, 92, 246, 0.4);
           margin-top: 4px;
-          padding: 10px 16px;
+          padding: 10px 18px;
           box-sizing: border-box;
         }
 
         .lx-submit-btn:hover:not(:disabled) {
           transform: translateY(-1px);
-          box-shadow: 0 0 32px rgba(139, 92, 246, 0.55);
+          box-shadow: 0 0 34px rgba(139, 92, 246, 0.6);
           filter: brightness(1.08);
         }
 
@@ -1515,11 +1441,12 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           }
         }
 
+        /* Toggle Mode Row */
         .lx-toggle-mode-row {
           text-align: center;
-          font-size: min(1.15vw, 13px);
+          font-size: 13px;
           color: #94a3b8;
-          margin-top: 2px;
+          margin-top: 4px;
         }
 
         .lx-highlight-link {
@@ -1545,108 +1472,97 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
           margin-top: 6px;
         }
 
+        /* Trust Badges */
         .lx-trust-indicators {
           display: flex;
-          justify-content: space-around;
+          justify-content: center;
           align-items: center;
-          margin-top: min(1.6vw, 18px);
-          padding-top: min(1vw, 12px);
+          gap: 18px;
+          margin-top: 22px;
+          padding-top: 16px;
           border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .lx-trust-item {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
         }
 
         .lx-trust-icon {
-          font-size: min(1.2vw, 14px);
+          font-size: 13px;
           opacity: 0.85;
         }
 
         .lx-trust-text {
-          font-size: min(0.95vw, 11px);
+          font-size: 11.5px;
           color: #94a3b8;
           font-weight: 500;
           letter-spacing: 0.5px;
         }
 
-        /* ================================================================
-            RESPONSIVE ADAPTATION (MOBILE & TABLET: < 1024px or Portrait)
-            ================================================================ */
-        @media (max-width: 1023px), (max-aspect-ratio: 1.15) {
-          .lx-auth-viewport {
-            padding: 24px 16px;
-            align-items: flex-start;
+        .lx-trust-divider {
+          width: 1px;
+          height: 14px;
+          background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Card Footer */
+        .lx-card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 18px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .lx-footer-domain {
+          font-size: 11px;
+          letter-spacing: 0.2em;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .lx-back-link {
+          font-size: 11.5px;
+          color: #94a3b8;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+
+        .lx-back-link:hover {
+          color: #c084fc;
+          text-decoration: underline;
+        }
+
+        /* Responsive Mobile Adaptation */
+        @media (max-width: 1023px) {
+          .lx-web-auth-page {
+            padding: 20px 12px;
           }
 
-          #lexino-login-root {
-            aspect-ratio: auto;
-            max-width: 460px;
-            background-image: none;
-            box-shadow: none;
-            border-radius: 0;
-            overflow: visible;
-          }
-
-          .lx-exact-desktop-overlay {
-            display: none !important;
-          }
-
-          .lx-card-stage {
-            position: relative;
-            right: auto;
-            top: auto;
-            width: 100%;
-            max-height: none;
-            border-radius: 24px;
-            padding: 28px 22px;
-            background: rgba(10, 11, 24, 0.95);
-            box-shadow:
-              0 0 40px rgba(0, 0, 0, 0.9),
-              0 0 25px rgba(139, 92, 246, 0.18);
-            border: 1px solid rgba(139, 92, 246, 0.4);
-            display: flex !important;
+          .lx-auth-card {
+            padding: 28px 20px 20px;
           }
 
           .lx-brand-title {
             font-size: 22px;
           }
 
-          .lx-brand-subtitle {
-            font-size: 13px;
-          }
-
           .lx-google-btn {
             min-height: 48px;
-            font-size: 14px;
           }
 
           .lx-input-wrap {
             min-height: 48px;
           }
 
-          .lx-input {
-            font-size: 15px;
-          }
-
           .lx-submit-btn {
             min-height: 48px;
-            font-size: 15px;
-          }
-
-          .lx-trust-indicators {
-            margin-top: 24px;
-            padding-top: 16px;
-          }
-
-          .lx-trust-text {
-            font-size: 12px;
           }
         }
       `}</style>
-    </div>
+    </main>
   );
 }
