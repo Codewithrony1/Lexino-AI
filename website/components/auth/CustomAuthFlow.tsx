@@ -128,36 +128,8 @@ export function CustomAuthFlow({ initialMode = 'signin' }: CustomAuthFlowProps) 
     }, 3600);
   };
 
-  // Cross-subdomain session sync & redirection helper
-  const completeAuthAndRedirect = async (destination: string) => {
-    try {
-      const isLexino = typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in');
-      let token: string | null = null;
-      try {
-        token = (await clerk.session?.getToken()) || null;
-      } catch {}
-      if (!token && typeof window !== 'undefined' && (window as any).Clerk?.session) {
-        try {
-          token = await (window as any).Clerk.session.getToken();
-        } catch {}
-      }
-      if (!token && typeof document !== 'undefined') {
-        const match = document.cookie.match(/(?:^|;\s*)__session=([^;]+)/);
-        if (match && match[1]) token = match[1];
-      }
-
-      if (token && isLexino) {
-        document.cookie = `__session=${token}; Domain=.lexinoai.in; Path=/; SameSite=Lax; Secure`;
-        try {
-          const destUrl = new URL(destination, window.location.origin);
-          destUrl.searchParams.set('__session', token);
-          window.location.href = destUrl.toString();
-          return;
-        } catch {}
-      }
-    } catch (e) {
-      console.error('Session sync error:', e);
-    }
+  // Native redirection helper
+  const completeAuthAndRedirect = (destination: string) => {
     window.location.href = destination;
   };
 

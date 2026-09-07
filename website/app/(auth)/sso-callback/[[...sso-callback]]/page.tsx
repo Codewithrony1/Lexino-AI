@@ -1,20 +1,8 @@
 'use client';
 
-import { AuthenticateWithRedirectCallback, useSession } from '@clerk/nextjs';
-import { useEffect } from 'react';
+import { AuthenticateWithRedirectCallback } from '@clerk/nextjs';
 
 export default function SSOCallbackPage() {
-  const { session } = useSession();
-
-  useEffect(() => {
-    if (session && typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in')) {
-      session.getToken().then((token) => {
-        if (token) {
-          document.cookie = `__session=${token}; Domain=.lexinoai.in; Path=/; SameSite=Lax; Secure`;
-        }
-      }).catch(() => {});
-    }
-  }, [session]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#020208] text-white">

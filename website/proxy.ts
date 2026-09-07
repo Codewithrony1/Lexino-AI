@@ -49,24 +49,6 @@ export default clerkMiddleware(async (auth, req) => {
   const host = rawHost.split(':')[0].toLowerCase();
   const isLexinoDomain = host === 'lexinoai.in' || host.endsWith('.lexinoai.in');
 
-  // =========================================================================
-  // 0. CROSS-SUBDOMAIN SESSION SYNC HANDLER
-  // If __session token is passed in query, set cookie on .lexinoai.in and redirect
-  // =========================================================================
-  const querySession = url.searchParams.get('__session');
-  if (querySession && isLexinoDomain) {
-    url.searchParams.delete('__session');
-    const cleanPath = (url.pathname || '/') + (url.search ? url.search : '');
-    const redirectRes = NextResponse.redirect(new URL(cleanPath, req.url), 307);
-    redirectRes.cookies.set('__session', querySession, {
-      domain: '.lexinoai.in',
-      path: '/',
-      sameSite: 'lax',
-      secure: true,
-      httpOnly: false,
-    });
-    return applySecurityHeaders(redirectRes, reqId);
-  }
 
   // =========================================================================
   // 1. APEX DOMAIN: lexinoai.in -> 308 Permanent Redirect to www.lexinoai.in
@@ -150,7 +132,7 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://docs.lexinoai.in'), 307);
     }
 
-    // Active session redirect for /login and /signup with cross-subdomain cookie reinforcement
+    // Active session redirect for /login and /signup
     if ((url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) && authObj.userId) {
       const rawRedirect = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl');
       const safeDest = rawRedirect && !rawRedirect.includes('/login') && !rawRedirect.includes('/signup')
@@ -163,36 +145,11 @@ export default clerkMiddleware(async (auth, req) => {
       } catch {
         targetUrl = new URL('https://chat.lexinoai.in');
       }
-      const sessionToken = req.cookies.get('__session')?.value;
-      if (sessionToken && isLexinoDomain) {
-        targetUrl.searchParams.set('__session', sessionToken);
-      }
-      
-      const redirectRes = NextResponse.redirect(targetUrl, 307);
-      if (sessionToken && isLexinoDomain) {
-        redirectRes.cookies.set('__session', sessionToken, {
-          domain: '.lexinoai.in',
-          path: '/',
-          sameSite: 'lax',
-          secure: true,
-          httpOnly: false,
-        });
-      }
-      return applySecurityHeaders(redirectRes, reqId);
+      return applySecurityHeaders(NextResponse.redirect(targetUrl, 307), reqId);
     }
 
     // Auth endpoints (/login, /signup, /sso-callback, /account, /__clerk, /api/auth) serve directly
     const response = NextResponse.next();
-    const sessionCookie = req.cookies.get('__session')?.value;
-    if (sessionCookie && isLexinoDomain) {
-      response.cookies.set('__session', sessionCookie, {
-        domain: '.lexinoai.in',
-        path: '/',
-        sameSite: 'lax',
-        secure: true,
-        httpOnly: false,
-      });
-    }
     return applySecurityHeaders(response, reqId);
   }
 
@@ -341,6 +298,25 @@ export default clerkMiddleware(async (auth, req) => {
   // Default fallback
   const response = NextResponse.next();
   return applySecurityHeaders(response, reqId);
+}, (req) => {
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(':')[0].toLowerCase();
+  const isLexino = host === 'lexinoai.in' || host.endsWith('.lexinoai.in');
+  const isAccounts = host === 'accounts.lexinoai.in';
+
+  // Support Clerk satellite domains architecture if configured via env
+  if (isLexino && !isAccounts && !host.startsWith('localhost')) {
+    const isSatellite = process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === 'true';
+    if (isSatellite) {
+      return {
+        domain: host,
+        isSatellite: true,
+        signInUrl: 'https://accounts.lexinoai.in/login',
+        signUpUrl: 'https://accounts.lexinoai.in/signup',
+      };
+    }
+  }
+
+  return {};
 });
 
 export const config = {

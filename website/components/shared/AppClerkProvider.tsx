@@ -9,10 +9,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 export function AppClerkProvider({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
-      publishableKey={
-        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-        'pk_test_Y2xlYW4td2hpcHBldC04OS5jbGVyay5hY2NvdW50cy5kZXYk'
-      }
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       signInUrl="/login"
       signUpUrl="/signup"
       signInFallbackRedirectUrl="/chat"
