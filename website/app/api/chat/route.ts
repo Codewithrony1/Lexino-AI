@@ -360,7 +360,15 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${groqKey}`,
         'Content-Type': 'application/json',
       };
-      actualModel = selectedModel === 'qwen/qwen3.6-27b' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
+      if (selectedModel === 'llama-3.3-70b-versatile') {
+        actualModel = 'llama-3.3-70b-versatile';
+      } else if (selectedModel === 'llama-3.1-8b-instant') {
+        actualModel = 'llama-3.1-8b-instant';
+      } else if (selectedModel === 'qwen/qwen3.6-27b') {
+        actualModel = 'qwen/qwen3.6-27b';
+      } else {
+        actualModel = 'openai/gpt-oss-120b';
+      }
       systemPrompt = getSystemPromptForRequest(activeAssistant, userIntent);
       apiBody = {
         model: actualModel,
