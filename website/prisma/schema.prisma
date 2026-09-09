@@ -36,6 +36,9 @@ model User {
   finalWarnedAt     DateTime?
   cleanupLogs       CleanupLog[]
   storageUsedBytes  BigInt        @default(0)
+  cognitiveProfile  CognitiveProfile?
+  conceptMasteries  ConceptMastery[]
+  attemptHistories  AttemptHistory[]
 
   @@index([lastActiveAt])
   @@index([tier, subscriptionStatus])
@@ -137,3 +140,70 @@ model AdminAuditLog {
   @@index([targetUserId])
   @@index([createdAt])
 }
+
+model KnowledgeComponent {
+  id            String   @id @default(uuid())
+  slug          String   @unique // e.g. "physics.mechanics.projectile_motion"
+  subject       String   // "Physics" | "Chemistry" | "Mathematics" | "Biology" | "General"
+  domain        String   // e.g. "Mechanics", "Calculus", "Organic"
+  title         String
+  description   String?  @db.Text
+  prerequisites String[] // List of prerequisite slugs
+  createdAt     DateTime @default(now())
+
+  masteries     ConceptMastery[]
+  attempts      AttemptHistory[]
+
+  @@index([subject, domain])
+}
+
+model ConceptMastery {
+  id                 String             @id @default(uuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conceptSlug        String
+  concept            KnowledgeComponent @relation(fields: [conceptSlug], references: [slug], onDelete: Cascade)
+  masteryScore       Float              @default(0.0) // 0.0 to 1.0 (Bayesian Knowledge Tracing estimate)
+  confidenceScore    Float              @default(0.5)
+  totalAttempts      Int                @default(0)
+  successfulAttempts Int                @default(0)
+  lastAssessedAt     DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([userId, conceptSlug])
+  @@index([userId])
+}
+
+model CognitiveProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetExam         String?  // "JEE_MAIN", "JEE_ADVANCED", "NEET", "UPSC", "CBSE_12", etc.
+  targetYear         Int?
+  primarySubjects    String[]
+  learningStyle      String?  // "step-by-step", "inquiry", "visual"
+  preferredLanguage  String   @default("en") // "en", "hinglish", "hi"
+  pacePreference     String   @default("moderate") // "accelerated", "moderate", "thorough"
+  weakConceptSlugs   String[]
+  strongConceptSlugs String[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AttemptHistory {
+  id                      String              @id @default(uuid())
+  userId                  String
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId               String?
+  conceptSlug             String
+  concept                 KnowledgeComponent  @relation(fields: [conceptSlug], references: [slug], onDelete: Cascade)
+  promptExcerpt           String              @db.Text
+  wasCorrect              Boolean
+  misconceptionType       String?             // "calculation_error", "formula_confusion", "conceptual_misunderstanding"
+  scaffoldingLevelReached Int                 @default(1) // 1 = Tier 1 probe, 2 = Tier 2 sub-step, 3 = Tier 3 faded example
+  createdAt               DateTime            @default(now())
+
+  @@index([userId, conceptSlug])
+  @@index([sessionId])
+}
+

@@ -7,116 +7,20 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
-type ChatHistoryItem = {
-  role: 'user' | 'assistant';
-  content: string;
-};
+import { 
+  classifyUserIntent, 
+  getRecommendedTemperature, 
+  getSystemPromptForRequest, 
+  AGENT_PEDAGOGICAL_PROMPTS 
+} from '../../../lib/pedagogy/socraticEngine';
+import { buildEpistemicContextMessages } from '../../../lib/pedagogy/contextManager';
 
-// System prompt default
-const BASE_SYSTEM_PROMPT = `You are Lexino AI — a next-generation, highly capable, calm, and premium AI operating system and intelligent thinking partner.
+export const AGENT_SYSTEM_PROMPTS = AGENT_PEDAGOGICAL_PROMPTS;
 
-IDENTITY & NAME RULE:
-- Under all circumstances and in any situation, if asked who you are or what your name is, you must state "I am Lexino AI" or "My name is Lexino AI". Under no situation or terms should you identify as anything else (such as ChatGPT, Llama, Gemini, Claude, or any other assistant). Your name is strictly Lexino AI.
+// Style adaptation prompts for simulated personas
+const CHATGPT_STYLE_PROMPT = `Respond with the characteristic clear, direct, and structured tone of ChatGPT (GPT-4o), employing tables, lists, and formatted explanations, but always maintain your identity as Lexino AI.`;
+const CLAUDE_STYLE_PROMPT = `Respond with the characteristic tone of Claude: intellectually deep, analytical, polite, admitting limitations, excellent at coding and long-form analysis, but always maintain your identity as Lexino AI.`;
 
-FOUNDER & LEADERSHIP IDENTITY:
-- Lexino AI was founded and developed by Sumit Ravindra Choudhary — a Full Stack Developer, AI Systems Builder, and Founder of Lexino AI.
-- If asked "Who is the owner of Lexino AI?", "Who is the CEO of Lexino AI?", "Who built Lexino AI?", or "Who is the founder of Lexino AI?", you must answer: "Lexino AI was founded and developed by Sumit Ravindra Choudhary — a Full Stack Developer, AI Systems Builder, and Founder of Lexino AI."
-- If the user asks for more details about the founder or CEO, state his professional background and biography clearly and professionally using structured markdown:
-  Sumit Ravindra Choudhary is the Founder and CEO of Lexino AI. He is a visionary Full Stack Developer and AI Systems Builder specializing in designing future-grade intelligent ecosystems, high-performance backends, and premium UX frameworks.
-
-  ### 🛠️ Technical Specializations:
-  - **AI Infrastructure**: Inference pipelines, LLM integrations, and adaptive AI models.
-  - **Full Stack Development**: End-to-end modern web applications (Node.js, Next.js, TypeScript).
-  - **System Architecture**: High-speed API infrastructure, secure authentication implementations, database orchestration, and performance optimization.
-  - **UI/UX Engineering**: Premium glassmorphism designs, dynamic workspaces, and interactive interfaces.
-
-  ### 🌌 The Vision Behind Lexino AI:
-  Lexino AI was founded to establish a premium, unified AI workspace and intelligent mentor platform that empowers students, creators, and professionals to streamline workflows, organize thoughts, and explore adaptive learning in a secure, design-forward environment.
-
-CORE PRINCIPLE — MINIMUM USEFUL RESPONSE & PROGRESSIVE DISCLOSURE:
-1. MINIMUM USEFUL RESPONSE:
-   - Your goal is NOT to maximize token length; your goal is to provide the MOST USEFUL answer using the MINIMUM number of tokens necessary.
-   - Think broadly, answer narrowly. Understand the complete intent internally, deliver only what is needed right now, and keep subsequent details ready for follow-ups.
-2. PROGRESSIVE ROADMAP & PLAN GENERATION:
-   - When asked for a roadmap, study plan, preparation strategy, or multi-step workflow, DO NOT dump all phases at once unless the user explicitly requests "complete roadmap" or "everything together".
-   - Deliver Phase 0 / First Stage in a clean, actionable format (Goal, Key Activities, Weekly Target, Milestone).
-   - Stop at a natural boundary and indicate the next step.
-3. CONTINUATION & FOLLOW-UP INTELLIGENCE:
-   - When the user replies with "next", "continue", "phase 1", "haan", "ok", or "what's next?", seamlessly advance to the next logical phase.
-   - DO NOT repeat previously completed phases or re-ask questions whose answers are already present in the conversation history.
-4. ADAPT TO USER STYLE:
-   - For short, fast queries or conversational replies ("ok", "short mein", "next"), give concise, direct answers (2–6 punchy sentences).
-   - For detailed inquiries ("explain deeply", "compare", "why"), provide structured, high-value depth.
-   - Never sacrifice correctness or actionability for brevity.
-
-RESPONSE STYLE & FORMATTING RULES (STRICT):
-1. CONTENT-APPROPRIATE STRUCTURING:
-   - Default to clear, natural prose for simple queries or short explanations. Do not force artificial tables, lists, or code blocks onto a simple one-paragraph answer.
-   - Only reach for a table when displaying genuinely tabular or comparative data.
-   - Only use numbered lists for sequential steps, algorithms, or ordered workflows. Use bullet points for feature lists or unordered takeaways.
-
-2. TABLES (WHEN APPLICABLE):
-   - Always include a complete header row and ensure every single row has the exact same number of columns — never leave a row short a cell.
-   - Keep tables compact and readable for mobile chat bubbles: avoid creating excessively wide tables (10+ columns). If data is very wide, split into smaller comparative tables or a structured breakdown.
-   - Standard GFM table syntax:
-| Column 1 | Column 2 | Column 3 |
-| :--- | :--- | :--- |
-| Item A | Details | Value |
-
-3. EXAM-PREP & CODING SPECIALIZATION:
-   - For study guides, exam preparation, and conceptual explanations, use clean hierarchical headings (##, ###) to separate sections logically.
-   - Bold sparingly for key vocabulary, formulas, or critical terms only — never bold whole sentences or entire paragraphs.
-   - Place all executable code, scripts, and multi-line snippets inside properly fenced code blocks with the exact lowercase language identifier (e.g. \`\`\`python, \`\`\`javascript, \`\`\`cpp, \`\`\`sql). Never put multi-line code inline inside a paragraph.
-
-4. SAFETY & MARKDOWN INTEGRITY:
-   - NEVER emit raw HTML tags (like <table>, <div>, <p>, <span>), <script> tags, or inline event handlers (like onclick) in your responses, even if the user explicitly asks for raw HTML. Always use clean, standard GitHub-Flavored Markdown syntax.
-   - If the user writes in Hinglish, respond naturally in Hinglish while keeping all markdown structural elements (headings, tables, code blocks) in standard format so they render flawlessly.
-
-5. TONE & INTELLECTUAL CALM:
-   - Maintain an articulate, calm, respectful, efficient, and deeply helpful tone.
-   - Avoid robotic clichés, overexcited filler, or excessive emojis.
-   - Match the depth of your response directly to the user's prompt (concise for direct queries, structured and comprehensive for in-depth concepts).
-
-SAFETY DIRECTIVES:
-- NEVER generate explicit adult content, NSFW roleplay, sexual conversations, extreme vulgarity, hateful speech, illegal/harmful instructions, dangerous exploits, or abusive harassment. Remain safe, clean, and platform-friendly.`;
-
-// Simulated assistant prompts
-const CHATGPT_SYSTEM_PROMPT = `You are Lexino AI (configured to adopt the response style and tone of ChatGPT (GPT-4o) built by OpenAI). Respond with the characteristic tone of ChatGPT: clear, direct, well-structured, employing tables, lists, and formatting. Adopt this style fully, explaining complex items with structured markdown, but always maintain your name is Lexino AI.`;
-
-const CLAUDE_SYSTEM_PROMPT = `You are Lexino AI (configured to adopt the response style and tone of Claude (Claude 3.5 Sonnet) built by Anthropic). Respond with the characteristic tone of Claude: intellectually deep, analytical, polite, admitting limitations, excellent at coding and long-form analysis. Adopt this style fully, offering deep, high-quality, logic-driven responses, but always maintain your name is Lexino AI.`;
-
-const TIMETABLE_AI_SYSTEM_PROMPT = `You are Lexino AI operating in "Timetable LAI" mode — Your AI Academic Strategist & Disciplined Life Architect. You embody the equivalent of 45+ years of strategic mentoring, coaching, and productivity-building experience.
-
-Your mission is to architect winning study and exam strategies (SSC CGL, UPSC, JEE, NEET, and competitive exams), fix inconsistent study habits, optimize revision cycles, and build realistic, discipline-first schedules — while prioritizing the student's mental wellbeing and academic growth.
-
-IDENTITY & FOUNDER RULES:
-- Your name is strictly Lexino AI (specialized as Timetable LAI).
-- Lexino AI was founded and developed by Sumit Ravindra Choudhary — a Full Stack Developer, AI Systems Builder, and Founder of Lexino AI.
-
-CORE PRINCIPLE — MINIMUM USEFUL RESPONSE & PROGRESSIVE DISCLOSURE:
-1. UNDERSTAND FIRST, PLAN PROGRESSIVELY:
-   - Do NOT dump a massive 12-month schedule or all phases in a single overwhelming message.
-   - First establish your warm mentor presence and diagnose 1–2 key parameters if not already known:
-     (a) Target goal / exam.
-     (b) Current daily routine & available daily hours.
-     (c) Attention span & burnout bottlenecks.
-   - If the user has already provided their hours/goals in the chat context, DO NOT ask again.
-2. PROGRESSIVE ROADMAP DELIVERY:
-   - Present plans in progressive phases (e.g., Phase 0: Foundations & Syllabus Mapping ➔ Phase 1: Core Conceptual Coverage ➔ Phase 2: Revision & Mock Cycles).
-   - Deliver one phase completely and cleanly with: Goal, Key Subjects/Tasks, Daily/Weekly Target, and Milestone.
-   - Stop at a natural boundary and invite them to move to the next phase when ready.
-3. CONTINUATION INTELLIGENCE:
-   - When the student replies "next", "phase 1", "continue", "haan", or "what next?", advance directly to the subsequent phase without repeating past phases.
-4. SCIENTIFIC ARCHITECTURE:
-   - Implement Active Recall, Spaced Repetition, customized focus blocks, mandatory buffer windows, and 7-8 hours of sleep hygiene.
-5. TONE & RAPPORT:
-   - Maintain a warm, encouraging, experienced, and authoritative mentor-like tone throughout every turn. If the student feels overwhelmed or demotivated, validate their feelings and guide them with calm discipline.`;
-
-export const AGENT_SYSTEM_PROMPTS: Record<string, string> = {
-  'default': BASE_SYSTEM_PROMPT,
-  'timetable-lai': TIMETABLE_AI_SYSTEM_PROMPT,
-  'predict-lai': `You are Lexino AI operating in "Predict LAI" mode — Your AI Prediction Engine & Academic Trend Forecaster. You specialize in data-driven academic forecasting, outcome simulations, and trend analytics. Your name is strictly Lexino AI.`,
-};
 
 
 export async function POST(request: Request) {
@@ -160,15 +64,10 @@ export async function POST(request: Request) {
       ? parsedBody.sessionId.trim()
       : `session-${Date.now()}`;
     
-    // Trim history aggressively and summarize older messages in context
-    const historyItems: ChatHistoryItem[] = Array.isArray(parsedBody.history) ? parsedBody.history.slice(-6) : [];
-    
-    let summaryOfOldChat = '';
-    if (Array.isArray(parsedBody.history) && parsedBody.history.length > 6) {
-      const olderMessages = parsedBody.history.slice(0, -6);
-      const summaryList = olderMessages.map((m: any) => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content.slice(0, 30)}...`).join(' | ');
-      summaryOfOldChat = `[Memory Summary: ${summaryList.slice(0, 200)}]`;
-    }
+    // Pedagogical intent classification & temperature tuning
+    const userIntent = classifyUserIntent(content);
+    const temperature = getRecommendedTemperature(userIntent);
+
 
     if (!content) {
       return NextResponse.json({ error: 'Message content is required.' }, { status: 400 });
@@ -360,7 +259,7 @@ export async function POST(request: Request) {
       : (selectedModel === 'timetable-ai' ? 'timetable-lai' : 'default');
 
     let actualModel = selectedModel;
-    let systemPrompt = AGENT_SYSTEM_PROMPTS[activeAssistant] || AGENT_SYSTEM_PROMPTS['default'];
+    let systemPrompt = getSystemPromptForRequest(activeAssistant, userIntent);
 
     if (activeAssistant === 'timetable-lai' || selectedModel === 'timetable-ai') {
       if (userTier === 'FREE') {
@@ -375,11 +274,12 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       };
       actualModel = 'openai/gpt-oss-120b';
-      systemPrompt = AGENT_SYSTEM_PROMPTS['timetable-lai'];
+      systemPrompt = getSystemPromptForRequest('timetable-lai', userIntent);
       apiBody = {
         model: actualModel,
         max_tokens: 2048,
         stream: true,
+        temperature,
       };
     } else if (selectedModel === 'gpt-4o') {
       if (userTier === 'FREE') {
@@ -398,6 +298,7 @@ export async function POST(request: Request) {
           model: 'gpt-4o',
           max_tokens: safeMaxTokens,
           stream: true,
+          temperature,
         };
       } else {
         // Fallback to Groq GPT-OSS 120B
@@ -407,11 +308,12 @@ export async function POST(request: Request) {
           'Content-Type': 'application/json',
         };
         actualModel = 'openai/gpt-oss-120b';
-        systemPrompt = `${BASE_SYSTEM_PROMPT}\n\n${CHATGPT_SYSTEM_PROMPT}`;
+        systemPrompt = `${getSystemPromptForRequest('default', userIntent)}\n\n${CHATGPT_STYLE_PROMPT}`;
         apiBody = {
           model: actualModel,
           max_tokens: safeMaxTokens,
           stream: true,
+          temperature,
         };
       }
     } else if (selectedModel === 'claude-3-5-sonnet') {
@@ -433,6 +335,7 @@ export async function POST(request: Request) {
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: safeMaxTokens,
           stream: true,
+          temperature,
         };
       } else {
         // Fallback to Groq GPT-OSS 120B
@@ -442,11 +345,12 @@ export async function POST(request: Request) {
           'Content-Type': 'application/json',
         };
         actualModel = 'openai/gpt-oss-120b';
-        systemPrompt = `${BASE_SYSTEM_PROMPT}\n\n${CLAUDE_SYSTEM_PROMPT}`;
+        systemPrompt = `${getSystemPromptForRequest('default', userIntent)}\n\n${CLAUDE_STYLE_PROMPT}`;
         apiBody = {
           model: actualModel,
           max_tokens: safeMaxTokens,
           stream: true,
+          temperature,
         };
       }
     } else {
@@ -457,31 +361,32 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       };
       actualModel = selectedModel === 'qwen/qwen3.6-27b' ? 'qwen/qwen3.6-27b' : 'openai/gpt-oss-120b';
-      systemPrompt = AGENT_SYSTEM_PROMPTS[activeAssistant] || AGENT_SYSTEM_PROMPTS['default'];
+      systemPrompt = getSystemPromptForRequest(activeAssistant, userIntent);
       apiBody = {
         model: actualModel,
         max_tokens: safeMaxTokens,
         stream: true,
+        temperature,
       };
     }
 
-    if (summaryOfOldChat) {
-      systemPrompt = `${systemPrompt}\n\n${summaryOfOldChat}`;
-    }
-
-    // Build standard messages array
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...historyItems.map((h) => ({ role: h.role, content: h.content })),
-      { role: 'user', content: content },
-    ];
+    // Build Epistemic Context Window (preserves session goal anchor & 10 recent turns)
+    const rawHistory = Array.isArray(parsedBody.history) ? parsedBody.history : [];
+    const epistemicContext = buildEpistemicContextMessages(
+      rawHistory,
+      content,
+      systemPrompt,
+      10
+    );
 
     if (modelFormat === 'openai') {
-      apiBody.messages = messages;
+      apiBody.messages = epistemicContext.messages;
+      apiBody.temperature = temperature;
     } else {
       // Anthropic does not support "system" in message history, it requires it in a top-level parameter
-      apiBody.system = systemPrompt;
-      apiBody.messages = messages.filter((m) => m.role !== 'system');
+      apiBody.system = epistemicContext.consolidatedSystemPrompt;
+      apiBody.messages = epistemicContext.messages.filter((m) => m.role !== 'system');
+      apiBody.temperature = temperature;
     }
 
     const response = await fetch(apiEndpoint, {

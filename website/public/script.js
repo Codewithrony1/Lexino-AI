@@ -265,7 +265,8 @@
                 if (typeof dirtyHtml !== 'string') return '';
                 if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
                     return window.DOMPurify.sanitize(dirtyHtml, {
-                        ADD_ATTR: ['target', 'align'],
+                        ADD_TAGS: ['math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'msqrt', 'mroot', 'annotation', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+                        ADD_ATTR: ['target', 'align', 'xmlns', 'display', 'class', 'style'],
                         FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
                         FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
                     });

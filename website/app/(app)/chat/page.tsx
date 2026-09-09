@@ -139,6 +139,7 @@ export default async function ChatPage() {
       <ClientScriptLoader
         scripts={[
           'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js',
           '/api.js',
           '/script.js',
         ]}
