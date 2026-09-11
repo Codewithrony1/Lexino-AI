@@ -3,6 +3,7 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '../../../../lib/prisma';
 import { PLANS } from '../../../../lib/plans';
 import { createRazorpayOrder, getRazorpayKeyId } from '../../../../lib/razorpay';
+import { checkRateLimit, getRateLimitHeaders } from '../../../../lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'unauthorized', message: 'Please log in to upgrade your subscription plan.' },
         { status: 401 }
+      );
+    }
+
+    // Rate Limiting: 10 orders per minute per user
+    const rateLimit = checkRateLimit(`order:${userId}`, 10, 60_000);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'rate_limit_exceeded', message: 'Too many order requests. Please wait a moment and try again.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimit) }
       );
     }
 

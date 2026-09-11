@@ -85,10 +85,11 @@ export async function ensureDbTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "ChatSession_userId_storageState_idx" ON "ChatSession"("userId", "storageState");
       CREATE INDEX IF NOT EXISTS "ApiLog_userId_createdAt_idx" ON "ApiLog"("userId", "createdAt");
     `);
-    hasEnsuredTables = true;
     console.log('✅ [Database Migration] Ensured core tables and performance indexes exist in PostgreSQL.');
   } catch (err: any) {
     console.warn('⚠️ [Database Migration] Table check note:', err?.message || err);
+  } finally {
+    hasEnsuredTables = true;
   }
 }
 

@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
+import { checkRateLimit, getRateLimitHeaders } from '../../../lib/rateLimit';
 
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate Limiting: 5 image generations per minute per user
+  const rateLimit = checkRateLimit(`image:${userId}`, 5, 60_000);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', message: 'Too many image requests. Please wait a minute and try again.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
+    );
   }
 
   try {

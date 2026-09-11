@@ -43,13 +43,13 @@ async function runValidation() {
   const headers = getRateLimitHeaders(exhausted) as Record<string, string>;
   assert(headers['X-RateLimit-Limit'] === '5' && headers['Retry-After'] !== undefined, 'Rate limit headers contain RFC compliant X-RateLimit and Retry-After');
 
-  // Test 4: Concurrency simulation (50 simultaneous hits across different users)
+  // Test 4: Concurrency simulation (100 simultaneous hits across different users)
   let concurrentSuccessCount = 0;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     const res = checkRateLimit(`sim_user_${i}`, 35, 60000);
     if (res.success) concurrentSuccessCount++;
   }
-  assert(concurrentSuccessCount === 50, 'High-concurrency isolated token buckets handle 50 concurrent distinct users without collision');
+  assert(concurrentSuccessCount === 100, 'High-concurrency isolated token buckets handle 100 concurrent distinct users without collision');
 
   // Test 5: Same-user rapid burst rejection
   const burstUser = 'burst_spammer_123';
@@ -61,6 +61,26 @@ async function runValidation() {
     else blocked++;
   }
   assert(allowed === 10 && blocked === 30, `Spam surge contained: exactly 10 allowed, 30 blocked (allowed: ${allowed}, blocked: ${blocked})`);
+
+  // Test 6: Multi-endpoint rate isolation (Image endpoint limit does not throttle Chat)
+  const multiUser = 'user_multi_endpoint_456';
+  const chatLimit = checkRateLimit(`chat:${multiUser}`, 35, 60000);
+  const imageLimit = checkRateLimit(`image:${multiUser}`, 5, 60000);
+  const uploadLimit = checkRateLimit(`upload:${multiUser}`, 20, 60000);
+  assert(
+    chatLimit.success && imageLimit.success && uploadLimit.success,
+    'Endpoint-isolated rate limiters protect distinct routes without cross-endpoint starvation'
+  );
+
+  // Test 7: Rapid 500-request pipeline across 50 users
+  let totalPipelineProcessed = 0;
+  for (let u = 0; u < 50; u++) {
+    for (let req = 0; req < 10; req++) {
+      const r = checkRateLimit(`pipeline_user_${u}`, 35, 60000);
+      if (r.success) totalPipelineProcessed++;
+    }
+  }
+  assert(totalPipelineProcessed === 500, 'High-throughput pipeline processed 500 requests across 50 users with 100% accounting accuracy');
 
   console.log(`\n🎉 Results: ${passed}/${total} checks passed successfully!`);
 }

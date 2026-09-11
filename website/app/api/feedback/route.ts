@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { checkRateLimit, getRateLimitHeaders } from '../../../lib/rateLimit';
 
 const FEEDBACK_FILE = path.join(process.cwd(), 'feedback.json');
 
@@ -12,6 +13,15 @@ let feedbackMemoryCache: any[] = [
 ];
 
 export async function POST(request: Request) {
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  const rateLimit = checkRateLimit(`feedback:${clientIp}`, 5, 60_000);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', message: 'Too many feedback submissions. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
+    );
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const { name, email, msg, rating } = body;
@@ -22,10 +32,10 @@ export async function POST(request: Request) {
 
     const newFeedback = {
       id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      name,
-      email,
-      msg,
-      rating: Number(rating) || 5,
+      name: String(name).trim().slice(0, 100),
+      email: String(email).trim().slice(0, 100),
+      msg: String(msg).trim().slice(0, 2000),
+      rating: Math.min(Math.max(Number(rating) || 5, 1), 5),
       createdAt: new Date().toISOString()
     };
 
@@ -37,10 +47,14 @@ export async function POST(request: Request) {
         feedbacks = JSON.parse(raw || '[]');
       }
       feedbacks.unshift(newFeedback);
+      if (feedbacks.length > 100) feedbacks = feedbacks.slice(0, 100);
       fs.writeFileSync(FEEDBACK_FILE, JSON.stringify(feedbacks, null, 2), 'utf8');
     } catch (fsErr) {
-      // Serverless fallback
+      // Serverless fallback with bounded memory cache
       feedbackMemoryCache.unshift(newFeedback);
+      if (feedbackMemoryCache.length > 100) {
+        feedbackMemoryCache = feedbackMemoryCache.slice(0, 100);
+      }
       console.warn('Fallback to memory for feedback saving:', fsErr);
     }
 

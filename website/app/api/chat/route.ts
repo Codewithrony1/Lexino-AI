@@ -22,6 +22,30 @@ export const AGENT_SYSTEM_PROMPTS = AGENT_PEDAGOGICAL_PROMPTS;
 const CHATGPT_STYLE_PROMPT = `Respond with the characteristic clear, direct, and structured tone of ChatGPT (GPT-4o), employing tables, lists, and formatted explanations, but always maintain your identity as Lexino AI.`;
 const CLAUDE_STYLE_PROMPT = `Respond with the characteristic tone of Claude: intellectually deep, analytical, polite, admitting limitations, excellent at coding and long-form analysis, but always maintain your identity as Lexino AI.`;
 
+// In-memory cache for LAI model enablement configuration to avoid blocking synchronous disk I/O on every streaming request
+let cachedLaiConfig: Record<string, boolean> = {
+  'timetable-lai': true,
+  'predict-lai': false,
+  'explore-lais': true,
+};
+let lastConfigReadTime = 0;
+const CONFIG_CACHE_TTL_MS = 30_000;
+
+function getCachedLaiConfig(): Record<string, boolean> {
+  const now = Date.now();
+  if (now - lastConfigReadTime < CONFIG_CACHE_TTL_MS) {
+    return cachedLaiConfig;
+  }
+  lastConfigReadTime = now;
+  try {
+    const configPath = path.join(process.cwd(), 'lai-config.json');
+    if (fs.existsSync(configPath)) {
+      cachedLaiConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+  } catch (_) {}
+  return cachedLaiConfig;
+}
+
 
 
 export async function POST(request: Request) {
@@ -46,20 +70,8 @@ export async function POST(request: Request) {
       ? parsedBody.selectedModel.trim()
       : 'llama-3.1-8b-instant';
 
-    // Server-side deactivation check for LAI models
-    let config = {
-      'timetable-lai': true,
-      'predict-lai': false,
-      'explore-lais': true
-    };
-    try {
-      const configPath = path.join(process.cwd(), 'lai-config.json');
-      if (fs.existsSync(configPath)) {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      }
-    } catch (e) {
-      console.warn('Failed to read config in chat route:', e);
-    }
+    // Server-side deactivation check for LAI models (using in-memory cached config)
+    const config = getCachedLaiConfig();
 
     if (selectedModel === 'timetable-ai' && config['timetable-lai'] === false) {
       return NextResponse.json({ error: 'The Timetable LAI is currently deactivated by the administrator for system maintenance.' }, { status: 403 });
@@ -251,30 +263,31 @@ export async function POST(request: Request) {
         }
 
         if (!isExistingMessage) {
-          await Promise.all([
-            prisma.user.upsert({
-              where: { id: userId },
-              update: {
-                messageCountToday: { increment: 1 },
-                lastMessageAt: new Date(),
-              },
-              create: { id: userId, email: `${userId}@placeholder.clerk.accounts`, name: 'User', messageCountToday: 1, lastMessageAt: new Date() },
-            }),
-            prisma.chatSession.upsert({
-              where: { id: sessionId },
-              update: { updatedAt: new Date(), lastInteractionAt: new Date(), storageState: 'HOT' },
-              create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
-            }),
-            prisma.message.create({
-              data: {
-                id: clientMessageId || undefined,
-                sessionId,
-                userId,
-                role: 'user',
-                content,
-              },
-            }),
-          ]);
+          // Strict foreign-key dependency order (User -> ChatSession -> Message) to prevent Postgres P2003 race condition under high concurrency
+          await prisma.user.upsert({
+            where: { id: userId },
+            update: {
+              messageCountToday: { increment: 1 },
+              lastMessageAt: new Date(),
+            },
+            create: { id: userId, email: `${userId}@placeholder.clerk.accounts`, name: 'User', messageCountToday: 1, lastMessageAt: new Date() },
+          });
+
+          await prisma.chatSession.upsert({
+            where: { id: sessionId },
+            update: { updatedAt: new Date(), lastInteractionAt: new Date(), storageState: 'HOT' },
+            create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
+          });
+
+          await prisma.message.create({
+            data: {
+              id: clientMessageId || undefined,
+              sessionId,
+              userId,
+              role: 'user',
+              content,
+            },
+          });
         }
       } catch (dbErr) {
         console.error('Database write error (user message):', dbErr);

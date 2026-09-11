@@ -71,6 +71,7 @@ export async function GET(request: Request) {
       orderBy: [
         { pinned: 'desc' },
         { updatedAt: 'desc' },
+        { id: 'desc' },
       ],
       select: {
         id: true,

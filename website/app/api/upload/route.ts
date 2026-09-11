@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { checkRateLimit, getRateLimitHeaders } from '../../../lib/rateLimit';
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB limit to prevent serverless OOM
 
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate Limiting: 20 uploads per minute per user
+  const rateLimit = checkRateLimit(`upload:${userId}`, 20, 60_000);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', message: 'Too many file uploads. Please slow down and try again shortly.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
+    );
   }
 
   try {
@@ -13,6 +25,13 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: 'payload_too_large', message: 'File exceeds the maximum allowable size of 10MB.' },
+        { status: 413 }
+      );
     }
 
     const bytes = await file.arrayBuffer();

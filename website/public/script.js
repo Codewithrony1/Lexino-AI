@@ -3462,6 +3462,9 @@
                     if (done) break;
 
                     streamBuffer += decoder.decode(value, { stream: true });
+                    if (streamBuffer.length > 65536) {
+                        streamBuffer = streamBuffer.slice(-32768); // Guard against runaway buffer on malformed stream
+                    }
                     const lines = streamBuffer.split('\n');
                     streamBuffer = lines.pop() || '';
 
