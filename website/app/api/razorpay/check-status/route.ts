@@ -2,10 +2,20 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { PLANS } from '@/lib/plans';
 import { fetchRazorpayOrderPayments, fetchRazorpayOrder } from '@/lib/razorpay';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  const rateLimitResult = checkRateLimit(`check-payment-status:${clientIp}`, 30, 60_000);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', message: 'Too many payment status requests. Please wait a moment.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   const url = new URL(request.url);
   const orderId = (url.searchParams.get('order_id') || url.searchParams.get('orderId') || '').trim();
 

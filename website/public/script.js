@@ -3862,7 +3862,7 @@
                     }
                 }
 
-                const newResponse = await getResponse([{type: "text", text: latestUserText}], historyForApi);
+                const newResponse = await getResponse(latestUserText, historyForApi);
                 typingMsg.remove();
                 messageDiv.style.opacity = '1';
                 messageDiv.querySelector('.message-content div').innerHTML = renderMarkdown(newResponse);

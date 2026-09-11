@@ -35,9 +35,11 @@
 
         if (status === 401) {
             setTimeout(() => {
-                window.location.href = "/login?redirect_url=/chat";
+                const isProd = typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in');
+                const returnUrl = encodeURIComponent(window.location.href);
+                window.location.href = isProd ? `https://accounts.lexinoai.in/sign-in?redirect_url=${returnUrl}` : `/login?redirect_url=/chat`;
             }, 2000);
-            return "Session expired. Redirecting to login...";
+            return "Session expired. Redirecting to sign in...";
         }
 
         if (status === 403) {
@@ -63,10 +65,20 @@
         const selectedModelValue = modelSelect ? modelSelect.value : "llama-3.3-70b-versatile";
         const selectedMaxTokens = maxTokensSelect ? parseInt(maxTokensSelect.value, 10) : 256;
         const maxTokens = Number.isFinite(selectedMaxTokens) ? Math.min(selectedMaxTokens, 512) : 256;
+
+        let stringContent = "";
+        if (typeof content === "string") {
+            stringContent = content;
+        } else if (Array.isArray(content)) {
+            stringContent = content.map((c) => (typeof c === "string" ? c : c?.text || JSON.stringify(c))).join("\n");
+        } else if (content && typeof content === "object") {
+            stringContent = content.text || JSON.stringify(content);
+        }
+
         const requestBody = JSON.stringify({
             selectedModel: selectedModelValue,
             maxTokens,
-            content,
+            content: stringContent,
             history
         });
 
@@ -90,8 +102,33 @@
                     continue;
                 }
 
+                const contentType = response.headers.get("content-type") || "";
+                if (contentType.includes("text/event-stream") && response.body) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let accumulated = "";
+                    let streamBuffer = "";
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        streamBuffer += decoder.decode(value, { stream: true });
+                        const lines = streamBuffer.split("\n");
+                        streamBuffer = lines.pop() || "";
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (trimmed.startsWith("data: ")) {
+                                try {
+                                    const parsed = JSON.parse(trimmed.slice(6));
+                                    if (parsed.text) accumulated += parsed.text;
+                                } catch (_) {}
+                            }
+                        }
+                    }
+                    return accumulated;
+                }
+
                 const data = await response.json().catch(() => ({}));
-                return data.output || data.reply || "";
+                return data.output || data.reply || data.text || "";
             } catch (error) {
                 const message = error?.message || "Network error";
                 networkFailures.push(endpoint);

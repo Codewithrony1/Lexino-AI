@@ -3,10 +3,20 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../../lib/prisma';
 import { PLANS } from '../../../../lib/plans';
 import { verifyPaymentSignature } from '../../../../lib/razorpay';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  const rateLimitResult = checkRateLimit(`razorpay-verify:${clientIp}`, 15, 60_000);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', message: 'Too many verification attempts. Please wait a moment.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   console.log('⚡ [Razorpay Verify] Incoming payment verification request received at', new Date().toISOString());
 
   try {
