@@ -32,7 +32,7 @@ export default async function ChatPage() {
   if (!authResult?.userId) {
     const isProd = process.env.NODE_ENV === 'production' && !process.env.VERCEL_URL?.includes('localhost');
     if (isProd) {
-      redirect('https://accounts.lexinoai.in/login?redirect_url=' + encodeURIComponent('https://chat.lexinoai.in'));
+      redirect('https://accounts.lexinoai.in/sign-in?redirect_url=' + encodeURIComponent('https://chat.lexinoai.in'));
     } else {
       redirect('/login?redirect_url=/chat');
     }

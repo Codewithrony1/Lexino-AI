@@ -136,7 +136,7 @@ export const DOC_ARTICLES: Record<string, DocArticle> = {
         {
           heading: 'Step 1: Sign in with Google or Email',
           body: [
-            'Visit accounts.lexinoai.in/login or click "Experience Lexino AI Now" from the main website. You can sign in instantly using Google Single Sign-On (SSO) or create an account with email and password.',
+            'Visit accounts.lexinoai.in/sign-in or click "Experience Lexino AI Now" from the main website. You can sign in instantly using Google Single Sign-On (SSO) or create an account with email and password.',
             'Upon successful authentication, you are automatically redirected into the AI workspace at chat.lexinoai.in.',
           ],
         },
@@ -296,7 +296,7 @@ export const DOC_ARTICLES: Record<string, DocArticle> = {
           heading: 'Central Identity Service (accounts.lexinoai.in)',
           body: [
             'Rather than duplicating authentication logic across multiple domains, accounts.lexinoai.in acts as the single source of truth for identity.',
-            '• When an unauthenticated visitor requests a protected workspace surface (e.g. chat.lexinoai.in), the edge middleware seamlessly redirects them to accounts.lexinoai.in/login with a cryptographic redirect_url parameter.',
+            '• When an unauthenticated visitor requests a protected workspace surface (e.g. chat.lexinoai.in), the edge middleware seamlessly redirects them to accounts.lexinoai.in/sign-in with a cryptographic redirect_url parameter.',
             '• Upon successful login via Google SSO or email, Clerk writes the session token (__session) scoped to .lexinoai.in.',
             '• The user is then returned to the exact page they requested with their session already active.',
           ],

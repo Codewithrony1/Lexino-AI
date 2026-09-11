@@ -41,7 +41,7 @@ export function ChatUserButtonMount() {
     (window as any).clerkSignOut = async () => {
       await signOut();
       const isProd = window.location.hostname.endsWith('lexinoai.in');
-      window.location.href = isProd ? 'https://accounts.lexinoai.in/login' : '/login';
+      window.location.href = isProd ? 'https://www.lexinoai.in' : '/';
     };
     
     return () => {
@@ -52,7 +52,7 @@ export function ChatUserButtonMount() {
   if (!target) return null;
 
   const isProd = typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in');
-  const logoutUrl = isProd ? 'https://accounts.lexinoai.in/login' : '/';
+  const logoutUrl = isProd ? 'https://www.lexinoai.in' : '/';
 
   return createPortal(
     <div className="clerk-header-user">

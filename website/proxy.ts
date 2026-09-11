@@ -66,8 +66,11 @@ export default clerkMiddleware(async (auth, req) => {
     if (url.pathname.startsWith('/chat') || url.pathname.startsWith('/projects') || url.pathname.startsWith('/files')) {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://chat.lexinoai.in'), 307);
     }
-    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) {
-      return NextResponse.redirect(new URL(url.pathname + url.search, 'https://accounts.lexinoai.in'), 307);
+    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/sign-in')) {
+      return NextResponse.redirect(new URL('/sign-in' + url.search, 'https://accounts.lexinoai.in'), 307);
+    }
+    if (url.pathname.startsWith('/signup') || url.pathname.startsWith('/sign-up')) {
+      return NextResponse.redirect(new URL('/sign-up' + url.search, 'https://accounts.lexinoai.in'), 307);
     }
 
     // Root '/' on docs domain -> rewrites to '/docs'
@@ -158,9 +161,13 @@ export default clerkMiddleware(async (auth, req) => {
   // =========================================================================
   if (host === 'chat.lexinoai.in') {
     // If login or signup directly requested on chat domain -> redirect to accounts.lexinoai.in
-    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) {
+    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/sign-in')) {
       const targetReturn = 'https://chat.lexinoai.in';
-      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in${url.pathname}?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
+      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-in?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
+    }
+    if (url.pathname.startsWith('/signup') || url.pathname.startsWith('/sign-up')) {
+      const targetReturn = 'https://chat.lexinoai.in';
+      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-up?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
     }
 
     // If marketing paths requested on chat domain -> redirect to www.lexinoai.in
@@ -210,7 +217,7 @@ export default clerkMiddleware(async (auth, req) => {
         cleanSearch.delete('redirectUrl');
         const searchStr = cleanSearch.toString() ? `?${cleanSearch.toString()}` : '';
         const targetReturn = 'https://chat.lexinoai.in' + (url.pathname === '/' ? '' : url.pathname) + searchStr;
-        const loginUrl = new URL(`https://accounts.lexinoai.in/login?redirect_url=${encodeURIComponent(targetReturn)}`);
+        const loginUrl = new URL(`https://accounts.lexinoai.in/sign-in?redirect_url=${encodeURIComponent(targetReturn)}`);
         return NextResponse.redirect(loginUrl, 307);
       }
 
@@ -245,8 +252,13 @@ export default clerkMiddleware(async (auth, req) => {
     }
 
     // If login/signup requested on www -> redirect to accounts.lexinoai.in
-    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) {
-      return NextResponse.redirect(new URL(url.pathname + url.search, 'https://accounts.lexinoai.in'), 307);
+    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/sign-in')) {
+      const redirectParam = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl') || 'https://chat.lexinoai.in';
+      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-in?redirect_url=${encodeURIComponent(redirectParam)}`), 307);
+    }
+    if (url.pathname.startsWith('/signup') || url.pathname.startsWith('/sign-up')) {
+      const redirectParam = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl') || 'https://chat.lexinoai.in';
+      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-up?redirect_url=${encodeURIComponent(redirectParam)}`), 307);
     }
 
     // Marketing pages (/, /pricing, /help, /terms, /privacy) serve directly
@@ -314,8 +326,8 @@ export default clerkMiddleware(async (auth, req) => {
       return {
         domain: host,
         isSatellite: true,
-        signInUrl: 'https://accounts.lexinoai.in/login',
-        signUpUrl: 'https://accounts.lexinoai.in/signup',
+        signInUrl: 'https://accounts.lexinoai.in/sign-in',
+        signUpUrl: 'https://accounts.lexinoai.in/sign-up',
       };
     }
   }

@@ -19,8 +19,8 @@ export async function AppClerkProvider({ children }: { children: React.ReactNode
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      signInUrl={isSatellite ? 'https://accounts.lexinoai.in/login' : '/login'}
-      signUpUrl={isSatellite ? 'https://accounts.lexinoai.in/signup' : '/signup'}
+      signInUrl={isSatellite ? 'https://accounts.lexinoai.in/sign-in' : '/login'}
+      signUpUrl={isSatellite ? 'https://accounts.lexinoai.in/sign-up' : '/signup'}
       signInFallbackRedirectUrl="/chat"
       signUpFallbackRedirectUrl="/chat"
       allowedRedirectOrigins={[
