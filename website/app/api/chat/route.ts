@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '../../../lib/prisma';
 import { restoreChatSession } from '../../../lib/chatCompression';
+import { checkRateLimit, getRateLimitHeaders } from '../../../lib/rateLimit';
 import fs from 'fs';
 import path from 'path';
 
@@ -27,6 +28,16 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate Limiting: 35 requests per minute per authenticated user (burst protection)
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  const rateLimitResult = checkRateLimit(`chat:${userId || clientIp}`, 35, 60_000);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', message: 'Too many chat requests. Please slow down and try again shortly.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
   }
 
   try {
@@ -203,42 +214,68 @@ export async function POST(request: Request) {
       }
     }
 
-    // B. Sync User and Message to Database (concurrent safe writes)
+    const clientMessageId = typeof parsedBody.clientMessageId === 'string' && parsedBody.clientMessageId.trim()
+      ? parsedBody.clientMessageId.trim()
+      : null;
+
+    // B. Sync User and Message to Database (concurrent safe writes & IDOR verification)
     if (process.env.DATABASE_URL) {
       try {
-        // If session was archived/compressed, seamlessly restore before appending new turn
+        // Verify session ownership strictly (prevent IDOR attacks)
         const existingSession = await prisma.chatSession.findUnique({
           where: { id: sessionId },
-          select: { storageState: true },
+          select: { userId: true, storageState: true },
         });
+
+        if (existingSession && existingSession.userId !== userId) {
+          return NextResponse.json(
+            { error: 'forbidden', message: 'You do not have permission to access or modify this chat session.' },
+            { status: 403 }
+          );
+        }
 
         if (existingSession?.storageState === 'COMPRESSED') {
           await restoreChatSession(sessionId);
         }
 
-        await Promise.all([
-          prisma.user.upsert({
-            where: { id: userId },
-            update: {
-              messageCountToday: { increment: 1 },
-              lastMessageAt: new Date(),
-            },
-            create: { id: userId, email: `${userId}@placeholder.clerk.accounts`, name: 'User', messageCountToday: 1, lastMessageAt: new Date() },
-          }),
-          prisma.chatSession.upsert({
-            where: { id: sessionId },
-            update: { updatedAt: new Date(), lastInteractionAt: new Date(), storageState: 'HOT' },
-            create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
-          }),
-          prisma.message.create({
-            data: {
-              sessionId,
-              userId,
-              role: 'user',
-              content,
-            },
-          }),
-        ]);
+        // Idempotency check: if message already processed, avoid duplicate DB write
+        let isExistingMessage = false;
+        if (clientMessageId) {
+          const existingMsg = await prisma.message.findUnique({
+            where: { id: clientMessageId },
+            select: { id: true },
+          });
+          if (existingMsg) {
+            isExistingMessage = true;
+          }
+        }
+
+        if (!isExistingMessage) {
+          await Promise.all([
+            prisma.user.upsert({
+              where: { id: userId },
+              update: {
+                messageCountToday: { increment: 1 },
+                lastMessageAt: new Date(),
+              },
+              create: { id: userId, email: `${userId}@placeholder.clerk.accounts`, name: 'User', messageCountToday: 1, lastMessageAt: new Date() },
+            }),
+            prisma.chatSession.upsert({
+              where: { id: sessionId },
+              update: { updatedAt: new Date(), lastInteractionAt: new Date(), storageState: 'HOT' },
+              create: { id: sessionId, userId, title: content.slice(0, 46) || 'New chat' },
+            }),
+            prisma.message.create({
+              data: {
+                id: clientMessageId || undefined,
+                sessionId,
+                userId,
+                role: 'user',
+                content,
+              },
+            }),
+          ]);
+        }
       } catch (dbErr) {
         console.error('Database write error (user message):', dbErr);
       }
@@ -397,10 +434,17 @@ export async function POST(request: Request) {
       apiBody.temperature = temperature;
     }
 
+    // Setup upstream abort controller linked to client request lifecycle
+    const abortController = new AbortController();
+    if (request.signal) {
+      request.signal.addEventListener('abort', () => abortController.abort());
+    }
+
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: apiHeaders,
       body: JSON.stringify(apiBody),
+      signal: abortController.signal,
     });
 
     if (!response.ok) {
@@ -415,6 +459,9 @@ export async function POST(request: Request) {
     let accumulatedReply = '';
 
     const stream = new ReadableStream({
+      cancel() {
+        abortController.abort();
+      },
       async start(controller) {
         if (!response.body) {
           controller.close();

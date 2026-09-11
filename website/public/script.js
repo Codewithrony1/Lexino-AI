@@ -146,6 +146,7 @@
         let contextMenuChatId = null;
         let pendingDeleteChatId = null;
         let shareChatId = null;
+        let activeChatAbortController = null;
         let mobileViewportFrame = null;
         let mobileComposerResizeObserver = null;
         let autoResizeFrame = null;
@@ -2136,6 +2137,11 @@
 
             const wasActive = activeChatId === chatId;
             chatSessions = chatSessions.filter((s) => s.id !== chatId);
+            
+            // Cloud session deletion
+            fetch(`/api/chat/sessions?sessionId=${encodeURIComponent(chatId)}`, { method: 'DELETE' })
+                .catch((err) => console.warn('[CloudSync] Session deletion note:', err));
+
             if (shareChatId === chatId) {
                 closeShareChatModal();
             }
@@ -2374,6 +2380,11 @@
         }
 
         function openChatSession(chatId) {
+            if (activeChatAbortController) {
+                try { activeChatAbortController.abort(); } catch (_) {}
+                activeChatAbortController = null;
+            }
+
             const target = chatSessions.find((s) => s.id === chatId);
             if (!target) return;
             if (isTempMode) {
@@ -2400,6 +2411,30 @@
                 messagesDiv.innerHTML = sessionHtml || getEmptyStateMarkup();
                 ensureMessageMoreMenus(messagesDiv);
             }
+
+            // Lazy-load cloud messages if thread is empty but session exists on backend
+            if ((!target.thread || target.thread.length === 0) && target.id) {
+                fetch(`/api/chat/sessions?sessionId=${encodeURIComponent(target.id)}`)
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data.success && data.session && Array.isArray(data.session.messages) && data.session.messages.length > 0) {
+                            target.thread = data.session.messages.map((m) => ({ role: m.role, content: m.content }));
+                            if (activeChatId === target.id) {
+                                currentConversation = target.thread.map((m) => ({ role: m.role, content: m.content }));
+                                target.html = renderThreadToHtml(currentConversation);
+                                const msgsDiv = getMessagesDiv();
+                                if (msgsDiv) {
+                                    msgsDiv.innerHTML = target.html || getEmptyStateMarkup();
+                                    ensureMessageMoreMenus(msgsDiv);
+                                    scrollMessagesToLatest();
+                                }
+                                saveAllSessions();
+                            }
+                        }
+                    })
+                    .catch((e) => console.warn('[CloudSync] Session message load note:', e));
+            }
+
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
@@ -2523,6 +2558,44 @@
             }
         }
 
+        async function syncCloudSessions() {
+            try {
+                const res = await fetch('/api/chat/sessions', { cache: 'no-store' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success || !Array.isArray(data.sessions)) return;
+
+                let hasNewSessions = false;
+                for (const cloudS of data.sessions) {
+                    const localIdx = chatSessions.findIndex((s) => s.id === cloudS.id);
+                    if (localIdx === -1) {
+                        chatSessions.push({
+                            id: cloudS.id,
+                            title: cloudS.title || 'New chat',
+                            pinned: Boolean(cloudS.pinned),
+                            updatedAt: new Date(cloudS.updatedAt || cloudS.createdAt).getTime(),
+                            thread: [],
+                            html: '',
+                            storageState: cloudS.storageState,
+                        });
+                        hasNewSessions = true;
+                    } else {
+                        if (chatSessions[localIdx].pinned !== Boolean(cloudS.pinned)) {
+                            chatSessions[localIdx].pinned = Boolean(cloudS.pinned);
+                            hasNewSessions = true;
+                        }
+                    }
+                }
+
+                if (hasNewSessions) {
+                    saveAllSessions();
+                    renderChatHistory();
+                }
+            } catch (err) {
+                console.warn('[CloudSync] Session sync note:', err);
+            }
+        }
+
         function loadChatState() {
             const messagesDiv = getMessagesDiv();
             if (!messagesDiv) return false;
@@ -2558,6 +2631,7 @@
                 saveAllSessions();
                 renderChatHistory();
                 scheduleMobileViewportSync();
+                syncCloudSessions();
                 return true;
             }
 
@@ -2585,6 +2659,7 @@
             renderChatHistory();
             scheduleMobileViewportSync();
             scrollMessagesToLatest();
+            syncCloudSessions();
             return true;
         }
 
@@ -3263,6 +3338,13 @@
             wrapper.appendChild(typingMsg);
             scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages });
 
+            // Cancel any in-flight streaming generation cleanly
+            if (activeChatAbortController) {
+                try { activeChatAbortController.abort(); } catch (_) {}
+            }
+            activeChatAbortController = new AbortController();
+            const clientMessageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+
             try {
                 const modelSelect = document.getElementById('modelSelect');
                 const maxTokensSelect = document.getElementById('maxTokens');
@@ -3280,13 +3362,15 @@
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    signal: activeChatAbortController.signal,
                     body: JSON.stringify({
                         selectedModel: selectedModelValue,
                         activeAssistant: activeAssistantMode,
                         maxTokens: selectedMaxTokens,
                         content: memoryUserText,
                         history: historyForApi,
-                        sessionId: activeChatId
+                        sessionId: activeChatId,
+                        clientMessageId: clientMessageId,
                     })
                 });
 
@@ -3298,7 +3382,7 @@
                         window.lexinoCooldownUntil = errData.cooldownUntil;
                         triggerCooldownTimer(errData.cooldownUntil);
                     }
-                    throw new Error(errData?.error || `Server error (${response.status})`);
+                    throw new Error(errData?.message || errData?.error || `Server error (${response.status})`);
                 }
 
                 incrementClientSideMsgCount();
@@ -3407,6 +3491,10 @@
                 saveChatState();
             } catch (err) {
                 typingMsg.remove();
+                if (err && (err.name === 'AbortError' || String(err).includes('aborted'))) {
+                    console.log('[Chat] Request cancelled cleanly by client.');
+                    return;
+                }
                 
                 const friendlyError = formatChatError(err);
                 const errorMsg = document.createElement('div');
@@ -3414,12 +3502,18 @@
                 errorMsg.innerHTML = `
                     <div class="message-avatar">AI</div>
                     <div class="message-content">
-                        <div style="color: #ef4444;">${friendlyError}</div>
+                        <div style="color: #ef4444; margin-bottom: 8px;">${friendlyError}</div>
+                        <button class="action-btn" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:6px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#ef4444; cursor:pointer; font-size:12px; font-weight:500;" onclick="window.retryUserMessage(${JSON.stringify(memoryUserText)})">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                            Retry
+                        </button>
                     </div>
                 `;
                 wrapper.appendChild(errorMsg);
                 scrollMessagesToLatest({ smooth: true, force: shouldFollowNewMessages, onlyIfNearBottom: true });
                 saveChatState();
+            } finally {
+                activeChatAbortController = null;
             }
         }
 
@@ -4060,4 +4154,46 @@
                 wallpaperLayer.classList.remove("wallpaper-paused");
             }
         });
+
+        window.retryUserMessage = function(text) {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.value = text;
+                sendMessage();
+            }
+        };
+
+        // Production network status and graceful auto-recovery
+        window.addEventListener('offline', () => {
+            console.warn('[Network] Offline detected.');
+            let banner = document.getElementById('network-status-toast');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'network-status-toast';
+                banner.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.92);backdrop-filter:blur(8px);color:#fff;padding:8px 18px;border-radius:24px;font-size:13px;font-weight:500;z-index:99999;box-shadow:0 6px 20px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;';
+                banner.innerHTML = '<span>⚠️ Network interrupted. Auto-reconnecting...</span>';
+                document.body.appendChild(banner);
+            }
+            banner.style.display = 'flex';
+        });
+
+        window.addEventListener('online', () => {
+            console.log('[Network] Back online.');
+            const banner = document.getElementById('network-status-toast');
+            if (banner) {
+                banner.style.background = 'rgba(16,185,129,0.92)';
+                banner.innerHTML = '<span>Connected! Synchronizing...</span>';
+                setTimeout(() => { banner.style.display = 'none'; }, 2400);
+            }
+            if (typeof syncCloudSessions === 'function') {
+                syncCloudSessions();
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (activeChatAbortController) {
+                try { activeChatAbortController.abort(); } catch (_) {}
+            }
+        });
+
     

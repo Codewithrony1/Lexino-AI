@@ -205,7 +205,11 @@ export default clerkMiddleware(async (auth, req) => {
     const isWorkspacePath = url.pathname === '/' || isProtectedRoute(req);
     if (isWorkspacePath) {
       if (!authObj.userId) {
-        const targetReturn = 'https://chat.lexinoai.in' + (url.pathname === '/' ? '' : url.pathname) + url.search;
+        const cleanSearch = new URLSearchParams(url.search);
+        cleanSearch.delete('redirect_url');
+        cleanSearch.delete('redirectUrl');
+        const searchStr = cleanSearch.toString() ? `?${cleanSearch.toString()}` : '';
+        const targetReturn = 'https://chat.lexinoai.in' + (url.pathname === '/' ? '' : url.pathname) + searchStr;
         const loginUrl = new URL(`https://accounts.lexinoai.in/login?redirect_url=${encodeURIComponent(targetReturn)}`);
         return NextResponse.redirect(loginUrl, 307);
       }
@@ -303,10 +307,10 @@ export default clerkMiddleware(async (auth, req) => {
   const isLexino = host === 'lexinoai.in' || host.endsWith('.lexinoai.in');
   const isAccounts = host === 'accounts.lexinoai.in';
 
-  // Support Clerk satellite domains architecture if configured via env
-  if (isLexino && !isAccounts && !host.startsWith('localhost')) {
-    const isSatellite = process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === 'true';
-    if (isSatellite) {
+  // Support Clerk satellite domains architecture for production cross-subdomain authentication
+  if (isLexino && !isAccounts && !host.startsWith('localhost') && !host.startsWith('127.0.0.1')) {
+    const disableSatellite = process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === 'false';
+    if (!disableSatellite) {
       return {
         domain: host,
         isSatellite: true,
