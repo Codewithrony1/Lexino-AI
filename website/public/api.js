@@ -37,7 +37,7 @@
             setTimeout(() => {
                 const isProd = typeof window !== 'undefined' && window.location.hostname.endsWith('lexinoai.in');
                 const returnUrl = encodeURIComponent(window.location.href);
-                window.location.href = isProd ? `https://accounts.lexinoai.in/sign-in?redirect_url=${returnUrl}` : `/login?redirect_url=/chat`;
+                window.location.href = isProd ? `https://www.lexinoai.in/login?redirect_url=${returnUrl}` : `/login?redirect_url=/chat`;
             }, 2000);
             return "Session expired. Redirecting to sign in...";
         }

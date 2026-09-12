@@ -78,6 +78,26 @@ const nextConfig = {
         destination: '/chat',
         permanent: false,
       },
+      {
+        source: '/sign-in',
+        destination: '/login',
+        permanent: false,
+      },
+      {
+        source: '/sign-up',
+        destination: '/signup',
+        permanent: false,
+      },
+      {
+        source: '/sign-in/:path*',
+        destination: '/login/:path*',
+        permanent: false,
+      },
+      {
+        source: '/sign-up/:path*',
+        destination: '/signup/:path*',
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

@@ -90,10 +90,10 @@ export function DocsViewer({ article }: DocsViewerProps) {
               Main Website
             </a>
             <a
-              href="https://accounts.lexinoai.in"
+              href="https://www.lexinoai.in/login"
               className="text-xs text-slate-400 hover:text-white transition hidden sm:inline-block"
             >
-              Account
+              Sign In
             </a>
             <a
               href="https://chat.lexinoai.in"

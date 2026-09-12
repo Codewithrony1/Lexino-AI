@@ -99,9 +99,9 @@ export const DOC_ARTICLES: Record<string, DocArticle> = {
           heading: 'Core Platform Architecture',
           body: [
             'Lexino AI runs across a distributed edge architecture organized into dedicated product surfaces under the Lexino AI brand:',
-            '• Main Portal (www.lexinoai.in): Marketing, feature overviews, student pricing, and plan subscriptions.',
+            '• Main Portal (www.lexinoai.in): Marketing, feature overviews, student pricing, plan subscriptions, and custom 3D authentication portal (/login).',
             '• AI Workspace (chat.lexinoai.in): Dedicated chat client, project workspaces, document RAG vault, and API endpoints.',
-            '• Central Auth (accounts.lexinoai.in): Centralized authentication service powered by Clerk with Google SSO and shared session cookies.',
+            '• Central Auth: Unified identity powered by Clerk with Google SSO and shared session cookies scoped to .lexinoai.in.',
             '• Public Docs (docs.lexinoai.in): Public documentation accessible to anyone without requiring an account.',
           ],
           callout: {
@@ -136,7 +136,7 @@ export const DOC_ARTICLES: Record<string, DocArticle> = {
         {
           heading: 'Step 1: Sign in with Google or Email',
           body: [
-            'Visit accounts.lexinoai.in/sign-in or click "Experience Lexino AI Now" from the main website. You can sign in instantly using Google Single Sign-On (SSO) or create an account with email and password.',
+            'Visit lexinoai.in/login or click "Experience Lexino AI Now" from the main website. You can sign in instantly using Google Single Sign-On (SSO) or create an account with email and password.',
             'Upon successful authentication, you are automatically redirected into the AI workspace at chat.lexinoai.in.',
           ],
         },
@@ -285,18 +285,18 @@ export const DOC_ARTICLES: Record<string, DocArticle> = {
     slug: 'authentication',
     category: 'Account & Identity',
     title: 'Centralized Authentication Architecture',
-    description: 'Understand how accounts.lexinoai.in centralizes identity across all Lexino AI subdomains using Clerk.',
+    description: 'Understand how Lexino AI manages identity across subdomains using Clerk and native .lexinoai.in session cookies.',
     readTime: '4 min read',
     prev: { title: 'Features & Wallpapers', href: '/docs/features' },
     next: { title: 'Subscription Plans', href: '/docs/subscriptions' },
     content: {
-      lead: 'Lexino AI delegates authentication to accounts.lexinoai.in, providing enterprise-grade security and cross-subdomain single sign-on.',
+      lead: 'Lexino AI powers identity via Clerk with a custom 3D cyberpunk interface, providing enterprise-grade security and seamless cross-subdomain single sign-on.',
       sections: [
         {
-          heading: 'Central Identity Service (accounts.lexinoai.in)',
+          heading: 'Unified Authentication & Session Scope',
           body: [
-            'Rather than duplicating authentication logic across multiple domains, accounts.lexinoai.in acts as the single source of truth for identity.',
-            '• When an unauthenticated visitor requests a protected workspace surface (e.g. chat.lexinoai.in), the edge middleware seamlessly redirects them to accounts.lexinoai.in/sign-in with a cryptographic redirect_url parameter.',
+            'Rather than duplicating authentication logic across multiple domains, Lexino AI provides a single unified login portal at /login.',
+            '• When an unauthenticated visitor requests a protected workspace surface (e.g. chat.lexinoai.in), the edge middleware seamlessly redirects them to www.lexinoai.in/login with a redirect_url parameter.',
             '• Upon successful login via Google SSO or email, Clerk writes the session token (__session) scoped to .lexinoai.in.',
             '• The user is then returned to the exact page they requested with their session already active.',
           ],

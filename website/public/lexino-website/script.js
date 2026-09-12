@@ -273,13 +273,18 @@ function initAuthCta() {
             button.textContent = 'Go to Chat Dashboard 🚀';
         }
     });
+    const navAuth = document.getElementById('navAuthLink');
+    if (navAuth) {
+        navAuth.textContent = 'Workspace 🚀';
+        navAuth.href = window.location.hostname.endsWith('lexinoai.in') ? 'https://chat.lexinoai.in' : '/chat';
+    }
 }
 
 function navigateToTry() {
     const isProduction = window.location.hostname.endsWith('lexinoai.in');
     const chatUrl = isProduction ? 'https://chat.lexinoai.in' : '/chat';
     const authUrl = isProduction 
-        ? 'https://accounts.lexinoai.in/sign-in?redirect_url=' + encodeURIComponent(chatUrl)
+        ? 'https://www.lexinoai.in/login?redirect_url=' + encodeURIComponent(chatUrl)
         : '/login?redirect_url=/chat';
     window.location.href = hasClerkSession() ? chatUrl : authUrl;
 }
@@ -400,7 +405,7 @@ async function initiateRazorpayPayment(planId, studentIdNote) {
             const isProduction = window.location.hostname.endsWith('lexinoai.in');
             const returnUrl = isProduction ? 'https://www.lexinoai.in/pricing' : '/pricing';
             window.location.href = isProduction 
-                ? 'https://accounts.lexinoai.in/sign-in?redirect_url=' + encodeURIComponent(returnUrl)
+                ? 'https://www.lexinoai.in/login?redirect_url=' + encodeURIComponent(returnUrl)
                 : '/login?redirect_url=/pricing';
             return;
         }

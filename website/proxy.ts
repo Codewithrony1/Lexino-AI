@@ -67,10 +67,10 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://chat.lexinoai.in'), 307);
     }
     if (url.pathname.startsWith('/login') || url.pathname.startsWith('/sign-in')) {
-      return NextResponse.redirect(new URL('/sign-in' + url.search, 'https://accounts.lexinoai.in'), 307);
+      return NextResponse.redirect(new URL('/login' + url.search, 'https://www.lexinoai.in'), 307);
     }
     if (url.pathname.startsWith('/signup') || url.pathname.startsWith('/sign-up')) {
-      return NextResponse.redirect(new URL('/sign-up' + url.search, 'https://accounts.lexinoai.in'), 307);
+      return NextResponse.redirect(new URL('/signup' + url.search, 'https://www.lexinoai.in'), 307);
     }
 
     // Root '/' on docs domain -> rewrites to '/docs'
@@ -160,14 +160,14 @@ export default clerkMiddleware(async (auth, req) => {
   // 4. CHAT WEBSITE: chat.lexinoai.in (Dedicated AI Chat & Workspace)
   // =========================================================================
   if (host === 'chat.lexinoai.in') {
-    // If login or signup directly requested on chat domain -> redirect to accounts.lexinoai.in
+    // If login or signup directly requested on chat domain -> redirect to www.lexinoai.in/login
     if (url.pathname.startsWith('/login') || url.pathname.startsWith('/sign-in')) {
       const targetReturn = 'https://chat.lexinoai.in';
-      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-in?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
+      return NextResponse.redirect(new URL(`https://www.lexinoai.in/login?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
     }
     if (url.pathname.startsWith('/signup') || url.pathname.startsWith('/sign-up')) {
       const targetReturn = 'https://chat.lexinoai.in';
-      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-up?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
+      return NextResponse.redirect(new URL(`https://www.lexinoai.in/signup?redirect_url=${encodeURIComponent(targetReturn)}`), 307);
     }
 
     // If marketing paths requested on chat domain -> redirect to www.lexinoai.in
@@ -217,7 +217,7 @@ export default clerkMiddleware(async (auth, req) => {
         cleanSearch.delete('redirectUrl');
         const searchStr = cleanSearch.toString() ? `?${cleanSearch.toString()}` : '';
         const targetReturn = 'https://chat.lexinoai.in' + (url.pathname === '/' ? '' : url.pathname) + searchStr;
-        const loginUrl = new URL(`https://accounts.lexinoai.in/sign-in?redirect_url=${encodeURIComponent(targetReturn)}`);
+        const loginUrl = new URL(`https://www.lexinoai.in/login?redirect_url=${encodeURIComponent(targetReturn)}`);
         return NextResponse.redirect(loginUrl, 307);
       }
 
@@ -251,14 +251,29 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(new URL(url.pathname + url.search, 'https://chat.lexinoai.in'), 307);
     }
 
-    // If login/signup requested on www -> redirect to accounts.lexinoai.in
-    if (url.pathname.startsWith('/login') || url.pathname.startsWith('/sign-in')) {
-      const redirectParam = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl') || 'https://chat.lexinoai.in';
-      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-in?redirect_url=${encodeURIComponent(redirectParam)}`), 307);
+    // Direct /sign-in and /sign-up aliases to /login and /signup
+    if (url.pathname.startsWith('/sign-in')) {
+      const target = url.pathname.replace(/^\/sign-in/, '/login') + url.search;
+      return NextResponse.redirect(new URL(target, req.url), 307);
     }
-    if (url.pathname.startsWith('/signup') || url.pathname.startsWith('/sign-up')) {
-      const redirectParam = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl') || 'https://chat.lexinoai.in';
-      return NextResponse.redirect(new URL(`https://accounts.lexinoai.in/sign-up?redirect_url=${encodeURIComponent(redirectParam)}`), 307);
+    if (url.pathname.startsWith('/sign-up')) {
+      const target = url.pathname.replace(/^\/sign-up/, '/signup') + url.search;
+      return NextResponse.redirect(new URL(target, req.url), 307);
+    }
+
+    // Active session forward: If already authenticated and visiting /login or /signup
+    if ((url.pathname.startsWith('/login') || url.pathname.startsWith('/signup')) && authObj.userId) {
+      const rawRedirect = url.searchParams.get('redirect_url') || url.searchParams.get('redirectUrl');
+      const safeDest = rawRedirect && !rawRedirect.includes('/login') && !rawRedirect.includes('/signup')
+        ? rawRedirect
+        : 'https://chat.lexinoai.in';
+      let targetUrl: URL;
+      try {
+        targetUrl = new URL(safeDest, 'https://chat.lexinoai.in');
+      } catch {
+        targetUrl = new URL('https://chat.lexinoai.in');
+      }
+      return applySecurityHeaders(NextResponse.redirect(targetUrl, 307), reqId);
     }
 
     // Marketing pages (/, /pricing, /help, /terms, /privacy) serve directly
@@ -314,25 +329,11 @@ export default clerkMiddleware(async (auth, req) => {
   // Default fallback
   const response = NextResponse.next();
   return applySecurityHeaders(response, reqId);
-}, (req) => {
-  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(':')[0].toLowerCase();
-  const isLexino = host === 'lexinoai.in' || host.endsWith('.lexinoai.in');
-  const isAccounts = host === 'accounts.lexinoai.in';
-
-  // Support Clerk satellite domains architecture for production cross-subdomain authentication
-  if (isLexino && !isAccounts && !host.startsWith('localhost') && !host.startsWith('127.0.0.1')) {
-    const disableSatellite = process.env.NEXT_PUBLIC_CLERK_IS_SATELLITE === 'false';
-    if (!disableSatellite) {
-      return {
-        domain: host,
-        isSatellite: true,
-        signInUrl: 'https://accounts.lexinoai.in/sign-in',
-        signUpUrl: 'https://accounts.lexinoai.in/sign-up',
-      };
-    }
-  }
-
-  return {};
+}, () => {
+  return {
+    signInUrl: '/login',
+    signUpUrl: '/signup',
+  };
 });
 
 export const config = {
